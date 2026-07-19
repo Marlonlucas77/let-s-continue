@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
-import { Users, ListOrdered, Target, TrendingUp, Trophy } from "lucide-react";
+import { Users, ListOrdered, Target, Trophy } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { DashboardSkeleton } from "@/components/Skeletons";
 import { Suspense } from "react";
