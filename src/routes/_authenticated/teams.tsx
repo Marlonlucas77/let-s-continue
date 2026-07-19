@@ -73,25 +73,24 @@ function TeamsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setSelected(t)}
-              className="card-surface p-4 flex items-center gap-3 text-left hover:border-primary/50 transition"
-            >
-              {t.logo ? (
-                <img src={t.logo} alt="" className="h-11 w-11 object-contain" />
-              ) : (
-                <div className="h-11 w-11 rounded-full bg-primary/20 grid place-items-center text-xs font-bold">
-                  {t.name.slice(0, 2).toUpperCase()}
+            <div key={t.id} className="card-surface p-4 flex items-center gap-3 hover:border-primary/50 transition">
+              <button onClick={() => setSelected(t)} className="flex-1 flex items-center gap-3 text-left min-w-0">
+                {t.logo ? (
+                  <img src={t.logo} alt="" className="h-11 w-11 object-contain" />
+                ) : (
+                  <div className="h-11 w-11 rounded-full bg-primary/20 grid place-items-center text-xs font-bold">
+                    {t.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{translateTeam(t.name)}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {translateCountry(t.country) || "—"}{t.founded ? ` · fund. ${t.founded}` : ""}
+                  </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{translateTeam(t.name)}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {translateCountry(t.country) || "—"}{t.founded ? ` · fund. ${t.founded}` : ""}
-                </div>
-              </div>
-            </button>
+              </button>
+              <FavoriteButton kind="team" refId={t.id} label={t.name} />
+            </div>
           ))}
         </div>
       )}
