@@ -77,7 +77,7 @@ function UpcomingPage() {
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">posso colar?</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
-            Estamos buscando jogos das suas ligas monitoradas. Tente aumentar o período ou verifique se você está seguindo alguma liga ativa.
+            abre o formulario para eu colar a chave de api
           </p>
           <div className="flex justify-center gap-2">
             <button 
