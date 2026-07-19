@@ -32,6 +32,21 @@ export type Database = {
         }
         Relationships: []
       }
+      api_sports_rate_limit: {
+        Row: {
+          id: number
+          last_dispatch_at: string
+        }
+        Insert: {
+          id?: number
+          last_dispatch_at?: string
+        }
+        Update: {
+          id?: number
+          last_dispatch_at?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -388,6 +403,7 @@ export type Database = {
           last_run_at: string | null
           league_id: number
           league_name: string
+          priority: number
           season: number
           user_id: string
         }
@@ -399,6 +415,7 @@ export type Database = {
           last_run_at?: string | null
           league_id: number
           league_name: string
+          priority?: number
           season: number
           user_id: string
         }
@@ -410,6 +427,7 @@ export type Database = {
           last_run_at?: string | null
           league_id?: number
           league_name?: string
+          priority?: number
           season?: number
           user_id?: string
         }
@@ -438,6 +456,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_api_sports_slot: {
+        Args: { min_interval_ms: number }
+        Returns: string
+      }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {
