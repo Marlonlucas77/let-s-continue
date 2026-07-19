@@ -9,6 +9,25 @@ const _inflight = new Map<string, Promise<any>>();
 const _computedCache = new Map<string, { at: number; ttl: number; data: any }>();
 let _rateLimitedUntil = 0;
 
+// Throttle global: garante um espaçamento mínimo entre chamadas reais à
+// API-Sports, prevenindo rajadas em vez de só reagir depois que o limite
+// de requisições por minuto já estourou. Todas as chamadas passam por essa
+// mesma fila, então não importa quantos jogos/telas disparem chamadas ao
+// mesmo tempo — elas são processadas uma de cada vez, espaçadas.
+const MIN_REQUEST_INTERVAL_MS = 350; // ~170 req/min no máximo
+let _dispatchChain: Promise<void> = Promise.resolve();
+let _lastDispatchAt = 0;
+
+function throttledSlot(): Promise<void> {
+  const slot = _dispatchChain.then(async () => {
+    const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    _lastDispatchAt = Date.now();
+  });
+  _dispatchChain = slot.catch(() => {}); // não deixa uma falha travar a fila
+  return slot;
+}
+
 export function getComputedCache(key: string) {
   const hit = _computedCache.get(key);
   if (!hit || Date.now() - hit.at >= hit.ttl) return null;
@@ -81,6 +100,7 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   if (pending) return pending;
 
   const p = (async () => {
+    await throttledSlot();
     const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
     if (res.status === 429) {
       let reason = res.statusText || "";

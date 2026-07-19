@@ -60,20 +60,26 @@ export const getLocalPrediction = createServerFn({ method: "POST" })
     };
   });
 
-// Previsão com IA generativa de verdade (LLM), diferente do modelo
-// estatístico acima. Importante pra casos onde o histórico local não
-// reflete o nível real dos times (ex: um time de elite mundial x um time
-// regional que nunca se enfrentaram) — o modelo estatístico só enxerga o
-// que está no seu banco, a IA traz conhecimento geral de futebol pra
-// completar isso.
-export const getAiTeamPrediction = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({
-    homeName: z.string(),
-    awayName: z.string(),
-    homeLeague: z.string().nullable().optional(),
-    awayLeague: z.string().nullable().optional(),
-    statModel: z.any().optional(), // previsão estatística local, se existir, como contexto extra
-  }).parse(d))
+// Previsão com IA generativa de verdade (LLM) — não depende de nenhuma
+// chamada à API-Sports além do que já se sabe do confronto (nomes dos
+// times, liga, país). Usa o conhecimento do próprio modelo sobre futebol
+// real em vez de puxar estatísticas detalhadas jogo a jogo, o que evita
+// estourar limite de requisições e é bem mais rápido.
+//
+// Retorna no mesmo formato do modelo estatístico local (stats.ts), pra
+// dar pra usar como fonte da previsão em qualquer tela sem precisar
+// adaptar a interface.
+const aiPredictionSchema = z.object({
+  homeName: z.string(),
+  awayName: z.string(),
+  homeLeague: z.string().nullable().optional(),
+  awayLeague: z.string().nullable().optional(),
+  matchDate: z.string().nullable().optional(),
+  statModel: z.any().optional(), // previsão estatística local, se existir, como contexto extra
+});
+
+export const getAiFixturePrediction = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => aiPredictionSchema.parse(d))
   .middleware([requireSupabaseAuth])
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -83,26 +89,32 @@ export const getAiTeamPrediction = createServerFn({ method: "POST" })
       ? `\n\nModelo estatístico local (baseado só no histórico importado, pode não refletir o nível real dos times): casa ${data.statModel.homeWinPct}% / empate ${data.statModel.drawPct}% / fora ${data.statModel.awayWinPct}%, gols esperados ${data.statModel.expectedGoals}. Use isso como referência secundária, não como verdade — corrija com seu conhecimento real sobre os times se achar que está errado.`
       : "";
 
-    const system = `Você é um analista esportivo especialista em futebol, com conhecimento real sobre a força atual dos clubes, elenco, campeonato que disputam e nível competitivo. Retorne APENAS JSON válido, sem markdown, sem texto extra.`;
-    const prompt = `Preveja o confronto ${data.homeName}${data.homeLeague ? ` (${data.homeLeague})` : ""} (mandante) vs ${data.awayName}${data.awayLeague ? ` (${data.awayLeague})` : ""} (visitante).
+    const system = `Você é um analista esportivo especialista em futebol, com conhecimento real sobre a força atual dos clubes, elenco, estilo de jogo, campeonato que disputam e nível competitivo. Retorne APENAS JSON válido, sem markdown, sem texto extra.`;
+    const prompt = `Preveja o confronto ${data.homeName}${data.homeLeague ? ` (${data.homeLeague})` : ""} (mandante) vs ${data.awayName}${data.awayLeague ? ` (${data.awayLeague})` : ""} (visitante)${data.matchDate ? `, em ${data.matchDate}` : ""}.
 
-Use seu conhecimento real sobre o nível desses times (força do elenco, competição que disputam, tradição) — não invente que são equivalentes só porque não há dados suficientes. Se um time é claramente mais forte (ex: um gigante europeu contra um time regional de outro continente), reflita isso nas probabilidades.${statLine}
+Use seu conhecimento real sobre o nível desses times (força do elenco, competição que disputam, tradição, estilo de jogo — times mais ofensivos tendem a mais escanteios/gols, ligas mais físicas tendem a mais cartões). Não invente que são equivalentes só porque não há dados detalhados — se um time é claramente mais forte, reflita isso nas probabilidades.${statLine}
 
 Responda estritamente neste JSON:
 {
   "predictedScore": { "home": <int>, "away": <int> },
-  "winner": "home" | "draw" | "away",
   "homeWinPct": <int 0-100>,
   "drawPct": <int 0-100>,
   "awayWinPct": <int 0-100>,
-  "confidence": <int 0-100>,
+  "expectedGoals": <número, ex: 2.6>,
+  "over25Pct": <int 0-100>,
+  "bttsPct": <int 0-100>,
+  "expectedCornersMin": <int>,
+  "expectedCornersMax": <int>,
+  "expectedYellow": <int>,
+  "confidenceScore": <int 0-100, honesto — baixo se você tem pouca certeza>,
   "risk": "baixo" | "medio" | "alto",
   "topPicks": [
-    { "market": "<mercado>", "pick": "<palpite>", "confidence": <int 0-100>, "reason": "<motivo curto>" }
+    { "market": "<mercado, ex: Resultado Final, Over/Under 2.5, Ambas Marcam, Escanteios, Cartões>", "pick": "<palpite>", "confidence": <int 0-100>, "reason": "<motivo curto>" }
   ],
-  "keyInsight": "<uma frase decisiva sobre o jogo, mencionando o motivo real — nível dos times, momento, etc.>"
+  "keyInsight": "<uma frase decisiva sobre o jogo, mencionando o motivo real>",
+  "basis": "<frase curta explicando a base da previsão, ex: 'IA generativa — conhecimento geral de futebol, sem histórico jogo a jogo'>"
 }
-homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 3 palpites em topPicks. Seja realista e direto.`;
+homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 3 palpites em topPicks, incluindo pelo menos um de escanteios ou cartões. Seja realista e direto.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -123,13 +135,31 @@ homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 3 palpites em topPicks.
     }
     const json = await res.json();
     const raw = json.choices?.[0]?.message?.content ?? "{}";
-    let prediction: any;
+    let ai: any;
     try {
-      prediction = JSON.parse(raw);
+      ai = JSON.parse(raw);
     } catch {
       const m = raw.match(/\{[\s\S]*\}/);
-      prediction = m ? JSON.parse(m[0]) : {};
+      ai = m ? JSON.parse(m[0]) : {};
     }
 
-    return { prediction };
+    return {
+      prediction: {
+        homeWinPct: ai.homeWinPct ?? 33,
+        drawPct: ai.drawPct ?? 34,
+        awayWinPct: ai.awayWinPct ?? 33,
+        expectedGoals: ai.expectedGoals ?? 2.5,
+        over25Pct: ai.over25Pct ?? 50,
+        bttsPct: ai.bttsPct ?? 50,
+        expectedCornersMin: ai.expectedCornersMin ?? 7,
+        expectedCornersMax: ai.expectedCornersMax ?? 12,
+        expectedYellow: ai.expectedYellow ?? 4,
+        confidenceScore: ai.confidenceScore ?? 40,
+        basis: ai.basis || "IA generativa — conhecimento geral de futebol.",
+      },
+      predictedScore: ai.predictedScore,
+      risk: ai.risk,
+      topPicks: ai.topPicks,
+      keyInsight: ai.keyInsight,
+    };
   });

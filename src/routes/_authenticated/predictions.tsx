@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { generatePrediction, computeTeamStats } from "@/lib/stats";
-import { getAiTeamPrediction } from "@/lib/predictions.functions";
+import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { Sparkles, Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
@@ -92,7 +92,7 @@ function PredictionsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const aiPredictFn = useServerFn(getAiTeamPrediction);
+  const aiPredictFn = useServerFn(getAiFixturePrediction);
   const aiMut = useMutation({
     mutationFn: async () => {
       if (!home || !away) throw new Error("Selecione os dois times primeiro.");
@@ -294,12 +294,12 @@ function PredictionsPage() {
                 <div className="flex items-center justify-center gap-4 py-2">
                   <div className="text-right flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground truncate">{home.name}</div>
-                    <div className="font-display text-4xl font-bold">{aiMut.data.prediction.predictedScore?.home ?? "-"}</div>
+                    <div className="font-display text-4xl font-bold">{aiMut.data.predictedScore?.home ?? "-"}</div>
                   </div>
                   <div className="text-xs text-muted-foreground">×</div>
                   <div className="text-left flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground truncate">{away.name}</div>
-                    <div className="font-display text-4xl font-bold">{aiMut.data.prediction.predictedScore?.away ?? "-"}</div>
+                    <div className="font-display text-4xl font-bold">{aiMut.data.predictedScore?.away ?? "-"}</div>
                   </div>
                 </div>
 
@@ -309,31 +309,38 @@ function PredictionsPage() {
                   <ProbCard label="Vitória fora" value={aiMut.data.prediction.awayWinPct ?? 0} color="var(--color-accent)" />
                 </div>
 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <Stat label="Over 2.5" value={`${aiMut.data.prediction.over25Pct}%`} />
+                  <Stat label="Ambas marcam" value={`${aiMut.data.prediction.bttsPct}%`} />
+                  <Stat label="Escanteios" value={`${aiMut.data.prediction.expectedCornersMin}–${aiMut.data.prediction.expectedCornersMax}`} />
+                  <Stat label="Cartões amarelos" value={`~${aiMut.data.prediction.expectedYellow}`} />
+                </div>
+
                 <div className="flex items-center justify-center gap-2 text-xs">
                   <span className="rounded-full bg-primary/20 text-primary px-2 py-0.5 font-medium">
-                    Confiança {aiMut.data.prediction.confidence ?? 0}%
+                    Confiança {aiMut.data.prediction.confidenceScore ?? 0}%
                   </span>
                   <span className={`rounded-full px-2 py-0.5 font-medium ${
-                    aiMut.data.prediction.risk === "baixo" ? "bg-green-500/20 text-green-400" :
-                    aiMut.data.prediction.risk === "alto" ? "bg-red-500/20 text-red-400" :
+                    aiMut.data.risk === "baixo" ? "bg-green-500/20 text-green-400" :
+                    aiMut.data.risk === "alto" ? "bg-red-500/20 text-red-400" :
                     "bg-amber-500/20 text-amber-400"
                   }`}>
-                    Risco {aiMut.data.prediction.risk ?? "medio"}
+                    Risco {aiMut.data.risk ?? "medio"}
                   </span>
                 </div>
 
-                {aiMut.data.prediction.keyInsight && (
+                {aiMut.data.keyInsight && (
                   <p className="text-sm italic text-center text-foreground/90 border-y border-primary/20 py-2">
-                    "{aiMut.data.prediction.keyInsight}"
+                    "{aiMut.data.keyInsight}"
                   </p>
                 )}
 
-                {Array.isArray(aiMut.data.prediction.topPicks) && aiMut.data.prediction.topPicks.length > 0 && (
+                {Array.isArray(aiMut.data.topPicks) && aiMut.data.topPicks.length > 0 && (
                   <div className="space-y-1.5">
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                       <Target className="h-3 w-3" /> Melhores palpites
                     </div>
-                    {aiMut.data.prediction.topPicks.slice(0, 3).map((pick: any, i: number) => (
+                    {aiMut.data.topPicks.slice(0, 3).map((pick: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 rounded-md bg-background/60 border border-border p-2">
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium">
