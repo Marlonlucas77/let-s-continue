@@ -53,6 +53,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Conta",
     items: [
+      { to: "/account", label: "Minha conta", icon: UserCircle },
       { to: "/settings", label: "Configurações", icon: Settings },
     ],
   },
