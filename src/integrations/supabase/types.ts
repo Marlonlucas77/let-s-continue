@@ -16,51 +16,45 @@ export type Database = {
     Tables: {
       fixture_analysis_cache: {
         Row: {
-          ai_prediction: Json | null
           ai_summary: string | null
-          analysis: Json
-          away_id: number
-          created_at: string
+          analysis: Json | null
+          away_id: number | null
           fixture_id: number
-          home_id: number
-          updated_at: string
+          home_id: number | null
+          updated_at: string | null
         }
         Insert: {
-          ai_prediction?: Json | null
           ai_summary?: string | null
-          analysis: Json
-          away_id: number
-          created_at?: string
+          analysis?: Json | null
+          away_id?: number | null
           fixture_id: number
-          home_id: number
-          updated_at?: string
+          home_id?: number | null
+          updated_at?: string | null
         }
         Update: {
-          ai_prediction?: Json | null
           ai_summary?: string | null
-          analysis?: Json
-          away_id?: number
-          created_at?: string
+          analysis?: Json | null
+          away_id?: number | null
           fixture_id?: number
-          home_id?: number
-          updated_at?: string
+          home_id?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       matches: {
         Row: {
           away_corners: number | null
-          away_goals: number
+          away_goals: number | null
           away_goals_ht: number | null
           away_red: number | null
-          away_team_id: string
+          away_team_id: string | null
           away_yellow: number | null
-          created_at: string
+          created_at: string | null
           home_corners: number | null
-          home_goals: number
+          home_goals: number | null
           home_goals_ht: number | null
           home_red: number | null
-          home_team_id: string
+          home_team_id: string | null
           home_yellow: number | null
           id: string
           match_date: string
@@ -68,17 +62,17 @@ export type Database = {
         }
         Insert: {
           away_corners?: number | null
-          away_goals?: number
+          away_goals?: number | null
           away_goals_ht?: number | null
           away_red?: number | null
-          away_team_id: string
+          away_team_id?: string | null
           away_yellow?: number | null
-          created_at?: string
+          created_at?: string | null
           home_corners?: number | null
-          home_goals?: number
+          home_goals?: number | null
           home_goals_ht?: number | null
           home_red?: number | null
-          home_team_id: string
+          home_team_id?: string | null
           home_yellow?: number | null
           id?: string
           match_date: string
@@ -86,17 +80,17 @@ export type Database = {
         }
         Update: {
           away_corners?: number | null
-          away_goals?: number
+          away_goals?: number | null
           away_goals_ht?: number | null
           away_red?: number | null
-          away_team_id?: string
+          away_team_id?: string | null
           away_yellow?: number | null
-          created_at?: string
+          created_at?: string | null
           home_corners?: number | null
-          home_goals?: number
+          home_goals?: number | null
           home_goals_ht?: number | null
           home_red?: number | null
-          home_team_id?: string
+          home_team_id?: string | null
           home_yellow?: number | null
           id?: string
           match_date?: string
@@ -121,17 +115,20 @@ export type Database = {
       }
       pool_members: {
         Row: {
-          joined_at: string
+          created_at: string | null
+          id: string
           pool_id: string
           user_id: string
         }
         Insert: {
-          joined_at?: string
+          created_at?: string | null
+          id?: string
           pool_id: string
           user_id: string
         }
         Update: {
-          joined_at?: string
+          created_at?: string | null
+          id?: string
           pool_id?: string
           user_id?: string
         }
@@ -147,21 +144,21 @@ export type Database = {
       }
       pools: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           invite_code: string
           name: string
           owner_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           invite_code?: string
           name: string
           owner_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           invite_code?: string
           name?: string
@@ -171,32 +168,32 @@ export type Database = {
       }
       predictions: {
         Row: {
-          away_team_id: string
-          created_at: string
-          home_team_id: string
+          away_team_id: string | null
+          created_at: string | null
+          home_team_id: string | null
           id: string
           predicted_data: Json
-          result_checked: boolean
+          result_checked: boolean | null
           user_id: string
           was_correct: boolean | null
         }
         Insert: {
-          away_team_id: string
-          created_at?: string
-          home_team_id: string
+          away_team_id?: string | null
+          created_at?: string | null
+          home_team_id?: string | null
           id?: string
           predicted_data: Json
-          result_checked?: boolean
+          result_checked?: boolean | null
           user_id: string
           was_correct?: boolean | null
         }
         Update: {
-          away_team_id?: string
-          created_at?: string
-          home_team_id?: string
+          away_team_id?: string | null
+          created_at?: string | null
+          home_team_id?: string | null
           id?: string
           predicted_data?: Json
-          result_checked?: boolean
+          result_checked?: boolean | null
           user_id?: string
           was_correct?: boolean | null
         }
@@ -219,20 +216,17 @@ export type Database = {
       }
       profiles: {
         Row: {
-          created_at: string
-          display_name: string | null
+          created_at: string | null
           email: string | null
           id: string
         }
         Insert: {
-          created_at?: string
-          display_name?: string | null
+          created_at?: string | null
           email?: string | null
           id: string
         }
         Update: {
-          created_at?: string
-          display_name?: string | null
+          created_at?: string | null
           email?: string | null
           id?: string
         }
@@ -240,57 +234,33 @@ export type Database = {
       }
       subscriptions: {
         Row: {
-          cancel_at_period_end: boolean | null
-          created_at: string
+          created_at: string | null
           current_period_end: string | null
-          current_period_start: string | null
-          environment: string
+          environment: string | null
           id: string
-          mercadopago_payment_id: string | null
-          payment_method: string | null
           plan: string
-          price_id: string | null
-          product_id: string | null
           status: string
           stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          updated_at: string | null
           user_id: string
         }
         Insert: {
-          cancel_at_period_end?: boolean | null
-          created_at?: string
+          created_at?: string | null
           current_period_end?: string | null
-          current_period_start?: string | null
-          environment?: string
+          environment?: string | null
           id?: string
-          mercadopago_payment_id?: string | null
-          payment_method?: string | null
-          plan?: string
-          price_id?: string | null
-          product_id?: string | null
-          status?: string
+          plan: string
+          status: string
           stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          updated_at?: string | null
           user_id: string
         }
         Update: {
-          cancel_at_period_end?: boolean | null
-          created_at?: string
+          created_at?: string | null
           current_period_end?: string | null
-          current_period_start?: string | null
-          environment?: string
+          environment?: string | null
           id?: string
-          mercadopago_payment_id?: string | null
-          payment_method?: string | null
           plan?: string
-          price_id?: string | null
-          product_id?: string | null
           status?: string
           stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -299,7 +269,7 @@ export type Database = {
         Row: {
           color: string | null
           country: string | null
-          created_at: string
+          created_at: string | null
           id: string
           league: string | null
           logo_url: string | null
@@ -309,7 +279,7 @@ export type Database = {
         Insert: {
           color?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           league?: string | null
           logo_url?: string | null
@@ -319,7 +289,7 @@ export type Database = {
         Update: {
           color?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           league?: string | null
           logo_url?: string | null
@@ -331,9 +301,9 @@ export type Database = {
       tracked_leagues: {
         Row: {
           country: string | null
-          created_at: string
+          created_at: string | null
           id: string
-          include_stats: boolean
+          include_stats: boolean | null
           last_run_at: string | null
           league_id: number
           league_name: string
@@ -342,9 +312,9 @@ export type Database = {
         }
         Insert: {
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
-          include_stats?: boolean
+          include_stats?: boolean | null
           last_run_at?: string | null
           league_id: number
           league_name: string
@@ -353,9 +323,9 @@ export type Database = {
         }
         Update: {
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
-          include_stats?: boolean
+          include_stats?: boolean | null
           last_run_at?: string | null
           league_id?: number
           league_name?: string
@@ -366,19 +336,16 @@ export type Database = {
       }
       user_roles: {
         Row: {
-          created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
-          created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
-          created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -415,10 +382,6 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
-        Returns: boolean
-      }
-      is_pool_member: {
-        Args: { _pool: string; _user: string }
         Returns: boolean
       }
     }

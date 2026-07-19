@@ -117,7 +117,7 @@ function PredictionsPage() {
           <div className="card-surface p-6 mt-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <TeamBadge name={home.name} logoUrl={home.logo_url} color={home.color} size={48} />
+                <TeamBadge name={home.name} logoUrl={home.logo_url} size={48} />
                 <div>
                   <div className="font-semibold">{home.name}</div>
                   <div className="text-xs text-muted-foreground">Mandante</div>
@@ -129,7 +129,7 @@ function PredictionsPage() {
                   <div className="font-semibold">{away.name}</div>
                   <div className="text-xs text-muted-foreground">Visitante</div>
                 </div>
-                <TeamBadge name={away.name} logoUrl={away.logo_url} color={away.color} size={48} />
+                <TeamBadge name={away.name} logoUrl={away.logo_url} size={48} />
               </div>
             </div>
 

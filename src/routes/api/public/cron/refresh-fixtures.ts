@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
               season: l.season,
               leagueName: l.league_name,
               country: l.country ?? undefined,
-              includeStats: l.include_stats,
+              includeStats: l.include_stats ?? false,
             });
             await supabaseAdmin.from("tracked_leagues").update({ last_run_at: new Date().toISOString() }).eq("id", l.id);
             results.push({ id: l.id, league: l.league_name, ...r });
