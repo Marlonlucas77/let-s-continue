@@ -302,19 +302,6 @@ export const analyzeFixture = createServerFn({ method: "POST" })
     if (cached && cached.analysis && (Date.now() - new Date(cached.updated_at as string).getTime()) < 60 * 60 * 1000) {
       return cached.analysis as unknown as PredictionAnalysis;
     }
-      away: TeamStat;
-      h2h: TeamStat;
-      prediction: {
-        homeWinPct: number;
-        drawPct: number;
-        awayWinPct: number;
-        expectedGoals: number;
-        over25Pct: number;
-        bttsPct: number;
-        confidenceScore: number;
-        basis: string;
-      };
-    }
 
     const [homeJson, awayJson, h2hJson] = await Promise.all([
       apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.homeId}&last=6`),
