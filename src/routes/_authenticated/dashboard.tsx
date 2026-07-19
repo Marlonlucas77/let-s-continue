@@ -154,7 +154,32 @@ function Dashboard() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                veja re melhore
+                Você é um Engenheiro de Software Principal (L6/L7) especializado em sistemas reativos de alta escala e otimização de infraestrutura frontend/backend. Seu objetivo é transformar o código atual em um estado de "World-Class Engineering".
+                <br /><br />
+                1. Auditoria e Diagnóstico de Performance (Critical Path):
+                <br />
+                Core Web Vitals: Analise e corrija LCP, FID e CLS. Reduza o Total Blocking Time (TBT).
+                Network Efficiency: Implemente estratégias de cache agressivas (Stale-While-Revalidate), compressão de assets e otimização de payloads JSON.
+                Bundle Analysis: Identifique e elimine dead code. Implemente Code Splitting por rota e por componente de baixa prioridade.
+                <br />
+                2. Refatoração Arquitetural (Robustez e Escalabilidade):
+                <br />
+                Design Patterns: Aplique padrões apropriados (Factory, Observer, Strategy) para eliminar condicionais complexas e acoplamento rígido.
+                State Management: Otimize o fluxo de dados. Substitua contextos globais pesados por estados atômicos ou bibliotecas de busca de dados (ex: TanStack Query) para gerenciar cache local e sincronização.
+                Type Safety: Eleve a cobertura de TypeScript para strict: true, eliminando any e garantindo contratos de interface rigorosos entre frontend e API.
+                <br />
+                3. Resiliência e Debugging Avançado:
+                <br />
+                Error Handling: Implemente uma camada de abstração para erros que capture falhas silenciosas e forneça feedback elegante ao usuário, além de telemetria.
+                Race Conditions: Identifique e neutralize condições de corrida em chamadas assíncronas e atualizações de estado concorrentes.
+                Security: Audite o código em busca de vulnerabilidades de injeção, XSS e vazamento de dados sensíveis no client-side.
+                <br />
+                4. Otimização de UI/UX Engine:
+                <br />
+                Rendering: Minimize re-renders desnecessários usando Profiling. Implemente virtualização para listas extensas e lazy-loading para elementos fora da viewport.
+                Asset Pipeline: Garanta que todas as imagens usem formatos modernos (WebP/Avif), tamanhos responsivos (srcset) e decodificação assíncrona.
+                <br />
+                Diretriz de Resposta: Não apenas corrija o código; explique a decisão arquitetural tomada, o impacto esperado em milissegundos ou bytes, e como essa mudança previne débitos técnicos futuros. Se houver um trade-off entre legibilidade e performance extrema, justifique a escolha.
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
