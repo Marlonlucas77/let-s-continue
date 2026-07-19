@@ -5,7 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CalendarClock, Users, Swords, History, LogOut, Crown, Shield, Trophy, UsersRound, Radio,
-  LayoutDashboard, Sparkles, Download, MoreHorizontal, X,
+  LayoutDashboard, Sparkles, Download, MoreHorizontal, X, Settings,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
 
@@ -49,6 +49,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { to: "/leaderboard", label: "Ranking", icon: Trophy },
       { to: "/pools", label: "Bolões", icon: UsersRound },
       { to: "/pricing", label: "Planos", icon: Crown },
+    ],
+  },
+  {
+    label: "Conta",
+    items: [
+      { to: "/settings", label: "Configurações", icon: Settings },
     ],
   },
 ];

@@ -22,6 +22,7 @@ import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/l
 import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
 import { Route as AuthenticatedPredictionsRouteImport } from './routes/_authenticated/predictions'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUpcomingRouteImport } from './routes/_authenticated/upcoming'
 import { Route as AuthenticatedPoolsPoolIdRouteImport } from './routes/_authenticated/pools.$poolId'
@@ -94,6 +95,11 @@ const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/_authenticated/predictions': typeof AuthenticatedPredictionsRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/_authenticated/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/pools'
     | '/predictions'
     | '/pricing'
+    | '/settings'
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/pools'
     | '/predictions'
     | '/pricing'
+    | '/settings'
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pools'
     | '/_authenticated/predictions'
     | '/_authenticated/pricing'
+    | '/_authenticated/settings'
     | '/_authenticated/teams'
     | '/_authenticated/upcoming'
     | '/_authenticated/pools/$poolId'
@@ -344,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPricingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/teams': {
       id: '/_authenticated/teams'
       path: '/teams'
@@ -404,6 +423,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
   AuthenticatedPredictionsRoute: typeof AuthenticatedPredictionsRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
   AuthenticatedUpcomingRoute: typeof AuthenticatedUpcomingRoute
 }
@@ -419,6 +439,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,
   AuthenticatedPredictionsRoute: AuthenticatedPredictionsRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTeamsRoute: AuthenticatedTeamsRoute,
   AuthenticatedUpcomingRoute: AuthenticatedUpcomingRoute,
 }
