@@ -162,6 +162,29 @@ function ImportPage() {
       <div className="card-surface p-4 mb-6">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-start gap-2">
+            <Radio className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-display font-semibold">Habilitar TODAS as ligas por padrão</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Marca todas as competições da temporada corrente (~1000+) como monitoradas. O cron diário passa a atualizá-las automaticamente. Não importa jogos agora — só liga o monitoramento.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => trackAllMut.mutate()}
+            disabled={trackAllMut.isPending}
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 text-primary px-4 py-2 text-sm font-medium disabled:opacity-50 shrink-0"
+          >
+            {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+            {trackAllMut.isPending ? "Habilitando..." : "Habilitar todas"}
+          </button>
+        </div>
+      </div>
+
+      <div className="card-surface p-4 mb-6">
+
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
               <h2 className="font-display font-semibold">Importar TODAS as ligas do mundo</h2>
