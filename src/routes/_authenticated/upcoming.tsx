@@ -84,7 +84,7 @@ function UpcomingPage() {
               onClick={() => window.location.reload()} 
               className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
             >
-              Recarregar página
+              oxi, ta doido?
             </button>
             <Link 
               to="/import" 
