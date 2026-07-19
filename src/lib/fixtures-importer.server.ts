@@ -106,12 +106,27 @@ export async function importFixturesFor({
     teamMap.set(f.teams.away.id, { name: f.teams.away.name, logo: f.teams.away.logo });
   }
 
-  const { data: existingTeams } = await supabase.from("teams").select("id, name").eq("user_id", userId);
-  const byName = new Map((existingTeams ?? []).map((t: any) => [t.name.toLowerCase(), t.id as string]));
+  const { data: existingTeams } = await supabase.from("teams").select("id, name, api_id").eq("user_id", userId);
+  const byName = new Map<string, string>((existingTeams ?? []).map((t: any) => [t.name.toLowerCase() as string, t.id as string]));
+  const byApiId = new Map<number, string>((existingTeams ?? []).filter((t: any) => t.api_id != null).map((t: any) => [t.api_id as number, t.id as string]));
+
+  // Times criados antes desta correção não têm api_id salvo — preenche agora
+  // para que a página de jogos consiga casar o histórico local com a API.
+  const backfill: { id: string; api_id: number }[] = [];
+  for (const [apiId, t] of teamMap) {
+    const localId = byName.get(t.name.toLowerCase());
+    if (localId && !byApiId.has(apiId)) {
+      backfill.push({ id: localId, api_id: apiId });
+      byApiId.set(apiId, localId);
+    }
+  }
+  if (backfill.length > 0) {
+    await Promise.all(backfill.map((b) => supabase.from("teams").update({ api_id: b.api_id }).eq("id", b.id)));
+  }
 
   let teamsCreated = 0;
-  const toInsert: any[] = [];
-  for (const t of teamMap.values()) {
+  const toInsert: { user_id: string; name: string; logo_url: string; league: string | null; country: string | null; api_id: number }[] = [];
+  for (const [apiId, t] of teamMap) {
     if (!byName.has(t.name.toLowerCase())) {
       toInsert.push({
         user_id: userId,
@@ -119,13 +134,17 @@ export async function importFixturesFor({
         logo_url: t.logo,
         league: leagueName ?? null,
         country: country ?? null,
+        api_id: apiId,
       });
     }
   }
   if (toInsert.length > 0) {
-    const { data: created, error } = await supabase.from("teams").insert(toInsert).select("id, name");
+    const { data: created, error } = await supabase.from("teams").insert(toInsert).select("id, name, api_id");
     if (error) throw new Error(error.message);
-    for (const t of created ?? []) byName.set((t.name as string).toLowerCase(), t.id as string);
+    for (const t of created ?? []) {
+      byName.set((t.name as string).toLowerCase(), t.id as string);
+      if (t.api_id != null) byApiId.set(t.api_id as number, t.id as string);
+    }
     teamsCreated = created?.length ?? 0;
   }
 

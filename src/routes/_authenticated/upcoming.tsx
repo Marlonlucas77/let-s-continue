@@ -5,9 +5,11 @@ import { useState, Suspense, useMemo } from "react";
 // @ts-ignore - react-window types mismatch
 import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
+import { getLocalPrediction } from "@/lib/predictions.functions";
+import type { TeamStats } from "@/lib/stats";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target } from "lucide-react";
+import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target, Zap, Flag, Square } from "lucide-react";
 import { FixtureCardSkeleton } from "@/components/Skeletons";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
@@ -220,6 +222,7 @@ function FixtureCard({ f }: { f: any }) {
   const [open, setOpen] = useState(false);
   const analyzeFn = useServerFn(analyzeFixture);
   const oddsFn = useServerFn(getFixtureOdds);
+  const localPredFn = useServerFn(getLocalPrediction);
   const queryClient = useQueryClient();
 
   const homeApiId: number | undefined = f.home?.apiId;
@@ -228,9 +231,9 @@ function FixtureCard({ f }: { f: any }) {
   const prefetch = () => {
     if (!homeApiId || !awayApiId) return;
     queryClient.prefetchQuery({
-      queryKey: ["analysis", f.fixtureId],
-      queryFn: async () => await analyzeFn({ data: { fixtureId: f.fixtureId, homeId: homeApiId, awayId: awayApiId } }),
-      staleTime: 30 * 60 * 1000,
+      queryKey: ["local-prediction", homeApiId, awayApiId],
+      queryFn: async () => await localPredFn({ data: { homeApiId, awayApiId } }),
+      staleTime: 10 * 60 * 1000,
     });
     queryClient.prefetchQuery({
       queryKey: ["odds", f.fixtureId],
@@ -239,12 +242,29 @@ function FixtureCard({ f }: { f: any }) {
     });
   };
 
+  // Caminho rápido: previsão calculada a partir do histórico já importado no
+  // banco (sem chamar a API externa). Cobre gols, 1x2, BTTS, over/under —
+  // e é a única fonte que temos para escanteios e cartões.
+  const { data: localPred, isLoading: localLoading } = useQuery({
+    queryKey: ["local-prediction", homeApiId, awayApiId],
+    queryFn: async () => await localPredFn({ data: { homeApiId: homeApiId!, awayApiId: awayApiId! } }),
+    enabled: open && !!homeApiId && !!awayApiId,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+  });
 
+  const hasLocal = localPred?.available === true;
+
+  // Caminho lento (API-Sports ao vivo): só é acionado quando não há
+  // histórico local suficiente, ou sob demanda para ver H2H/forma detalhada.
+  const [wantsLiveDetails, setWantsLiveDetails] = useState(false);
+  const shouldFetchLive = open && !!homeApiId && !!awayApiId && (wantsLiveDetails || (!localLoading && !hasLocal));
 
   const { data: analysis, error: analysisError, refetch: refetchAnalysis } = useQuery({
     queryKey: ["analysis", f.fixtureId],
     queryFn: async () => await analyzeFn({ data: { fixtureId: f.fixtureId, homeId: homeApiId!, awayId: awayApiId! } }),
-    enabled: open && !!homeApiId && !!awayApiId,
+    enabled: shouldFetchLive,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
@@ -259,17 +279,37 @@ function FixtureCard({ f }: { f: any }) {
     retry: 1,
   });
 
+  // Dados combinados para os chips de cima do card: prioriza o modelo local
+  // (mais rápido e com escanteios/cartões); usa a análise ao vivo como
+  // fallback quando não há histórico local suficiente.
+  const p = hasLocal ? localPred.prediction : analysis?.prediction;
+
+  // Adapta o formato do stats.ts (histórico local) para o mesmo shape que
+  // o TeamPanel e os prompts de IA já sabem usar (vindo da análise ao vivo).
+  const toTeamPanelData = (stats: TeamStats) => ({
+    games: stats.games, wins: stats.wins, draws: stats.draws, losses: stats.losses,
+    avgFor: stats.avgGoalsFor, avgAgainst: stats.avgGoalsAgainst,
+    bttsPct: stats.bttsPct, over25Pct: stats.over25Pct,
+    form: stats.form, recent: [] as any[],
+  });
+  const homePanelData = hasLocal && localPred.available ? toTeamPanelData(localPred.home) : analysis?.home;
+  const awayPanelData = hasLocal && localPred.available ? toTeamPanelData(localPred.away) : analysis?.away;
+
+  const aiAnalysisPayload = hasLocal
+    ? { home: homePanelData, away: awayPanelData, h2h: analysis?.h2h ?? { games: 0 }, prediction: localPred.prediction }
+    : analysis;
+
   const aiFn = useServerFn(getAiInsights);
   const aiMut = useMutation({
     mutationFn: async () => await aiFn({
-      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis },
+      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis: aiAnalysisPayload },
     }),
   });
 
   const predictFn = useServerFn(getAiPrediction);
   const predictMut = useMutation({
     mutationFn: async () => await predictFn({
-      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis },
+      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis: aiAnalysisPayload },
     }),
   });
 
@@ -278,7 +318,6 @@ function FixtureCard({ f }: { f: any }) {
   const dt = new Date(f.date);
   const dateStr = dt.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
-  const p = analysis?.prediction;
   const bestPick = p ? [
     { label: "Vitória mandante", pct: p.homeWinPct, market: "1x2", outcome: "Home" },
     { label: "Empate", pct: p.drawPct, market: "1x2", outcome: "Draw" },
@@ -289,6 +328,14 @@ function FixtureCard({ f }: { f: any }) {
 
   const bestOddForPick = odds?.markets.find((m: any) => m.market === bestPick?.market && m.outcome === bestPick?.outcome);
   const ev = bestPick && bestOddForPick ? (bestPick.pct / 100) * bestOddForPick.odd : null;
+
+  // Escanteios e cartões só existem no modelo local (histórico importado) —
+  // a API-Sports não devolve isso na listagem de jogos futuros.
+  const corners = hasLocal ? { min: localPred.prediction.expectedCornersMin, max: localPred.prediction.expectedCornersMax } : null;
+  const yellowCards = hasLocal ? localPred.prediction.expectedYellow : null;
+
+  const isWaiting = open && (localLoading || (shouldFetchLive && !analysis && !analysisError));
+  const showLiveError = !hasLocal && !!analysisError && !analysis;
 
   return (
     <div className="card-surface p-4" onMouseEnter={prefetch} onTouchStart={prefetch}>
@@ -319,19 +366,27 @@ function FixtureCard({ f }: { f: any }) {
 
       {open && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
-          {analysisError && !analysis ? (
+          {showLiveError ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
               <div className="text-destructive font-medium mb-1">Não foi possível carregar as estatísticas</div>
               <div className="text-xs text-muted-foreground mb-2">{(analysisError as Error).message || "Erro na API. Pode ser limite de requisições."}</div>
               <button onClick={() => refetchAnalysis()} className="text-xs text-primary hover:underline">Tentar novamente</button>
             </div>
-          ) : !analysis ? (
+          ) : isWaiting || !p ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Analisando últimos jogos...
+              <Loader2 className="h-4 w-4 animate-spin" /> {localLoading ? "Consultando histórico local..." : "Analisando últimos jogos..."}
             </div>
           ) : (
 
             <>
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                {hasLocal ? (
+                  <><Zap className="h-3 w-3 text-primary" /> Previsão instantânea · histórico local ({localPred.home.games + localPred.away.games} jogos)</>
+                ) : (
+                  <><Loader2 className="h-3 w-3" /> Análise ao vivo · API-Sports</>
+                )}
+              </div>
+
               <div className="grid gap-3 md:grid-cols-3">
                 <StatChip label="Casa" value={`${p!.homeWinPct}%`} highlight={bestPick?.outcome === "Home"} />
                 <StatChip label="Empate" value={`${p!.drawPct}%`} highlight={bestPick?.outcome === "Draw"} />
@@ -339,27 +394,41 @@ function FixtureCard({ f }: { f: any }) {
                 <StatChip label="Over 2.5" value={`${p!.over25Pct}%`} highlight={bestPick?.market === "Over/Under"} />
                 <StatChip label="Ambas marcam" value={`${p!.bttsPct}%`} highlight={bestPick?.market === "BTTS"} />
                 <StatChip label="Gols esperados" value={String(p!.expectedGoals)} />
-                <StatChip label="Confiança IA" value={`${p!.confidenceScore ?? 0}%`} highlight={ (p!.confidenceScore ?? 0) > 75 } />
+                {corners && <StatChip label="Escanteios" value={`${corners.min}-${corners.max}`} />}
+                {yellowCards != null && <StatChip label="Cartões amarelos" value={String(yellowCards)} />}
+                <StatChip label="Confiança" value={`${p!.confidenceScore ?? 0}%`} highlight={(p!.confidenceScore ?? 0) > 75} />
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <TeamPanel title={translateTeam(f.home.name)} data={analysis.home} accent="home" />
-                <TeamPanel title={translateTeam(f.away.name)} data={analysis.away} accent="away" />
-              </div>
+              {homePanelData && awayPanelData && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TeamPanel title={translateTeam(f.home.name)} data={homePanelData} accent="home" />
+                  <TeamPanel title={translateTeam(f.away.name)} data={awayPanelData} accent="away" />
+                </div>
+              )}
 
-              {analysis.h2h.games > 0 && (
+              {(analysis?.h2h?.games ?? 0) > 0 && (
                 <div className="rounded-md border border-border bg-input/40 p-3">
                   <div className="text-xs uppercase text-muted-foreground mb-1 flex items-center gap-1">
-                    <BarChart3 className="h-3 w-3" /> Confronto direto ({analysis.h2h.games} jogos)
+                    <BarChart3 className="h-3 w-3" /> Confronto direto ({analysis!.h2h.games} jogos)
                   </div>
                   <div className="text-sm">
-                    Média de gols: <span className="font-mono">{(analysis.h2h.avgFor + analysis.h2h.avgAgainst).toFixed(2)}</span>
+                    Média de gols: <span className="font-mono">{(analysis!.h2h.avgFor + analysis!.h2h.avgAgainst).toFixed(2)}</span>
                     <span className="mx-2">·</span>
-                    BTTS: <span className="font-mono">{Math.round(analysis.h2h.bttsPct)}%</span>
+                    BTTS: <span className="font-mono">{Math.round(analysis!.h2h.bttsPct)}%</span>
                     <span className="mx-2">·</span>
-                    Over 2.5: <span className="font-mono">{Math.round(analysis.h2h.over25Pct)}%</span>
+                    Over 2.5: <span className="font-mono">{Math.round(analysis!.h2h.over25Pct)}%</span>
                   </div>
                 </div>
+              )}
+
+              {hasLocal && !analysis && (
+                <button
+                  onClick={() => setWantsLiveDetails(true)}
+                  disabled={wantsLiveDetails}
+                  className="text-xs text-primary hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+                >
+                  {wantsLiveDetails ? <><Loader2 className="h-3 w-3 animate-spin" /> Buscando H2H e forma na API ao vivo...</> : "Ver confronto direto e forma recente (API ao vivo)"}
+                </button>
               )}
 
               <p className="text-xs text-muted-foreground italic">{p!.basis}</p>

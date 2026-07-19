@@ -557,9 +557,12 @@ export const getAiInsights = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("LOVABLE_API_KEY não configurado");
 
     const a = data.analysis;
+    const cornersLine = a.prediction?.expectedCornersMin != null
+      ? `\n- Escanteios esperados: ${a.prediction.expectedCornersMin}-${a.prediction.expectedCornersMax} · Cartões amarelos esperados: ${a.prediction.expectedYellow}`
+      : "";
     const prompt = `Analise em português brasileiro o confronto ${data.homeName} (casa) vs ${data.awayName} (fora). Escreva 3 parágrafos curtos:
 1. Forma recente de cada time (use os dados)
-2. O que esperar do jogo (gols, ritmo)
+2. O que esperar do jogo (gols, ritmo${a.prediction?.expectedCornersMin != null ? ", escanteios, cartões" : ""})
 3. Palpite justificado
 
 Dados:
@@ -567,7 +570,7 @@ Dados:
 - ${data.awayName}: ${a.away.wins}V ${a.away.draws}E ${a.away.losses}D em ${a.away.games} jogos, média ${a.away.avgFor.toFixed(1)} gols pró e ${a.away.avgAgainst.toFixed(1)} contra, forma: ${a.away.form.join("")}
 - H2H: ${a.h2h.games} confrontos, mandante venceu ${a.h2h.wins}
 - Probabilidade calculada: casa ${a.prediction.homeWinPct}% · empate ${a.prediction.drawPct}% · fora ${a.prediction.awayWinPct}%
-- Gols esperados: ${a.prediction.expectedGoals} · Over 2.5: ${a.prediction.over25Pct}% · BTTS: ${a.prediction.bttsPct}%
+- Gols esperados: ${a.prediction.expectedGoals} · Over 2.5: ${a.prediction.over25Pct}% · BTTS: ${a.prediction.bttsPct}%${cornersLine}
 
 Seja direto, sem introduções. Máximo 200 palavras total.`;
 
@@ -631,6 +634,9 @@ export const getAiPrediction = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("LOVABLE_API_KEY não configurado");
 
     const a = data.analysis;
+    const cornersLine = a.prediction?.expectedCornersMin != null
+      ? `\n- Escanteios esperados (histórico local): ${a.prediction.expectedCornersMin}-${a.prediction.expectedCornersMax} · Cartões amarelos esperados: ${a.prediction.expectedYellow}`
+      : "";
     const system = `Você é um analista esportivo especialista em previsões de futebol. Retorne APENAS JSON válido, sem markdown, sem texto extra.`;
     const prompt = `Preveja o resultado de ${data.homeName} (casa) vs ${data.awayName} (fora).
 
@@ -638,7 +644,7 @@ Dados:
 - ${data.homeName}: ${a.home.wins}V ${a.home.draws}E ${a.home.losses}D, média ${a.home.avgFor.toFixed(2)} gols pró / ${a.home.avgAgainst.toFixed(2)} sofr., forma ${a.home.form.join("")}, BTTS ${Math.round(a.home.bttsPct)}%, Over2.5 ${Math.round(a.home.over25Pct)}%
 - ${data.awayName}: ${a.away.wins}V ${a.away.draws}E ${a.away.losses}D, média ${a.away.avgFor.toFixed(2)} gols pró / ${a.away.avgAgainst.toFixed(2)} sofr., forma ${a.away.form.join("")}, BTTS ${Math.round(a.away.bttsPct)}%, Over2.5 ${Math.round(a.away.over25Pct)}%
 - H2H: ${a.h2h.games} jogos, mandante venceu ${a.h2h.wins}
-- Modelo estatístico: casa ${a.prediction.homeWinPct}% / empate ${a.prediction.drawPct}% / fora ${a.prediction.awayWinPct}%, gols esperados ${a.prediction.expectedGoals}
+- Modelo estatístico: casa ${a.prediction.homeWinPct}% / empate ${a.prediction.drawPct}% / fora ${a.prediction.awayWinPct}%, gols esperados ${a.prediction.expectedGoals}${cornersLine}
 
 Responda estritamente neste JSON:
 {
@@ -651,7 +657,7 @@ Responda estritamente neste JSON:
   ],
   "keyInsight": "<uma frase decisiva sobre o jogo>"
 }
-Inclua 3 palpites em topPicks (ex: Resultado Final, Over/Under 2.5, Ambas Marcam, Handicap, Escanteios). Seja realista.`;
+Inclua 3 palpites em topPicks (ex: Resultado Final, Over/Under 2.5, Ambas Marcam, Handicap${a.prediction?.expectedCornersMin != null ? ", Total de Escanteios, Cartões" : ""}). ${a.prediction?.expectedCornersMin != null ? `Use os números de escanteios e cartões fornecidos acima como base real — não invente valores fora do intervalo dado. ` : ""}Seja realista.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

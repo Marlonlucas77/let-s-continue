@@ -267,6 +267,7 @@ export type Database = {
       }
       teams: {
         Row: {
+          api_id: number | null
           color: string | null
           country: string | null
           created_at: string | null
@@ -277,6 +278,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          api_id?: number | null
           color?: string | null
           country?: string | null
           created_at?: string | null
@@ -287,6 +289,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          api_id?: number | null
           color?: string | null
           country?: string | null
           created_at?: string | null
