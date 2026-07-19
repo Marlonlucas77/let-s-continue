@@ -14,16 +14,294 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fixture_analysis_cache: {
+        Row: {
+          ai_summary: string | null
+          analysis: Json | null
+          away_id: number | null
+          fixture_id: number
+          home_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          analysis?: Json | null
+          away_id?: number | null
+          fixture_id: number
+          home_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          analysis?: Json | null
+          away_id?: number | null
+          fixture_id?: number
+          home_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          away_corners: number | null
+          away_goals: number | null
+          away_goals_ht: number | null
+          away_red: number | null
+          away_team_id: string | null
+          away_yellow: number | null
+          created_at: string | null
+          home_corners: number | null
+          home_goals: number | null
+          home_goals_ht: number | null
+          home_red: number | null
+          home_team_id: string | null
+          home_yellow: number | null
+          id: string
+          match_date: string
+          user_id: string
+        }
+        Insert: {
+          away_corners?: number | null
+          away_goals?: number | null
+          away_goals_ht?: number | null
+          away_red?: number | null
+          away_team_id?: string | null
+          away_yellow?: number | null
+          created_at?: string | null
+          home_corners?: number | null
+          home_goals?: number | null
+          home_goals_ht?: number | null
+          home_red?: number | null
+          home_team_id?: string | null
+          home_yellow?: number | null
+          id?: string
+          match_date: string
+          user_id: string
+        }
+        Update: {
+          away_corners?: number | null
+          away_goals?: number | null
+          away_goals_ht?: number | null
+          away_red?: number | null
+          away_team_id?: string | null
+          away_yellow?: number | null
+          created_at?: string | null
+          home_corners?: number | null
+          home_goals?: number | null
+          home_goals_ht?: number | null
+          home_red?: number | null
+          home_team_id?: string | null
+          home_yellow?: number | null
+          id?: string
+          match_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          away_team_id: string | null
+          created_at: string | null
+          home_team_id: string | null
+          id: string
+          predicted_data: Json
+          result_checked: boolean | null
+          user_id: string
+          was_correct: boolean | null
+        }
+        Insert: {
+          away_team_id?: string | null
+          created_at?: string | null
+          home_team_id?: string | null
+          id?: string
+          predicted_data: Json
+          result_checked?: boolean | null
+          user_id: string
+          was_correct?: boolean | null
+        }
+        Update: {
+          away_team_id?: string | null
+          created_at?: string | null
+          home_team_id?: string | null
+          id?: string
+          predicted_data?: Json
+          result_checked?: boolean | null
+          user_id?: string
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          id: string
+          plan: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string
+          plan: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string
+          plan?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+          league: string | null
+          logo_url: string | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          league?: string | null
+          logo_url?: string | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          league?: string | null
+          logo_url?: string | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracked_leagues: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+          include_stats: boolean | null
+          league_id: number
+          league_name: string
+          season: number
+          user_id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          include_stats?: boolean | null
+          league_id: number
+          league_name: string
+          season: number
+          user_id: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          include_stats?: boolean | null
+          league_id?: number
+          league_name?: string
+          season?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +428,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
