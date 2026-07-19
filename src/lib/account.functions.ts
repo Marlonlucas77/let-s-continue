@@ -30,7 +30,7 @@ export const getMyAccount = createServerFn({ method: "GET" })
     // Assinatura mais recente
     const { data: sub } = await supabase
       .from("subscriptions")
-      .select("plan, status, current_period_end, cancel_at_period_end, environment")
+      .select("plan, status, current_period_end, environment")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
