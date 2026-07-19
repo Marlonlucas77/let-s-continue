@@ -164,11 +164,13 @@ function UpcomingPage() {
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-destructive/60 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">
-            {isConfigError ? "Integração com a API de futebol não configurada" : isRateLimitError ? "Limite da API de futebol atingido" : "Não foi possível carregar os jogos"}
+            {isConfigError ? "Integração com a API de futebol não configurada" : isRateLimitError ? "Limite da API-Sports (fornecedor externo) atingido" : "Não foi possível carregar os jogos"}
           </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
             {isConfigError
               ? "Este módulo depende de uma chave da API-Sports.io (variável API_SPORTS_KEY) configurada nos Secrets do projeto. Peça ao administrador para cadastrá-la."
+              : isRateLimitError
+              ? `${(error as Error).message} Obs.: este limite é da API-Sports (api-sports.io) — não tem relação com o seu plano Pro do Lovable.`
               : (error as Error).message || "A API de futebol não respondeu agora."}
           </p>
           <button 
