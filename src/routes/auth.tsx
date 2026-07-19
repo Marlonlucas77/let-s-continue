@@ -30,12 +30,14 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/settings?onboarding=1`,
             data: { display_name: name || email.split("@")[0] },
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Entrando...");
+        toast.success("Conta criada! Escolha suas ligas para começar.");
+        navigate({ to: "/settings", search: { onboarding: "1" } });
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
