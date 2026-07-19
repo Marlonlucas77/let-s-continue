@@ -56,7 +56,7 @@ export const getMyAccount = createServerFn({ method: "GET" })
             plan: sub.plan,
             status: sub.status,
             currentPeriodEnd: sub.current_period_end,
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            cancelAtPeriodEnd: false,
             environment: sub.environment,
           }
         : null,
