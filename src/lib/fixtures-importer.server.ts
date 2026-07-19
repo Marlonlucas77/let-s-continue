@@ -88,6 +88,22 @@ export type ImportArgs = {
   includeStats?: boolean;
 };
 
+// Roda até `limit` tarefas em paralelo por vez, em vez de uma de cada vez.
+// Com um circuit breaker de rate limit já embutido no apiSportsFetch, um
+// paralelismo moderado acelera bastante o import sem martelar a API.
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export async function importFixturesFor({
   supabase, userId, leagueId, season, leagueName, country, includeStats,
 }: ImportArgs) {
@@ -183,8 +199,10 @@ export async function importFixturesFor({
   let statsFetched = 0;
   if (includeStats && fixtureRefs.length > 0) {
     const cap = Math.min(fixtureRefs.length, 40);
-    for (let i = 0; i < cap; i++) {
-      const ref = fixtureRefs[i];
+    const toFetch = fixtureRefs.slice(0, cap);
+    // 5 em paralelo: ~5x mais rápido que sequencial, mantendo folga pro
+    // circuit breaker de rate limit do apiSportsFetch agir se precisar.
+    await mapWithConcurrency(toFetch, 5, async (ref) => {
       try {
         const sj = await apiSportsFetch(`/fixtures/statistics?fixture=${ref.fixtureId}`);
         const teamsStats: any[] = sj.response ?? [];
@@ -208,8 +226,8 @@ export async function importFixturesFor({
           }
         }
         statsFetched++;
-      } catch { /* skip */ }
-    }
+      } catch { /* segue sem stats nesse jogo específico */ }
+    });
   }
 
   if (rows.length > 0) {

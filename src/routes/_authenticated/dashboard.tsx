@@ -18,12 +18,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const todayStr = new Date().toISOString().slice(0, 10);
   const { data } = useSuspenseQuery({
-    queryKey: ["dashboard"],
+    queryKey: ["dashboard", todayStr],
     queryFn: async () => {
       const [teams, recent, allMatches, preds] = await Promise.all([
         supabase.from("teams").select("*").order("created_at", { ascending: false }),
-        supabase.from("matches").select("*, home_team:home_team_id(name,logo_url), away_team:away_team_id(name,logo_url)").order("match_date", { ascending: false }).limit(5),
+        supabase.from("matches").select("*, home_team:home_team_id(name,logo_url), away_team:away_team_id(name,logo_url)").eq("match_date", todayStr).order("match_date", { ascending: false }).limit(5),
         supabase.from("matches").select("match_date, home_goals, away_goals, home_corners, away_corners").order("match_date", { ascending: false }).limit(20),
         supabase.from("predictions").select("*"),
       ]);
@@ -152,17 +153,23 @@ function Dashboard() {
 
         <div className="card-surface p-5 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
           <h2 className="font-display font-semibold mb-4 flex items-center gap-2">
-            <Target className="h-4 w-4 text-primary" /> Sugestões da IA
+            <Target className="h-4 w-4 text-primary" /> Resumo de previsões
           </h2>
           <div className="space-y-4">
             <div className="p-3 rounded-md bg-background/50 border border-border">
-              <div className="text-xs font-bold text-primary uppercase mb-1">Destaque do dia</div>
-              <p className="text-sm">A IA identificou 85% de probabilidade de Over 2.5 no jogo do Flamengo hoje.</p>
+              <div className="text-xs font-bold text-primary uppercase mb-1">Destaque</div>
+              <p className="text-sm">
+                {checked > 0
+                  ? `Sua taxa de acerto atual é de ${accuracy}% em ${checked} previsão(ões) conferida(s).`
+                  : predsCount > 0
+                  ? `Você tem ${predsCount} previsão(ões) salva(s) aguardando conferência.`
+                  : "Salve previsões nas telas Jogos ou Previsões para acompanhar sua taxa de acerto aqui."}
+              </p>
             </div>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                UI/UX (virtualização da lista de jogos, skeletons, otimização de re-renders)
+                Times com histórico importado geram previsão instantânea com escanteios e cartões
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
