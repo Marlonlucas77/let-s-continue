@@ -51,6 +51,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { to: "/pricing", label: "Planos", icon: Crown },
     ],
   },
+  {
+    label: "Conta",
+    items: [
+      { to: "/settings", label: "Configurações", icon: Settings },
+    ],
+  },
 ];
 
 // Para a barra inferior no celular só cabem uns 5 ícones — o resto vai
