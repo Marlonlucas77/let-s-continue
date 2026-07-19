@@ -233,14 +233,12 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const days = data.days ?? 4;
 
-    const [teamsRes, tracked] = await Promise.all([
-      supabase.from("teams").select("id, name, logo_url").eq("user_id", userId),
-      supabase.from("tracked_leagues").select("league_id, season").eq("user_id", userId),
+    const [teamsRes] = await Promise.all([
+      supabase.from("teams").select("id, name, logo_url, api_id").eq("user_id", userId),
     ]);
     const teams = teamsRes.data ?? [];
     const byName = new Map(teams.map((t: any) => [t.name.toLowerCase(), t]));
     const byApiId = new Map(teams.map((t: any) => [t.api_id, t]));
-    const trackedList: { league_id: number; season: number }[] = tracked.data ?? [];
 
     const today = new Date();
     // Use UTC for date boundaries to ensure consistency
@@ -251,35 +249,29 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
 
     console.log(`[listUpcomingFixtures] Fetching fixtures from ${from} to ${to} (${days} days)`);
 
-    // Fast path: fetch only user's tracked leagues (small payload, much faster).
-    // Fallback: if user has no tracked leagues, fetch by date (global).
-    let responses: ApiSportsFixture[][];
-    if (trackedList.length > 0) {
-      responses = await Promise.all(
-        trackedList.map(async (t) => {
-          try {
-            const json = await apiSportsFetch<ApiSportsFixture>(
-              `/fixtures?league=${t.league_id}&season=${t.season}&from=${from}&to=${to}&status=NS-TBD`
-            );
-            return json.response ?? [];
-          } catch { return []; }
-        })
-      );
-    } else {
-      const dates: string[] = [];
-      for (let i = 0; i < days; i++) {
-        const d = new Date(today);
-        d.setUTCDate(today.getUTCDate() + i);
-        dates.push(d.toISOString().slice(0, 10));
-      }
-      responses = await Promise.all(
-        dates.map(async (date) => {
-          try {
-            const json = await apiSportsFetch<ApiSportsFixture>(`/fixtures?date=${date}`);
-            return json.response ?? [];
-          } catch { return []; }
-        })
-      );
+    const dates: string[] = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(today);
+      d.setUTCDate(today.getUTCDate() + i);
+      dates.push(d.toISOString().slice(0, 10));
+    }
+
+    const settled = await Promise.allSettled(
+      dates.map(async (date) => {
+        const json = await apiSportsFetch<ApiSportsFixture>(
+          `/fixtures?date=${date}&timezone=America%2FSao_Paulo`
+        );
+        return json.response ?? [];
+      })
+    );
+
+    const responses = settled
+      .filter((result): result is PromiseFulfilledResult<ApiSportsFixture[]> => result.status === "fulfilled")
+      .map((result) => result.value);
+
+    if (responses.length === 0 && settled.length > 0) {
+      const firstError = settled.find((result) => result.status === "rejected") as PromiseRejectedResult | undefined;
+      throw new Error(firstError?.reason?.message || "Não foi possível carregar jogos da API agora.");
     }
 
     const out: {
