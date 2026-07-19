@@ -28,6 +28,7 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPoolsPoolIdRouteImport } from './routes/_authenticated/pools.$poolId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicCronRefreshFixturesRouteImport } from './routes/api/public/cron/refresh-fixtures'
+import { Route as ApiPublicCronEvaluatePredictionsRouteImport } from './routes/api/public/cron/evaluate-predictions'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -128,6 +129,12 @@ const ApiPublicCronRefreshFixturesRoute =
     path: '/api/public/cron/refresh-fixtures',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronEvaluatePredictionsRoute =
+  ApiPublicCronEvaluatePredictionsRouteImport.update({
+    id: '/api/public/cron/evaluate-predictions',
+    path: '/api/public/cron/evaluate-predictions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/_authenticated/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
+    | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
+    | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   id:
@@ -251,6 +263,7 @@ export interface FileRouteTypes {
     | '/_authenticated/teams'
     | '/_authenticated/upcoming'
     | '/_authenticated/pools/$poolId'
+    | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -259,6 +272,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronEvaluatePredictionsRoute: typeof ApiPublicCronEvaluatePredictionsRoute
   ApiPublicCronRefreshFixturesRoute: typeof ApiPublicCronRefreshFixturesRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -398,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronRefreshFixturesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/evaluate-predictions': {
+      id: '/api/public/cron/evaluate-predictions'
+      path: '/api/public/cron/evaluate-predictions'
+      fullPath: '/api/public/cron/evaluate-predictions'
+      preLoaderRoute: typeof ApiPublicCronEvaluatePredictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -451,6 +472,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronEvaluatePredictionsRoute: ApiPublicCronEvaluatePredictionsRoute,
   ApiPublicCronRefreshFixturesRoute: ApiPublicCronRefreshFixturesRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
