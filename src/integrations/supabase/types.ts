@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string | null
+          ref_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          label?: string | null
+          ref_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          ref_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       fixture_analysis_cache: {
         Row: {
           ai_summary: string | null
@@ -398,6 +425,16 @@ export type Database = {
           display_name: string
           total: number
           user_id: string
+        }[]
+      }
+      get_my_prediction_stats: {
+        Args: { _user: string }
+        Returns: {
+          accuracy: number
+          correct: number
+          last_30_correct: number
+          last_30_total: number
+          total: number
         }[]
       }
       get_pool_leaderboard: {
