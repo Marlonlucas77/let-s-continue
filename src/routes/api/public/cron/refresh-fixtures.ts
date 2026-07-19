@@ -9,13 +9,6 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
 
         // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas
         const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-        // Processa mais ligas por execução do que antes (5 → 12) — com
-        // 1.233+ ligas habilitadas possíveis (a opção "Habilitar todas as
-        // ligas" em Configurações liga literalmente tudo que a API-Sports
-        // tem), 5 por vez levaria dias pra cobrir o backlog uma vez só.
-        // Não aumentei mais que isso pra não arriscar estourar o tempo
-        // máximo de execução da função (cada liga espera o throttle
-        // compartilhado, ~2.2s por chamada à API).
         // Com o limite real confirmado (300 req/min), dá pra processar bem
         // mais ligas por execução sem risco — cada liga usa só 2-3
         // chamadas, então mesmo 30 ligas ficam bem dentro da margem.
@@ -31,8 +24,25 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         }
 
+        // Com muitas ligas empatadas em prioridade 100 (todas nunca
+        // rodadas), a ordenação não é suficiente pra garantir que uma
+        // liga específica entre no lote de 30 — ela pode "perder" o
+        // desempate várias vezes seguidas. Garante explicitamente que o
+        // Brasileirão Série A (id 71 na API-Sports) sempre seja tentado
+        // em toda execução, além do lote normal, não competindo por vaga.
+        const MUST_RUN_LEAGUE_IDS = [71]; // Brasileirão Série A
+        const batch = [...(leagues ?? [])];
+        const batchIds = new Set(batch.map((l) => l.id));
+        const { data: mustRun } = await supabaseAdmin
+          .from("tracked_leagues")
+          .select("*")
+          .in("league_id", MUST_RUN_LEAGUE_IDS);
+        for (const l of (mustRun ?? [])) {
+          if (!batchIds.has(l.id)) batch.push(l);
+        }
+
         const results: any[] = [];
-        for (const l of (leagues ?? [])) {
+        for (const l of batch) {
           try {
             const r = await importFixturesFor({
               supabase: supabaseAdmin,
