@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Download, Loader2, Radio, Trash2, RefreshCw } from "lucide-react";
+import { Search, Download, Loader2, Radio, Trash2, RefreshCw, Globe, CheckCircle2, XCircle } from "lucide-react";
 import {
   searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues,
 } from "@/lib/api-sports.functions";
@@ -14,6 +14,21 @@ export const Route = createFileRoute("/_authenticated/import")({
 });
 
 type League = { id: number; name: string; type: string; country: string; logo: string; seasons: number[]; };
+
+// Lista curada das ligas mais relevantes do mundo — "todas as ligas" de
+// verdade seria milhares de competições (toda divisão, todo país,
+// categorias de base, feminino...), o que estouraria qualquer cota de
+// API rapidamente e na prática não seria útil. Isso cobre o que a
+// grande maioria das pessoas realmente acompanha.
+const POPULAR_LEAGUES = [
+  "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1",
+  "Brasileirao Serie A", "Brasileirao Serie B", "Primeira Liga",
+  "Eredivisie", "Primera Division Argentina", "UEFA Champions League",
+  "UEFA Europa League", "World Cup", "Copa Libertadores", "Copa America",
+  "MLS", "Liga MX",
+];
+
+type BulkProgressItem = { name: string; status: "pending" | "loading" | "done" | "error"; detail?: string };
 
 function ImportPage() {
   const qc = useQueryClient();
@@ -60,6 +75,38 @@ function ImportPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [bulkProgress, setBulkProgress] = useState<BulkProgressItem[] | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+
+  const runBulkImport = async () => {
+    setBulkRunning(true);
+    const items: BulkProgressItem[] = POPULAR_LEAGUES.map((name) => ({ name, status: "pending" }));
+    setBulkProgress(items);
+
+    for (let i = 0; i < POPULAR_LEAGUES.length; i++) {
+      const name = POPULAR_LEAGUES[i];
+      setBulkProgress((prev) => prev!.map((it, idx) => idx === i ? { ...it, status: "loading" } : it));
+      try {
+        const found = (await search({ data: { query: name } })) as League[];
+        // Prefere resultado do tipo "League" (evita pegar uma copa/torneio
+        // secundário quando o nome bate com mais de uma competição).
+        const best = found.find((l) => l.type === "League") ?? found[0];
+        if (!best) throw new Error("Não encontrada");
+        const season = best.seasons[0] ?? new Date().getFullYear();
+        const r: any = await importFn({ data: { leagueId: best.id, season, leagueName: best.name, country: best.country, includeStats: false } });
+        setBulkProgress((prev) => prev!.map((it, idx) => idx === i
+          ? { ...it, status: "done", detail: `${r.imported} jogo(s), ${r.teamsCreated} time(s)` }
+          : it));
+      } catch (e: any) {
+        setBulkProgress((prev) => prev!.map((it, idx) => idx === i ? { ...it, status: "error", detail: e.message } : it));
+      }
+    }
+    setBulkRunning(false);
+    qc.invalidateQueries({ queryKey: ["matches"] });
+    qc.invalidateQueries({ queryKey: ["teams"] });
+    toast.success("Importação das principais ligas concluída");
+  };
+
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
@@ -91,6 +138,43 @@ function ImportPage() {
           <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Cron diário às 04:00 UTC atualiza jogos finalizados.</p>
         </div>
       )}
+
+      <div className="card-surface p-4 mb-6">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-2">
+            <Globe className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-display font-semibold">Importar principais ligas do mundo</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {POPULAR_LEAGUES.length} competições mais relevantes de uma vez (Premier League, La Liga, Brasileirão, Champions, Copa do Mundo e outras). Sem escanteios/cartões — importe individualmente depois se quiser esse detalhe.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={runBulkImport}
+            disabled={bulkRunning}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 shrink-0"
+          >
+            {bulkRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {bulkRunning ? "Importando..." : "Importar tudo"}
+          </button>
+        </div>
+
+        {bulkProgress && (
+          <div className="mt-4 grid gap-1.5 sm:grid-cols-2">
+            {bulkProgress.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs rounded-md bg-input/40 px-2 py-1.5">
+                {item.status === "pending" && <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0" />}
+                {item.status === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+                {item.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                {item.status === "error" && <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                <span className="flex-1 truncate">{item.name}</span>
+                {item.detail && <span className="text-muted-foreground truncate max-w-[40%]">{item.detail}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <form
         onSubmit={(e) => { e.preventDefault(); if (query.trim().length >= 2) searchMut.mutate(query.trim()); }}
