@@ -59,8 +59,9 @@ function LivePage() {
           <Radio className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-medium text-foreground mb-1">Nenhum jogo ao vivo agora</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
-            Não há partidas em andamento no momento. Isso é comum em horários com pouca atividade esportiva ou entre rodadas.
+            Não há partidas em andamento no momento. Você pode filtrar por liga ou buscar times específicos no menu lateral.
           </p>
+
           <button 
             onClick={() => window.location.reload()} 
             className="text-xs rounded-md bg-primary px-4 py-2 text-primary-foreground font-medium hover:opacity-90"

@@ -18,12 +18,14 @@ function TeamsPage() {
   const [selected, setSelected] = useState<Team | null>(null);
   const searchFn = useServerFn(searchTeams);
 
-  const { data: results = [], isFetching } = useQuery({
+  const { data: results = [], isFetching, refetch } = useQuery({
     queryKey: ["team-search", term],
     queryFn: async () => (await searchFn({ data: { query: term } })) as Team[],
     enabled: term.length >= 2,
     staleTime: 5 * 60 * 1000,
+    retry: false,
   });
+
 
   if (selected) return <TeamDetail team={selected} onBack={() => setSelected(null)} />;
 
@@ -35,7 +37,7 @@ function TeamsPage() {
       </div>
 
       <form
-        onSubmit={(e) => { e.preventDefault(); setTerm(query.trim()); }}
+        onSubmit={(e) => { e.preventDefault(); if (query.trim().length >= 2) setTerm(query.trim()); }}
         className="card-surface p-3 flex gap-2 mb-6"
       >
         <div className="flex-1 flex items-center gap-2 bg-input border border-border rounded-md px-3">
