@@ -499,19 +499,45 @@ function FixtureCard({ f }: { f: any }) {
                 </div>
               )}
 
+              {!hasLocal && (aiFixturePred?.homeAnalysis || aiFixturePred?.awayAnalysis) && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {aiFixturePred?.homeAnalysis && (
+                    <div className="rounded-md border border-border bg-input/40 p-3">
+                      <div className="text-xs font-medium mb-1 truncate">{translateTeam(f.home.name)}</div>
+                      <p className="text-xs text-muted-foreground">{aiFixturePred.homeAnalysis}</p>
+                    </div>
+                  )}
+                  {aiFixturePred?.awayAnalysis && (
+                    <div className="rounded-md border border-border bg-input/40 p-3">
+                      <div className="text-xs font-medium mb-1 truncate">{translateTeam(f.away.name)}</div>
+                      <p className="text-xs text-muted-foreground">{aiFixturePred.awayAnalysis}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {!hasLocal && aiFixturePred?.keyInsight && (
                 <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
                   <p className="text-sm italic text-foreground/90">"{aiFixturePred.keyInsight}"</p>
-                  {Array.isArray(aiFixturePred.topPicks) && aiFixturePred.topPicks.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {aiFixturePred.topPicks.slice(0, 3).map((pick: any, i: number) => (
-                        <div key={i} className="text-xs text-muted-foreground">
-                          <span className="text-foreground font-medium">{pick.market}:</span> {pick.pick}
-                          {pick.confidence != null && <span className="text-primary ml-1">({pick.confidence}%)</span>}
+                </div>
+              )}
+
+              {!hasLocal && Array.isArray(aiFixturePred?.topPicks) && aiFixturePred.topPicks.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                    <Target className="h-3 w-3" /> Palpites por mercado
+                  </div>
+                  {aiFixturePred.topPicks.map((pick: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 rounded-md bg-input/40 border border-border p-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">
+                          <span className="text-muted-foreground">{pick.market}:</span> {pick.pick}
                         </div>
-                      ))}
+                        {pick.reason && <div className="text-[11px] text-muted-foreground mt-0.5">{pick.reason}</div>}
+                      </div>
+                      {pick.confidence != null && <span className="text-xs font-mono font-semibold text-primary shrink-0">{pick.confidence}%</span>}
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
 

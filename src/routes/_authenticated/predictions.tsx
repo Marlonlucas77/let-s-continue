@@ -329,6 +329,23 @@ function PredictionsPage() {
                   </span>
                 </div>
 
+                {(aiMut.data.homeAnalysis || aiMut.data.awayAnalysis) && (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {aiMut.data.homeAnalysis && (
+                      <div className="rounded-md bg-background/50 border border-border p-2.5">
+                        <div className="text-[11px] font-medium mb-0.5 truncate">{home.name}</div>
+                        <p className="text-xs text-muted-foreground">{aiMut.data.homeAnalysis}</p>
+                      </div>
+                    )}
+                    {aiMut.data.awayAnalysis && (
+                      <div className="rounded-md bg-background/50 border border-border p-2.5">
+                        <div className="text-[11px] font-medium mb-0.5 truncate">{away.name}</div>
+                        <p className="text-xs text-muted-foreground">{aiMut.data.awayAnalysis}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {aiMut.data.keyInsight && (
                   <p className="text-sm italic text-center text-foreground/90 border-y border-primary/20 py-2">
                     "{aiMut.data.keyInsight}"
@@ -338,9 +355,9 @@ function PredictionsPage() {
                 {Array.isArray(aiMut.data.topPicks) && aiMut.data.topPicks.length > 0 && (
                   <div className="space-y-1.5">
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <Target className="h-3 w-3" /> Melhores palpites
+                      <Target className="h-3 w-3" /> Palpites por mercado
                     </div>
-                    {aiMut.data.topPicks.slice(0, 3).map((pick: any, i: number) => (
+                    {aiMut.data.topPicks.map((pick: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 rounded-md bg-background/60 border border-border p-2">
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium">

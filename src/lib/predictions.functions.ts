@@ -92,7 +92,7 @@ export const getAiFixturePrediction = createServerFn({ method: "POST" })
     const system = `Você é um analista esportivo especialista em futebol, com conhecimento real sobre a força atual dos clubes, elenco, estilo de jogo, campeonato que disputam e nível competitivo. Retorne APENAS JSON válido, sem markdown, sem texto extra.`;
     const prompt = `Preveja o confronto ${data.homeName}${data.homeLeague ? ` (${data.homeLeague})` : ""} (mandante) vs ${data.awayName}${data.awayLeague ? ` (${data.awayLeague})` : ""} (visitante)${data.matchDate ? `, em ${data.matchDate}` : ""}.
 
-Use seu conhecimento real sobre o nível desses times (força do elenco, competição que disputam, tradição, estilo de jogo — times mais ofensivos tendem a mais escanteios/gols, ligas mais físicas tendem a mais cartões). Não invente que são equivalentes só porque não há dados detalhados — se um time é claramente mais forte, reflita isso nas probabilidades.${statLine}
+Use seu conhecimento real sobre o nível desses times (força do elenco, competição que disputam, tradição, momento atual, estilo de jogo — times mais ofensivos tendem a mais escanteios/gols, ligas mais físicas tendem a mais cartões). Não invente que são equivalentes só porque não há dados detalhados — se um time é claramente mais forte, reflita isso nas probabilidades. Seja específico sobre o motivo (não genérico).${statLine}
 
 Responda estritamente neste JSON:
 {
@@ -108,13 +108,15 @@ Responda estritamente neste JSON:
   "expectedYellow": <int>,
   "confidenceScore": <int 0-100, honesto — baixo se você tem pouca certeza>,
   "risk": "baixo" | "medio" | "alto",
+  "homeAnalysis": "<1-2 frases sobre o momento/força do time da casa>",
+  "awayAnalysis": "<1-2 frases sobre o momento/força do time visitante>",
   "topPicks": [
-    { "market": "<mercado, ex: Resultado Final, Over/Under 2.5, Ambas Marcam, Escanteios, Cartões>", "pick": "<palpite>", "confidence": <int 0-100>, "reason": "<motivo curto>" }
+    { "market": "<mercado>", "pick": "<palpite>", "confidence": <int 0-100>, "reason": "<motivo curto e específico>" }
   ],
   "keyInsight": "<uma frase decisiva sobre o jogo, mencionando o motivo real>",
   "basis": "<frase curta explicando a base da previsão, ex: 'IA generativa — conhecimento geral de futebol, sem histórico jogo a jogo'>"
 }
-homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 3 palpites em topPicks, incluindo pelo menos um de escanteios ou cartões. Seja realista e direto.`;
+homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks, cobrindo mercados variados: Resultado Final (1x2), Dupla Chance, Over/Under 2.5 gols, Ambas Marcam, Escanteios (over/under), Cartões (over/under) — um de cada, com motivo específico pro confronto. Seja realista e direto.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -161,5 +163,7 @@ homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 3 palpites em topPicks,
       risk: ai.risk,
       topPicks: ai.topPicks,
       keyInsight: ai.keyInsight,
+      homeAnalysis: ai.homeAnalysis,
+      awayAnalysis: ai.awayAnalysis,
     };
   });
