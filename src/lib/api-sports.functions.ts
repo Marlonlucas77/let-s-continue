@@ -309,15 +309,6 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       apiSportsFetch<ApiSportsFixture>(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=6`),
     ]);
 
-    type TeamStat = {
-      games: number;
-      wins: number; draws: number; losses: number;
-      goalsFor: number; goalsAgainst: number;
-      avgFor: number; avgAgainst: number;
-      bttsPct: number; over25Pct: number;
-      form: ("W" | "D" | "L")[];
-      recent: { date: string; opponent: string; gf: number; ga: number; result: "W" | "D" | "L"; home: boolean }[];
-    };
 
     const compute = (fixtures: ApiSportsFixture[], teamId: number): TeamStat => {
       let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0;
