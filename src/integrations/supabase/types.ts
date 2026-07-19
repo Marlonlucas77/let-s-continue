@@ -267,6 +267,7 @@ export type Database = {
       }
       teams: {
         Row: {
+          color: string | null
           country: string | null
           created_at: string | null
           id: string
@@ -276,6 +277,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string | null
           country?: string | null
           created_at?: string | null
           id?: string
@@ -285,6 +287,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string | null
           country?: string | null
           created_at?: string | null
           id?: string
@@ -301,6 +304,7 @@ export type Database = {
           created_at: string | null
           id: string
           include_stats: boolean | null
+          last_run_at: string | null
           league_id: number
           league_name: string
           season: number
@@ -311,6 +315,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           include_stats?: boolean | null
+          last_run_at?: string | null
           league_id: number
           league_name: string
           season: number
@@ -321,6 +326,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           include_stats?: boolean | null
+          last_run_at?: string | null
           league_id?: number
           league_name?: string
           season?: number

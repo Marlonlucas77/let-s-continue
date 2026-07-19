@@ -234,8 +234,8 @@ export const autoCheckPredictions = createServerFn({ method: "POST" })
       ].sort((a, b) => b.pct - a.pct);
       const predicted = picks[0].key;
       const sameSide = m.home_team_id === p.home_team_id;
-      const actualHome = sameSide ? m.home_goals : m.away_goals;
-      const actualAway = sameSide ? m.away_goals : m.home_goals;
+      const actualHome = sameSide ? (m.home_goals ?? 0) : (m.away_goals ?? 0);
+      const actualAway = sameSide ? (m.away_goals ?? 0) : (m.home_goals ?? 0);
       const actual = actualHome > actualAway ? "home" : actualHome < actualAway ? "away" : "draw";
       const wasCorrect = predicted === actual;
       await supabase.from("predictions").update({ result_checked: true, was_correct: wasCorrect }).eq("id", p.id);

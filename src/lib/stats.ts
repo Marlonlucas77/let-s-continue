@@ -35,13 +35,13 @@ export function computeTeamStats(teamId: string, matches: Match[], filter: "all"
 
   for (const m of sorted) {
     const isHome = m.home_team_id === teamId;
-    const my = isHome ? m.home_goals : m.away_goals;
-    const opp = isHome ? m.away_goals : m.home_goals;
+    const my = isHome ? (m.home_goals ?? 0) : (m.away_goals ?? 0);
+    const opp = isHome ? (m.away_goals ?? 0) : (m.home_goals ?? 0);
     gf += my; ga += opp;
     corners += (isHome ? m.home_corners : m.away_corners) ?? 0;
     yellow += (isHome ? m.home_yellow : m.away_yellow) ?? 0;
-    if (m.home_goals > 0 && m.away_goals > 0) btts++;
-    const tot = m.home_goals + m.away_goals;
+    if ((m.home_goals ?? 0) > 0 && (m.away_goals ?? 0) > 0) btts++;
+    const tot = (m.home_goals ?? 0) + (m.away_goals ?? 0);
     if (tot > 1.5) o15++;
     if (tot > 2.5) o25++;
     if (tot > 3.5) o35++;

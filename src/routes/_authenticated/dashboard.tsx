@@ -15,7 +15,7 @@ function Dashboard() {
     queryFn: async () => {
       const [teams, recent, allMatches, preds] = await Promise.all([
         supabase.from("teams").select("*").order("created_at", { ascending: false }),
-        supabase.from("matches").select("*, home_team:home_team_id(name,color,logo_url), away_team:away_team_id(name,color,logo_url)").order("match_date", { ascending: false }).limit(5),
+        supabase.from("matches").select("*, home_team:home_team_id(name,logo_url), away_team:away_team_id(name,logo_url)").order("match_date", { ascending: false }).limit(5),
         supabase.from("matches").select("match_date, home_goals, away_goals, home_corners, away_corners").order("match_date", { ascending: false }).limit(20),
         supabase.from("predictions").select("*"),
       ]);
@@ -42,12 +42,12 @@ function Dashboard() {
       const h = m.home_team?.name; const a = m.away_team?.name;
       if (h) {
         const e = map.get(h) ?? { name: h, gf: 0, ga: 0, games: 0 };
-        e.gf += m.home_goals; e.ga += m.away_goals; e.games++;
+        e.gf += m.home_goals ?? 0; e.ga += m.away_goals ?? 0; e.games++;
         map.set(h, e);
       }
       if (a) {
         const e = map.get(a) ?? { name: a, gf: 0, ga: 0, games: 0 };
-        e.gf += m.away_goals; e.ga += m.home_goals; e.games++;
+        e.gf += m.away_goals ?? 0; e.ga += m.home_goals ?? 0; e.games++;
         map.set(a, e);
       }
     }
@@ -131,11 +131,11 @@ function Dashboard() {
             <ul className="space-y-2">
               {data?.matches.map((m: any) => (
                 <li key={m.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  <TeamBadge name={m.home_team.name} logoUrl={m.home_team.logo_url} color={m.home_team.color} size={28} />
+                  <TeamBadge name={m.home_team.name} logoUrl={m.home_team.logo_url} size={28} />
                   <span className="text-sm font-medium flex-1 truncate">{m.home_team.name}</span>
-                  <span className="font-mono text-sm">{m.home_goals} - {m.away_goals}</span>
+                  <span className="font-mono text-sm">{m.home_goals ?? 0} - {m.away_goals ?? 0}</span>
                   <span className="text-sm font-medium flex-1 truncate text-right">{m.away_team.name}</span>
-                  <TeamBadge name={m.away_team.name} logoUrl={m.away_team.logo_url} color={m.away_team.color} size={28} />
+                  <TeamBadge name={m.away_team.name} logoUrl={m.away_team.logo_url} size={28} />
                 </li>
               ))}
             </ul>
