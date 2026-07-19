@@ -5,7 +5,7 @@ import { useState, Suspense } from "react";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain } from "lucide-react";
+import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target } from "lucide-react";
 import { FixtureCardSkeleton } from "@/components/Skeletons";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
