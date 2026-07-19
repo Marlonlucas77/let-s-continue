@@ -20,7 +20,6 @@ import { Route as AuthenticatedPredictionsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
-import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedH2hRouteImport } from './routes/_authenticated/h2h'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -85,11 +84,6 @@ const AuthenticatedLeaderboardRoute =
     path: '/leaderboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedImportRoute = AuthenticatedImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -136,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/h2h': typeof AuthenticatedH2hRoute
   '/history': typeof AuthenticatedHistoryRoute
-  '/import': typeof AuthenticatedImportRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
@@ -156,7 +149,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/h2h': typeof AuthenticatedH2hRoute
   '/history': typeof AuthenticatedHistoryRoute
-  '/import': typeof AuthenticatedImportRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
@@ -178,7 +170,6 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/h2h': typeof AuthenticatedH2hRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
-  '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
@@ -200,7 +191,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/h2h'
     | '/history'
-    | '/import'
     | '/leaderboard'
     | '/live'
     | '/pools'
@@ -220,7 +210,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/h2h'
     | '/history'
-    | '/import'
     | '/leaderboard'
     | '/live'
     | '/pools'
@@ -241,7 +230,6 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/h2h'
     | '/_authenticated/history'
-    | '/_authenticated/import'
     | '/_authenticated/leaderboard'
     | '/_authenticated/live'
     | '/_authenticated/pools'
@@ -342,13 +330,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/import': {
-      id: '/_authenticated/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof AuthenticatedImportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/history': {
       id: '/_authenticated/history'
       path: '/history'
@@ -417,7 +398,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedH2hRoute: typeof AuthenticatedH2hRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
-  AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
@@ -433,7 +413,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedH2hRoute: AuthenticatedH2hRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
-  AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,

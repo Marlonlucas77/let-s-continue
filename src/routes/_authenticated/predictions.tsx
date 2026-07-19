@@ -133,19 +133,16 @@ function PredictionsPage() {
 
       {teams.length === 0 && (
         <div className="mt-6 card-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground mb-3">Você ainda não importou nenhum time. Importe uma liga pra começar a gerar previsões.</p>
-          <Link to="/import" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-            Ir para Importar
-          </Link>
+          <p className="text-sm text-muted-foreground">Ainda não há times cadastrados. O cron popula os dados automaticamente das ligas monitoradas.</p>
         </div>
       )}
 
       {teams.length > 0 && (
       <div className="card-surface p-5 mt-6">
         <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>{teams.length} time(s) disponível(eis) — só aparecem times que você já importou.</span>
-          <Link to="/import" className="text-primary hover:underline shrink-0">Importar mais ligas/times →</Link>
+          <span>{teams.length} time(s) disponível(eis).</span>
         </div>
+
 
         <div className="mb-4">
           <label className="text-sm font-medium">Filtrar por liga</label>
