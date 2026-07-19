@@ -160,6 +160,34 @@ function Dashboard() {
       <div className="grid gap-6 mt-8 lg:grid-cols-2">
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-semibold flex items-center gap-2">
+              <Star className="h-4 w-4 text-primary" /> Meus favoritos (7 dias)
+            </h2>
+            <Link to="/teams" className="text-xs text-primary hover:underline">Gerenciar</Link>
+          </div>
+          {(data?.favFixtures ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Favorite times na aba <Link to="/teams" className="text-primary">Times</Link> para acompanhar os próximos jogos aqui.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {data!.favFixtures.slice(0, 5).map((m: any) => (
+                <li key={m.fixtureId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <TeamBadge name={m.home.name} logoUrl={m.home.logo} size={24} />
+                  <span className="text-sm flex-1 truncate">{m.home.name}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+                    {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(m.date))}
+                  </span>
+                  <span className="text-sm flex-1 truncate text-right">{m.away.name}</span>
+                  <TeamBadge name={m.away.name} logoUrl={m.away.logo} size={24} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="card-surface p-5">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold">Jogos de hoje</h2>
             <Link to="/upcoming" className="text-xs text-primary hover:underline">Ver todos</Link>
           </div>
