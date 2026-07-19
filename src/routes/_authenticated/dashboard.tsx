@@ -6,8 +6,10 @@ import { Users, ListOrdered, Target, TrendingUp } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { DashboardSkeleton } from "@/components/Skeletons";
 import { Suspense } from "react";
+import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  errorComponent: (props) => <LocalErrorBoundary {...props} boundaryName="dashboard" />,
   component: () => (
     <Suspense fallback={<DashboardSkeleton />}>
       <Dashboard />
@@ -27,7 +29,6 @@ function Dashboard() {
       ]);
       return { teams: teams.data ?? [], matches: recent.data ?? [], allMatches: allMatches.data ?? [], preds: preds.data ?? [] };
     },
-    staleTime: 60 * 1000, // 1 minute cache
   });
 
   const teamsCount = data?.teams.length ?? 0;
