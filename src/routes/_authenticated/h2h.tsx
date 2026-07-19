@@ -184,7 +184,7 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
   const [term, setTerm] = useState("");
   const searchFn = useServerFn(searchTeams);
 
-  const { data: results = [], isFetching } = useQuery({
+  const { data: results = [], isFetching, error } = useQuery({
     queryKey: ["h2h-search", label, term],
     queryFn: async () => (await searchFn({ data: { query: term } })) as Team[],
     enabled: term.length >= 2,
@@ -228,7 +228,10 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
         <button type="submit" className="rounded-md bg-primary/80 px-3 py-2 text-xs font-medium text-primary-foreground">OK</button>
       </form>
       {isFetching && <div className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> buscando</div>}
-      {!isFetching && term.length >= 2 && results.length === 0 && (
+      {!isFetching && error && (
+        <div className="text-xs text-destructive">{(error as Error).message || "Erro ao buscar. Tente novamente."}</div>
+      )}
+      {!isFetching && !error && term.length >= 2 && results.length === 0 && (
         <div className="text-xs text-muted-foreground">Nenhum resultado.</div>
       )}
       <div className="space-y-1 max-h-64 overflow-y-auto">

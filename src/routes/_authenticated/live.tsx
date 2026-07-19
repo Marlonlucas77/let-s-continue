@@ -18,12 +18,13 @@ export const Route = createFileRoute("/_authenticated/live")({
 
 function LivePage() {
   const liveFn = useServerFn(listLiveFixtures);
-  const { data: fixtures = [], isLoading, isFetching, dataUpdatedAt } = useQuery({
+  const { data: fixtures = [], isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["live-fixtures"],
     queryFn: async () => (await liveFn()) as any[],
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     staleTime: 15_000,
+    retry: false,
   });
 
   const grouped = fixtures.reduce<Record<string, any[]>>((acc, f) => {
@@ -53,6 +54,20 @@ function LivePage() {
       {isLoading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Buscando jogos ao vivo...
+        </div>
+      ) : error ? (
+        <div className="card-surface p-12 text-center">
+          <Radio className="h-10 w-10 text-destructive/50 mx-auto mb-4" />
+          <h3 className="font-medium text-foreground mb-1">Não foi possível buscar jogos ao vivo</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
+            {(error as Error).message || "Erro na API de futebol."}
+          </p>
+          <button 
+            onClick={() => refetch()} 
+            className="text-xs rounded-md bg-primary px-4 py-2 text-primary-foreground font-medium hover:opacity-90"
+          >
+            Tentar novamente
+          </button>
         </div>
       ) : fixtures.length === 0 ? (
         <div className="card-surface p-12 text-center">

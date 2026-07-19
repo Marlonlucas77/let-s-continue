@@ -18,7 +18,7 @@ function TeamsPage() {
   const [selected, setSelected] = useState<Team | null>(null);
   const searchFn = useServerFn(searchTeams);
 
-  const { data: results = [], isFetching, refetch } = useQuery({
+  const { data: results = [], isFetching, error, refetch } = useQuery({
     queryKey: ["team-search", term],
     queryFn: async () => (await searchFn({ data: { query: term } })) as Team[],
     enabled: term.length >= 2,
@@ -57,6 +57,14 @@ function TeamsPage() {
       {isFetching ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+        </div>
+      ) : error ? (
+        <div className="card-surface p-8 text-center">
+          <p className="text-sm text-destructive font-medium mb-1">Não foi possível buscar times agora</p>
+          <p className="text-xs text-muted-foreground mb-4">{(error as Error).message || "Erro na API de futebol."}</p>
+          <button onClick={() => refetch()} className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90">
+            Tentar novamente
+          </button>
         </div>
       ) : term.length < 2 ? (
         <p className="text-sm text-muted-foreground text-center py-12">Digite o nome de um time para começar.</p>
