@@ -31,13 +31,21 @@ function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
-  const [days, setDays] = useState(14);
+  // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
+  // valor inicial menor evita estourar o limite de requisições logo na entrada.
+  const [days, setDays] = useState(3);
 
   const { data: fixtures = [], isFetching, isLoading, error, refetch } = useQuery({
     queryKey: ["upcoming-fixtures", days],
     queryFn: async () => (await listFn({ data: { days } })) as any[],
     staleTime: 5 * 60 * 1000,
+    // A API externa já sinaliza erros de configuração/limite de forma clara;
+    // tentar de novo automaticamente só desperdiça cota e atrasa o feedback.
+    retry: false,
   });
+
+  const isConfigError = /API_SPORTS_KEY|LOVABLE_API_KEY|não configurad/i.test((error as Error)?.message ?? "");
+  const isRateLimitError = /limite|rate|429/i.test((error as Error)?.message ?? "");
 
   const filtered = useMemo(() => {
     return fixtures.filter((f: any) => {
@@ -135,9 +143,15 @@ function UpcomingPage() {
       {error ? (
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-destructive/60 mx-auto mb-3" />
-          <h3 className="font-medium text-foreground mb-1">Não foi possível carregar os jogos</h3>
+          <h3 className="font-medium text-foreground mb-1">
+            {isConfigError ? "Integração com a API de futebol não configurada" : "Não foi possível carregar os jogos"}
+          </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-            {(error as Error).message || "A API de futebol não respondeu agora."}
+            {isConfigError
+              ? "Este módulo depende de uma chave da API-Sports.io (variável API_SPORTS_KEY) configurada nos Secrets do projeto. Peça ao administrador para cadastrá-la."
+              : isRateLimitError
+              ? "O limite de requisições da API de futebol foi atingido. Aguarde alguns instantes e tente novamente."
+              : (error as Error).message || "A API de futebol não respondeu agora."}
           </p>
           <button 
             onClick={() => refetch()} 
