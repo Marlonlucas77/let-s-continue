@@ -154,7 +154,7 @@ function Dashboard() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Monitore novas ligas para mais previsões
+                oxi, não pedi para voce fazer isso, to falando para desenvolver e melhorar o aplicativ
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
