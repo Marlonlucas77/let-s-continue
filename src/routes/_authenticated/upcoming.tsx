@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useState, Suspense, lazy } from "react";
+import { useState, Suspense } from "react";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target } from "lucide-react";
+import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain } from "lucide-react";
 import { FixtureCardSkeleton } from "@/components/Skeletons";
-
-
+import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
 export const Route = createFileRoute("/_authenticated/upcoming")({
+  errorComponent: (props) => <LocalErrorBoundary {...props} boundaryName="upcoming" />,
   component: () => (
     <Suspense fallback={
       <div className="max-w-5xl space-y-3">
@@ -33,8 +33,6 @@ function UpcomingPage() {
   const { data: fixtures = [] } = useSuspenseQuery({
     queryKey: ["upcoming-fixtures"],
     queryFn: async () => (await listFn({ data: { days: 4 } })) as any[],
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
   });
 
   const filtered = fixtures.filter((f: any) => {
