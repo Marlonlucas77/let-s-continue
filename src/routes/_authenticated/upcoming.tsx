@@ -31,10 +31,11 @@ function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [days, setDays] = useState(4);
 
-  const { data: fixtures = [] } = useSuspenseQuery({
-    queryKey: ["upcoming-fixtures"],
-    queryFn: async () => (await listFn({ data: { days: 4 } })) as any[],
+  const { data: fixtures = [], isFetching, refetch } = useQuery({
+    queryKey: ["upcoming-fixtures", days],
+    queryFn: async () => (await listFn({ data: { days } })) as any[],
   });
 
   const filtered = useMemo(() => {
@@ -60,8 +61,25 @@ function UpcomingPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="font-display text-3xl font-bold">Próximos jogos</h1>
-        <p className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-3xl font-bold">Próximos jogos</h1>
+          <div className="flex items-center gap-2 bg-input/40 p-1 rounded-md border border-border">
+            {[3, 7, 14].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDays(d)}
+                className={`px-3 py-1 text-xs font-medium rounded transition-all ${
+                  days === d 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-input"
+                }`}
+              >
+                {d} dias
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
           Análise estatística e previsões de IA para os confrontos das suas ligas monitoradas.
         </p>
       </div>
@@ -103,7 +121,14 @@ function UpcomingPage() {
         </div>
       </div>
 
-      <p className="mb-3 text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
+        {isFetching && (
+          <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
+            <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
+          </div>
+        )}
+      </div>
 
 
       {filtered.length === 0 ? (

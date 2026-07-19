@@ -243,8 +243,13 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     const trackedList: { league_id: number; season: number }[] = tracked.data ?? [];
 
     const today = new Date();
+    // Use UTC for date boundaries to ensure consistency
     const from = today.toISOString().slice(0, 10);
-    const to = new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
+    const toDate = new Date(today);
+    toDate.setUTCDate(today.getUTCDate() + days);
+    const to = toDate.toISOString().slice(0, 10);
+
+    console.log(`[listUpcomingFixtures] Fetching fixtures from ${from} to ${to} (${days} days)`);
 
     // Fast path: fetch only user's tracked leagues (small payload, much faster).
     // Fallback: if user has no tracked leagues, fetch by date (global).
