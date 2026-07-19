@@ -310,10 +310,11 @@ function FixtureCard({ f }: { f: any }) {
     retry: 1,
   });
 
+  const [wantsOdds, setWantsOdds] = useState(false);
   const { data: odds, isFetching: oddsLoading } = useQuery({
     queryKey: ["odds", f.fixtureId],
     queryFn: async () => await oddsFn({ data: { fixtureId: f.fixtureId } }),
-    enabled: open,
+    enabled: open && wantsOdds,
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     retry: 1,
@@ -561,7 +562,15 @@ function FixtureCard({ f }: { f: any }) {
               <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0 text-sm">
                 <div className="font-medium">Sugestão: <span className="text-primary">{bestPick.label}</span> ({bestPick.pct}%)</div>
-                {oddsLoading && !bestOddForPick && (
+                {!wantsOdds && (
+                  <button
+                    onClick={() => setWantsOdds(true)}
+                    className="text-xs text-primary hover:underline mt-0.5"
+                  >
+                    Ver odds das casas de apostas
+                  </button>
+                )}
+                {wantsOdds && oddsLoading && !bestOddForPick && (
                   <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
                     <Loader2 className="h-3 w-3 animate-spin" /> Buscando odds...
                   </div>
