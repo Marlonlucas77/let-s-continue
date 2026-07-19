@@ -103,6 +103,53 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   return p;
 }
 
+// O parâmetro `last` (ex: /fixtures?team=X&last=10) não é permitido em
+// planos grátis da API-Sports. A alternativa suportada é buscar por
+// `season` e pegar os últimos N jogos nós mesmos. Como o ano da "season"
+// varia por convenção (ligas europeias usam o ano de início, ex: 2025
+// pra temporada 2025/26; ligas como o Brasileirão usam o ano corrente),
+// busca as duas temporadas mais prováveis e junta o resultado.
+export async function recentFixturesForTeam(teamId: number, limit: number): Promise<any[]> {
+  const now = new Date();
+  const month = now.getUTCMonth() + 1;
+  const year = now.getUTCFullYear();
+  const euSeasonGuess = month >= 7 ? year : year - 1; // temporada europeia (ago-mai)
+  const seasons = Array.from(new Set([year, euSeasonGuess]));
+
+  const settled = await Promise.allSettled(
+    seasons.map((s) => apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${s}`))
+  );
+  const all: any[] = [];
+  for (const r of settled) {
+    if (r.status === "fulfilled") all.push(...(r.value.response ?? []));
+  }
+  if (all.length === 0 && settled.every((r) => r.status === "rejected")) {
+    const firstError = settled.find((r): r is PromiseRejectedResult => r.status === "rejected");
+    throw firstError?.reason instanceof Error ? firstError.reason : new Error("Não foi possível carregar os jogos do time.");
+  }
+
+  const seen = new Set<number>();
+  const deduped = all.filter((f) => {
+    const id = f.fixture?.id;
+    if (id == null || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  return deduped
+    .sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string))
+    .slice(0, limit);
+}
+
+// Mesma limitação vale pro head-to-head: busca o histórico completo entre
+// os dois times (sem `last`) e corta os N mais recentes aqui.
+export async function recentHeadToHead(homeId: number, awayId: number, limit: number): Promise<any[]> {
+  const json = await apiSportsFetch<any>(`/fixtures/headtohead?h2h=${homeId}-${awayId}`);
+  const all = (json.response ?? []) as any[];
+  return [...all]
+    .sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string))
+    .slice(0, limit);
+}
+
 export type ImportArgs = {
   supabase: any;
   userId: string;

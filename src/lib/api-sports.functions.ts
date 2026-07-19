@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { apiSportsFetch, importFixturesFor, getComputedCache, setComputedCache } from "@/lib/fixtures-importer.server";
+import { apiSportsFetch, importFixturesFor, getComputedCache, setComputedCache, recentFixturesForTeam, recentHeadToHead } from "@/lib/fixtures-importer.server";
 import { ApiSportsFixture, ApiSportsLeague, ApiSportsOdd } from "./api-sports.types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -39,8 +39,7 @@ export const getTeamAnalysis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { teamId: number }) => z.object({ teamId: z.number().int() }).parse(d))
   .handler(async ({ data }) => {
-    const json = await apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.teamId}&last=20`);
-    const fixtures = json.response ?? [];
+    const fixtures = await recentFixturesForTeam(data.teamId, 20);
     const done = fixtures.filter((f) => f.fixture?.status?.short === "FT");
     
     let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
@@ -83,9 +82,9 @@ export const compareTeams = createServerFn({ method: "POST" })
   .inputValidator((d: { homeId: number; awayId: number }) => z.object({ homeId: z.number().int(), awayId: z.number().int() }).parse(d))
   .handler(async ({ data }) => {
     const [hRes, aRes, h2hRes] = await Promise.all([
-      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.homeId}&last=15`),
-      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.awayId}&last=15`),
-      apiSportsFetch<ApiSportsFixture>(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=10`),
+      recentFixturesForTeam(data.homeId, 15),
+      recentFixturesForTeam(data.awayId, 15),
+      recentHeadToHead(data.homeId, data.awayId, 10),
     ]);
 
     const stats = (fixtures: ApiSportsFixture[], teamId: number) => {
@@ -115,11 +114,11 @@ export const compareTeams = createServerFn({ method: "POST" })
       };
     };
 
-    const home = stats(hRes.response ?? [], data.homeId);
-    const away = stats(aRes.response ?? [], data.awayId);
+    const home = stats(hRes, data.homeId);
+    const away = stats(aRes, data.awayId);
     
     // H2H stats
-    const h2hFixtures = h2hRes.response ?? [];
+    const h2hFixtures = h2hRes;
     let h2hW = 0, h2hD = 0, h2hL = 0, h2hG = 0, h2hBtts = 0, h2hO25 = 0;
     const h2hRecent = h2hFixtures.map(f => {
       const isHome = f.teams.home.id === data.homeId;
@@ -478,10 +477,10 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       return cached.analysis as unknown as PredictionAnalysis;
     }
 
-    const [homeJson, awayJson, h2hJson] = await Promise.all([
-      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.homeId}&last=6`),
-      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.awayId}&last=6`),
-      apiSportsFetch<ApiSportsFixture>(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=6`),
+    const [homeFixtures, awayFixtures, h2hFixtures] = await Promise.all([
+      recentFixturesForTeam(data.homeId, 6),
+      recentFixturesForTeam(data.awayId, 6),
+      recentHeadToHead(data.homeId, data.awayId, 6),
     ]);
 
 
@@ -517,9 +516,9 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       };
     };
 
-    const home = compute(homeJson.response ?? [], data.homeId);
-    const away = compute(awayJson.response ?? [], data.awayId);
-    const h2h = compute(h2hJson.response ?? [], data.homeId);
+    const home = compute(homeFixtures, data.homeId);
+    const away = compute(awayFixtures, data.awayId);
+    const h2h = compute(h2hFixtures, data.homeId);
 
     const homeAtk = home.avgFor || 1.2;
     const awayAtk = away.avgFor || 1.0;
