@@ -1,16 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useState, Suspense, lazy } from "react";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
 import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target } from "lucide-react";
+import { FixtureCardSkeleton } from "@/components/Skeletons";
 
 
 
 export const Route = createFileRoute("/_authenticated/upcoming")({
-  component: UpcomingPage,
+  component: () => (
+    <Suspense fallback={
+      <div className="max-w-5xl space-y-3">
+        <div className="mb-6"><div className="h-9 w-48 bg-muted animate-pulse rounded" /><div className="h-4 w-64 bg-muted animate-pulse rounded mt-2" /></div>
+        <div className="grid gap-2 sm:grid-cols-2 mb-4"><div className="h-10 bg-muted animate-pulse rounded" /><div className="h-10 bg-muted animate-pulse rounded" /></div>
+        {[1,2,3,4,5].map(i => <FixtureCardSkeleton key={i} />)}
+      </div>
+    }>
+      <UpcomingPage />
+    </Suspense>
+  ),
 });
 
 function UpcomingPage() {
@@ -19,7 +30,7 @@ function UpcomingPage() {
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
 
-  const { data: fixtures = [], isLoading } = useQuery({
+  const { data: fixtures = [] } = useSuspenseQuery({
     queryKey: ["upcoming-fixtures"],
     queryFn: async () => (await listFn({ data: { days: 4 } })) as any[],
     staleTime: 5 * 60 * 1000,
@@ -68,11 +79,7 @@ function UpcomingPage() {
       <p className="mb-3 text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
 
 
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando jogos...
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
