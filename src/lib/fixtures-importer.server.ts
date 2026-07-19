@@ -335,13 +335,18 @@ export async function importFixturesFor({
         api_id: apiId,
       });
     } else {
-      // Time já existe: se o rótulo salvo estiver vazio ou diferente do que
-      // essa importação encontrou de verdade, corrige — assim rótulos
-      // errados (ex: de quando 1.233 ligas foram habilitadas de uma vez)
-      // se autocorrigem conforme os times voltam a ser importados.
+      // Time já existe: só corrige o rótulo quando o PAÍS salvo está
+      // claramente errado (sinal forte de erro de verdade, como aconteceu
+      // com times sul-americanos rotulados como "J1 League"/Japão). Não
+      // corrige só por causa da liga ser diferente — um time joga várias
+      // competições no mesmo país (liga nacional + copa), e comparar só
+      // pela liga fazia o rótulo ficar trocando toda vez que o time
+      // aparecia em outra competição, escondendo ele do filtro da liga
+      // principal (foi o que aconteceu com o Santos, sumindo do filtro
+      // "Serie A" ao ser reimportado via alguma copa).
       const localId = byName.get(t.name.toLowerCase())!;
       const current = existingLeagueByName.get(t.name.toLowerCase());
-      if (t.leagueName && current && current.league !== t.leagueName) {
+      if (t.leagueName && current && (!current.league || (t.country && current.country && current.country !== t.country))) {
         toFixLabel.push({ id: localId, league: t.leagueName, country: t.country });
       }
     }
