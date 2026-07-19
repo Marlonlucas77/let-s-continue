@@ -94,7 +94,7 @@ function PricingPage() {
 
         <div className="grid gap-6 mt-8 md:grid-cols-3">
           {plans.map((p) => {
-            const isCurrent = (p.id === "free" && !isPremium) || (p.priceId && sub?.price_id === p.priceId && isPremium);
+            const isCurrent = (p.id === "free" && !isPremium) || (p.priceId && sub?.plan === p.id && isPremium);
             return (
               <div key={p.id} className={`card-surface p-6 relative ${p.highlight ? "border-primary/50" : ""}`}>
                 {p.highlight && (

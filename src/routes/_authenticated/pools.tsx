@@ -101,7 +101,7 @@ function PoolsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-medium">{p.name}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Criado {new Date(p.created_at).toLocaleDateString("pt-BR")}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Criado {p.created_at ? new Date(p.created_at).toLocaleDateString("pt-BR") : "---"}</div>
                 </div>
                 <button
                   onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(p.invite_code); toast.success("Código copiado"); }}
