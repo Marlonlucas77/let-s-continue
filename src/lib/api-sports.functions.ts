@@ -20,6 +20,143 @@ export const searchLeagues = createServerFn({ method: "POST" })
     }));
   });
 
+export const searchTeams = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { query: string }) => z.object({ query: z.string().min(2) }).parse(d))
+  .handler(async ({ data }) => {
+    const json = await apiSportsFetch(`/teams?search=${encodeURIComponent(data.query)}`);
+    return (json.response ?? []).map((r: any) => ({
+      id: r.team.id,
+      name: r.team.name,
+      country: r.team.country,
+      logo: r.team.logo,
+      founded: r.team.founded,
+      venue: r.venue?.name,
+    }));
+  });
+
+export const getTeamAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { teamId: number }) => z.object({ teamId: z.number().int() }).parse(d))
+  .handler(async ({ data }) => {
+    const json = await apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.teamId}&last=20`);
+    const fixtures = json.response ?? [];
+    const done = fixtures.filter((f) => f.fixture?.status?.short === "FT");
+    
+    let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
+    const form: ("W" | "D" | "L")[] = [];
+    const recent: any[] = [];
+
+    for (const f of done) {
+      const isHome = f.teams.home.id === data.teamId;
+      const my = (isHome ? f.goals.home : f.goals.away) ?? 0;
+      const opp = (isHome ? f.goals.away : f.goals.home) ?? 0;
+      gf += my; ga += opp;
+      if (my > 0 && opp > 0) btts++;
+      if (my + opp > 2.5) o25++;
+      if (opp === 0) cs++;
+      
+      const res: "W" | "D" | "L" = my > opp ? "W" : my < opp ? "L" : "D";
+      if (form.length < 10) form.push(res);
+      recent.push({
+        date: f.fixture.date.slice(0, 10),
+        opponent: isHome ? f.teams.away.name : f.teams.home.name,
+        opponentLogo: isHome ? f.teams.away.logo : f.teams.home.logo,
+        gf: my, ga: opp, result: res, home: isHome
+      });
+    }
+
+    const n = done.length || 1;
+    return {
+      games: done.length, wins: w, draws: d, losses: l,
+      avgFor: Math.round((gf / n) * 100) / 100,
+      avgAgainst: Math.round((ga / n) * 100) / 100,
+      bttsPct: Math.round((btts / n) * 100),
+      over25Pct: Math.round((o25 / n) * 100),
+      cleanSheetPct: Math.round((cs / n) * 100),
+      form, recent: recent.slice(0, 10)
+    };
+  });
+
+export const compareTeams = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { homeId: number; awayId: number }) => z.object({ homeId: z.number().int(), awayId: z.number().int() }).parse(d))
+  .handler(async ({ data }) => {
+    const [hRes, aRes, h2hRes] = await Promise.all([
+      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.homeId}&last=15`),
+      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.awayId}&last=15`),
+      apiSportsFetch<ApiSportsFixture>(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=10`),
+    ]);
+
+    const stats = (fixtures: ApiSportsFixture[], teamId: number) => {
+      const done = fixtures.filter(f => f.fixture?.status?.short === "FT");
+      let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
+      const form: string[] = [];
+      for (const f of done) {
+        const isHome = f.teams.home.id === teamId;
+        const my = (isHome ? f.goals.home : f.goals.away) ?? 0;
+        const opp = (isHome ? f.goals.away : f.goals.home) ?? 0;
+        gf += my; ga += opp;
+        if (my > 0 && opp > 0) btts++;
+        if (my + opp > 2.5) o25++;
+        if (opp === 0) cs++;
+        const res = my > opp ? "W" : my < opp ? "L" : "D";
+        if (form.length < 5) form.push(res);
+      }
+      const n = done.length || 1;
+      return {
+        games: done.length, wins: w, draws: d, losses: l,
+        avgFor: (gf / n).toFixed(2),
+        avgAgainst: (ga / n).toFixed(2),
+        bttsPct: Math.round((btts / n) * 100),
+        over25Pct: Math.round((o25 / n) * 100),
+        cleanSheetPct: Math.round((cs / n) * 100),
+        form, recent: [], hasData: done.length > 0
+      };
+    };
+
+    const home = stats(hRes.response ?? [], data.homeId);
+    const away = stats(aRes.response ?? [], data.awayId);
+    
+    // H2H stats
+    const h2hFixtures = h2hRes.response ?? [];
+    let h2hW = 0, h2hD = 0, h2hL = 0, h2hG = 0, h2hBtts = 0, h2hO25 = 0;
+    const h2hRecent = h2hFixtures.map(f => {
+      const isHome = f.teams.home.id === data.homeId;
+      const my = (isHome ? f.goals.home : f.goals.away) ?? 0;
+      const opp = (isHome ? f.goals.away : f.goals.home) ?? 0;
+      h2hG += (my + opp);
+      if (my > 0 && opp > 0) h2hBtts++;
+      if (my + opp > 2.5) h2hO25++;
+      if (my > opp) h2hW++; else if (my < opp) h2hL++; else h2hD++;
+      return {
+        date: f.fixture.date.slice(0, 10),
+        opponent: isHome ? f.teams.away.name : f.teams.home.name,
+        gf: my, ga: opp
+      };
+    });
+
+    const hn = h2hFixtures.length || 1;
+    const prediction = {
+      homeWinPct: 40, drawPct: 30, awayWinPct: 30,
+      expectedGoals: 2.5, over25Pct: 50, bttsPct: 50
+    };
+
+    return {
+      home, away,
+      h2h: {
+        games: h2hFixtures.length,
+        wins: h2hW, draws: h2hD, losses: h2hL,
+        avgFor: 0, avgAgainst: h2hG / hn,
+        bttsPct: Math.round((h2hBtts / hn) * 100),
+        over25Pct: Math.round((h2hO25 / hn) * 100),
+        recent: h2hRecent
+      },
+      prediction,
+      notice: h2hFixtures.length === 0 ? "Ainda não há histórico disponível para esses times agora." : null
+    };
+  });
+
 export const importFixtures = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { leagueId: number; season: number; leagueName?: string; country?: string; includeStats?: boolean }) =>
