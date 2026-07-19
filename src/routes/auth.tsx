@@ -58,7 +58,7 @@ function AuthPage() {
           {mode === "login" && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-left animate-in fade-in slide-in-from-top-1">
               <p className="font-semibold mb-1 text-primary">Acesso Demonstrativo:</p>
-              <p><span className="font-medium">Email:</span> admin@placarcerto.com</p>
+              <p><span className="font-medium">Email:</span> admin2@placarcerto.com</p>
               <p><span className="font-medium">Senha:</span> PlacarCerto_@2026_Secure</p>
             </div>
           )}
