@@ -11,7 +11,10 @@ function getSupabase() {
 }
 
 function planFromPrice(priceLookupKey: string | null | undefined): string {
-  if (priceLookupKey?.startsWith("premium")) return "premium";
+  if (!priceLookupKey) return "free";
+  if (priceLookupKey.startsWith("elite")) return "elite";
+  if (priceLookupKey.startsWith("pro")) return "pro";
+  if (priceLookupKey.startsWith("basic")) return "basic";
   return "free";
 }
 
