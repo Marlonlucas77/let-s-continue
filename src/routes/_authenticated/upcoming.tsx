@@ -90,7 +90,7 @@ function UpcomingPage() {
               to="/import" 
               className="text-xs rounded-md border border-border bg-input/50 px-3 py-1.5 text-foreground font-medium hover:bg-input"
             >
-              Monitorar novas ligas
+              eu quero colar a porra da chave da api para puxar os resultados ao vivo
             </Link>
           </div>
         </div>
