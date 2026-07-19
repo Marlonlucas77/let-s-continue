@@ -227,6 +227,7 @@ function FixtureCard({ f }: { f: any }) {
                 <StatChip label="Over 2.5" value={`${p!.over25Pct}%`} highlight={bestPick?.market === "Over/Under"} />
                 <StatChip label="Ambas marcam" value={`${p!.bttsPct}%`} highlight={bestPick?.market === "BTTS"} />
                 <StatChip label="Gols esperados" value={String(p!.expectedGoals)} />
+                <StatChip label="Confiança IA" value={`${p!.confidenceScore ?? 0}%`} highlight={ (p!.confidenceScore ?? 0) > 75 } />
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
