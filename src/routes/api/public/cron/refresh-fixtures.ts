@@ -9,11 +9,18 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
 
         // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas
         const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+        // Processa mais ligas por execução do que antes (5 → 12) — com
+        // 1.233+ ligas habilitadas possíveis (a opção "Habilitar todas as
+        // ligas" em Configurações liga literalmente tudo que a API-Sports
+        // tem), 5 por vez levaria dias pra cobrir o backlog uma vez só.
+        // Não aumentei mais que isso pra não arriscar estourar o tempo
+        // máximo de execução da função (cada liga espera o throttle
+        // compartilhado, ~2.2s por chamada à API).
         const { data: leagues, error } = await supabaseAdmin
           .from("tracked_leagues")
           .select("*")
           .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
-          .limit(5);
+          .limit(12);
 
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
