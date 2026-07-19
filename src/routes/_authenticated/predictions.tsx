@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
-import { TeamCombobox } from "@/components/TeamCombobox";
+import { TeamCombobox, isCustomTeam, type ComboTeam } from "@/components/TeamCombobox";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
@@ -17,30 +17,30 @@ export const Route = createFileRoute("/_authenticated/predictions")({
 function PredictionsPage() {
   const qc = useQueryClient();
   const { isPremium, remaining, canSavePrediction, monthCount } = useSubscription();
-  const [homeId, setHomeId] = useState("");
-  const [awayId, setAwayId] = useState("");
+  const [home, setHome] = useState<ComboTeam | null>(null);
+  const [away, setAway] = useState<ComboTeam | null>(null);
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
     queryFn: async () => (await supabase.from("teams").select("*").order("name")).data ?? [],
   });
 
-  // Só usado pra checar se os times já se enfrentaram (aviso), não mais
-  // pra calcular previsão — o modelo estatístico local foi removido daqui
-  // porque com pouco histórico ele gerava número sem sentido (ex: 100%
-  // de empate). A previsão agora vem só da IA generativa, abaixo.
+  // Só usado pra checar se os times já se enfrentaram (aviso) e pra dar
+  // sugestões rápidas — não é mais obrigatório escolher um time da lista.
+  // Você pode digitar qualquer nome; a IA não precisa que o time esteja
+  // cadastrado, só precisa do nome pra gerar a previsão.
   const { data: matches = [] } = useQuery({
     queryKey: ["matches-raw"],
     queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, match_date, home_goals, away_goals")).data ?? [],
   });
 
-  const home = teams.find((t) => t.id === homeId);
-  const away = teams.find((t) => t.id === awayId);
+  const homeIsLocal = !!home && !isCustomTeam(home);
+  const awayIsLocal = !!away && !isCustomTeam(away);
 
   const h2h = useMemo(() => {
-    if (!homeId || !awayId) return [];
-    return matches.filter((m) => (m.home_team_id === homeId && m.away_team_id === awayId) || (m.home_team_id === awayId && m.away_team_id === homeId));
-  }, [matches, homeId, awayId]);
+    if (!homeIsLocal || !awayIsLocal) return [];
+    return matches.filter((m) => (m.home_team_id === home!.id && m.away_team_id === away!.id) || (m.home_team_id === away!.id && m.away_team_id === home!.id));
+  }, [matches, home, away, homeIsLocal, awayIsLocal]);
 
   const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
   const neverPlayed = !!home && !!away && h2h.length === 0;
@@ -81,11 +81,12 @@ function PredictionsPage() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!aiMut.data?.prediction) return;
+      if (!aiMut.data?.prediction || !home || !away) return;
+      if (!homeIsLocal || !awayIsLocal) throw new Error("Só é possível salvar previsões com os dois times da sua lista importada.");
       if (!canSavePrediction) throw new Error("Limite grátis atingido. Assine para salvar mais.");
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from("predictions").insert({
-        user_id: user!.id, home_team_id: homeId, away_team_id: awayId,
+        user_id: user!.id, home_team_id: home.id, away_team_id: away.id,
         predicted_data: aiMut.data.prediction as any,
       });
       if (error) throw error;
@@ -98,14 +99,14 @@ function PredictionsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  useEffect(() => { aiMut.reset(); setWantsAnalysis(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [homeId, awayId]);
+  useEffect(() => { aiMut.reset(); setWantsAnalysis(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [home?.id, away?.id]);
 
   return (
     <div className="max-w-5xl">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold">Previsões</h1>
-          <p className="text-sm text-muted-foreground mt-1">Previsão gerada por IA — usa conhecimento real sobre os times, não depende do seu histórico importado.</p>
+          <p className="text-sm text-muted-foreground mt-1">Compare dois times quaisquer com IA — digite qualquer nome, não precisa estar importado.</p>
         </div>
         {isPremium ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-medium text-primary">
@@ -132,55 +133,50 @@ function PredictionsPage() {
       )}
 
 
-      {teams.length === 0 && (
-        <div className="mt-6 card-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground">Ainda não há times cadastrados. O cron popula os dados automaticamente das ligas monitoradas.</p>
-        </div>
-      )}
-
-      {teams.length > 0 && (
       <div className="card-surface p-5 mt-6">
-        <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>{teams.length} time(s) disponível(eis).</span>
-        </div>
+        {teams.length > 0 && (
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
+            <span>{teams.length} time(s) na sua lista importada — mas pode digitar qualquer time, mesmo fora dela.</span>
+          </div>
+        )}
 
-
-        <div className="mb-4">
-          <label className="text-sm font-medium">Filtrar por liga</label>
-          <select
-            value={leagueFilter}
-            onChange={(e) => setLeagueFilter(e.target.value)}
-            className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm"
-          >
-            <option value="">Todas as ligas</option>
-            {teamsByLeague.map(([league]) => <option key={league} value={league}>{league}</option>)}
-          </select>
-        </div>
+        {teams.length > 0 && (
+          <div className="mb-4">
+            <label className="text-sm font-medium">Filtrar sugestões por liga</label>
+            <select
+              value={leagueFilter}
+              onChange={(e) => setLeagueFilter(e.target.value)}
+              className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm"
+            >
+              <option value="">Todas as ligas</option>
+              {teamsByLeague.map(([league]) => <option key={league} value={league}>{league}</option>)}
+            </select>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="text-sm font-medium">Time mandante</label>
             <TeamCombobox
               teams={filteredTeams}
-              value={homeId}
-              onChange={setHomeId}
-              placeholder="Digite pra buscar..."
+              value={home}
+              onChange={setHome}
+              placeholder="Digite o nome do time..."
             />
           </div>
           <div>
             <label className="text-sm font-medium">Time visitante</label>
             <TeamCombobox
               teams={filteredTeams}
-              value={awayId}
-              onChange={setAwayId}
-              placeholder="Digite pra buscar..."
+              value={away}
+              onChange={setAway}
+              placeholder="Digite o nome do time..."
             />
           </div>
         </div>
       </div>
-      )}
 
-      {home && away && homeId !== awayId && !wantsAnalysis && (
+      {home && away && home.id !== away.id && !wantsAnalysis && (
         <div className="card-surface p-6 mt-6 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -336,10 +332,16 @@ function PredictionsPage() {
             )}
 
             {aiMut.data?.prediction && (
-              <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Limite grátis atingido"} className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-                {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
-              </button>
+              (!homeIsLocal || !awayIsLocal) ? (
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Salvar previsão pra acompanhar taxa de acerto só funciona com os dois times da sua lista importada (pelo menos um dos dois foi digitado livremente aqui).
+                </p>
+              ) : (
+                <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Limite grátis atingido"} className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+                  {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                  {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
+                </button>
+              )
             )}
           </div>
 

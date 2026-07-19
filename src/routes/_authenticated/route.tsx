@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CalendarClock, Users, Swords, History, LogOut, Crown, Shield, Trophy, UsersRound, Radio,
+  CalendarClock, Users, History, LogOut, Crown, Shield, Trophy, UsersRound, Radio,
   LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
@@ -31,7 +31,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/upcoming", label: "Jogos", icon: CalendarClock },
       { to: "/predictions", label: "Previsão IA", icon: Sparkles },
-      { to: "/h2h", label: "H2H", icon: Swords },
       { to: "/live", label: "Ao vivo", icon: Radio },
     ],
   },
