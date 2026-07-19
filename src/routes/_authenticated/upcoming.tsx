@@ -44,7 +44,7 @@ function UpcomingPage() {
       <div className="mb-6">
         <h1 className="font-display text-3xl font-bold">Próximos jogos</h1>
         <p className="text-sm text-muted-foreground">
-          para com isso
+          eu não quero que atualize texto descritivo de nada
         </p>
       </div>
 
