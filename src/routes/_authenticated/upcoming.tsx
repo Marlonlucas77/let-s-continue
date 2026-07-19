@@ -7,9 +7,12 @@ import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { getLocalPrediction } from "@/lib/predictions.functions";
 import type { TeamStats } from "@/lib/stats";
+import { useSubscription } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target, Zap, Flag, Square } from "lucide-react";
+import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target, Zap, Save } from "lucide-react";
 import { FixtureCardSkeleton } from "@/components/Skeletons";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
@@ -299,6 +302,27 @@ function FixtureCard({ f }: { f: any }) {
     ? { home: homePanelData, away: awayPanelData, h2h: analysis?.h2h ?? { games: 0 }, prediction: localPred.prediction }
     : analysis;
 
+  const { canSavePrediction } = useSubscription();
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      if (!hasLocal || !localPred.available) throw new Error("Previsão local indisponível para salvar.");
+      if (!canSavePrediction) throw new Error("Limite grátis de previsões salvas atingido. Assine para salvar mais.");
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("predictions").insert({
+        user_id: user!.id,
+        home_team_id: localPred.homeTeamId,
+        away_team_id: localPred.awayTeamId,
+        predicted_data: localPred.prediction as any,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Previsão salva no histórico");
+      queryClient.invalidateQueries({ queryKey: ["predictions-month"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const aiFn = useServerFn(getAiInsights);
   const aiMut = useMutation({
     mutationFn: async () => await aiFn({
@@ -379,11 +403,24 @@ function FixtureCard({ f }: { f: any }) {
           ) : (
 
             <>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                {hasLocal ? (
-                  <><Zap className="h-3 w-3 text-primary" /> Previsão instantânea · histórico local ({localPred.home.games + localPred.away.games} jogos)</>
-                ) : (
-                  <><Loader2 className="h-3 w-3" /> Análise ao vivo · API-Sports</>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  {hasLocal ? (
+                    <><Zap className="h-3 w-3 text-primary" /> Previsão instantânea · histórico local ({localPred.home.games + localPred.away.games} jogos)</>
+                  ) : (
+                    <><Loader2 className="h-3 w-3" /> Análise ao vivo · API-Sports</>
+                  )}
+                </div>
+                {hasLocal && (
+                  <button
+                    onClick={() => saveMut.mutate()}
+                    disabled={saveMut.isPending || saveMut.isSuccess}
+                    className="text-[11px] rounded-md border border-border px-2 py-1 hover:bg-input inline-flex items-center gap-1 disabled:opacity-50"
+                    title="Salva esta previsão no histórico para conferir a taxa de acertos depois"
+                  >
+                    {saveMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                    {saveMut.isSuccess ? "Salva" : "Salvar previsão"}
+                  </button>
                 )}
               </div>
 

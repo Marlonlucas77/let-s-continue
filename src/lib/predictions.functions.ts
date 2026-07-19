@@ -55,5 +55,7 @@ export const getLocalPrediction = createServerFn({ method: "POST" })
       prediction,
       home: homeStats,
       away: awayStats,
+      homeTeamId: homeTeam.id,
+      awayTeamId: awayTeam.id,
     };
   });

@@ -58,6 +58,19 @@ function HistoryPage() {
   const correct = checked.filter((p) => p.was_correct).length;
   const accuracy = checked.length ? Math.round((correct / checked.length) * 100) : 0;
 
+  // Acurácia por mercado — só considera previsões onde aquele mercado foi
+  // de fato avaliado (nem toda previsão tem dado de escanteios/cartões).
+  const marketAccuracy = (key: "over_under_correct" | "btts_correct" | "corners_correct" | "cards_correct") => {
+    const evaluated = checked.filter((p: any) => p[key] != null);
+    if (evaluated.length === 0) return null;
+    const hits = evaluated.filter((p: any) => p[key] === true).length;
+    return { pct: Math.round((hits / evaluated.length) * 100), total: evaluated.length };
+  };
+  const overUnderAcc = marketAccuracy("over_under_correct");
+  const bttsAcc = marketAccuracy("btts_correct");
+  const cornersAcc = marketAccuracy("corners_correct");
+  const cardsAcc = marketAccuracy("cards_correct");
+
   return (
     <div className="max-w-5xl">
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
@@ -75,13 +88,21 @@ function HistoryPage() {
             Verificar
           </button>
           <div className="card-surface px-4 py-3 text-right">
-            <div className="text-xs text-muted-foreground">Acurácia</div>
+            <div className="text-xs text-muted-foreground">Vencedor</div>
             <div className="font-display text-2xl font-bold text-primary">{accuracy}%</div>
             <div className="text-xs text-muted-foreground">{correct}/{checked.length} conferidas</div>
           </div>
         </div>
       </div>
 
+      {(overUnderAcc || bttsAcc || cornersAcc || cardsAcc) && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {overUnderAcc && <MarketAccuracyCard label="Over/Under 2.5" pct={overUnderAcc.pct} total={overUnderAcc.total} />}
+          {bttsAcc && <MarketAccuracyCard label="Ambas marcam" pct={bttsAcc.pct} total={bttsAcc.total} />}
+          {cornersAcc && <MarketAccuracyCard label="Escanteios" pct={cornersAcc.pct} total={cornersAcc.total} />}
+          {cardsAcc && <MarketAccuracyCard label="Cartões" pct={cardsAcc.pct} total={cardsAcc.total} />}
+        </div>
+      )}
 
       <div className="space-y-3">
         {preds.map((p: any) => {
@@ -114,7 +135,17 @@ function HistoryPage() {
                 <Chip label="Fora" value={`${d.awayWinPct}%`} />
                 <Chip label="Over 2.5" value={`${d.over25Pct}%`} />
                 <Chip label="BTTS" value={`${d.bttsPct}%`} />
+                {d.expectedCornersMin != null && <Chip label="Escanteios" value={`${d.expectedCornersMin}-${d.expectedCornersMax}`} />}
+                {d.expectedYellow != null && <Chip label="Cartões" value={String(d.expectedYellow)} />}
               </div>
+              {p.result_checked && (p.over_under_correct != null || p.btts_correct != null || p.corners_correct != null || p.cards_correct != null) && (
+                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                  {p.over_under_correct != null && <MarketBadge label="Over/Under" hit={p.over_under_correct} />}
+                  {p.btts_correct != null && <MarketBadge label="BTTS" hit={p.btts_correct} />}
+                  {p.corners_correct != null && <MarketBadge label="Escanteios" hit={p.corners_correct} />}
+                  {p.cards_correct != null && <MarketBadge label="Cartões" hit={p.cards_correct} />}
+                </div>
+              )}
             </div>
           );
         })}
@@ -126,4 +157,22 @@ function HistoryPage() {
 
 function Chip({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md bg-input border border-border px-2 py-1"><span className="text-muted-foreground">{label}:</span> <b>{value}</b></div>;
+}
+
+function MarketAccuracyCard({ label, pct, total }: { label: string; pct: number; total: number }) {
+  return (
+    <div className="card-surface px-3 py-2.5">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="font-display text-xl font-bold">{pct}%</div>
+      <div className="text-[11px] text-muted-foreground">{total} conferida(s)</div>
+    </div>
+  );
+}
+
+function MarketBadge({ label, hit }: { label: string; hit: boolean }) {
+  return (
+    <span className={`px-2 py-0.5 rounded-full ${hit ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
+      {label}: {hit ? "acertou" : "errou"}
+    </span>
+  );
 }

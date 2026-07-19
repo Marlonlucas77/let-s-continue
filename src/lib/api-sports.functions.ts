@@ -375,19 +375,57 @@ export const autoCheckPredictions = createServerFn({ method: "POST" })
         x.match_date >= predDate
       );
       if (!m) continue;
-      const d = p.predicted_data as { homeWinPct?: number; drawPct?: number; awayWinPct?: number };
+
+      const d = p.predicted_data as {
+        homeWinPct?: number; drawPct?: number; awayWinPct?: number;
+        over25Pct?: number; bttsPct?: number;
+        expectedCornersMin?: number; expectedCornersMax?: number; expectedYellow?: number;
+      };
+      const sameSide = m.home_team_id === p.home_team_id;
+      const actualHome = sameSide ? (m.home_goals ?? 0) : (m.away_goals ?? 0);
+      const actualAway = sameSide ? (m.away_goals ?? 0) : (m.home_goals ?? 0);
+      const actualTotalGoals = actualHome + actualAway;
+
+      // 1x2
       const picks = [
         { key: "home", pct: d.homeWinPct ?? 0 },
         { key: "draw", pct: d.drawPct ?? 0 },
         { key: "away", pct: d.awayWinPct ?? 0 },
       ].sort((a, b) => b.pct - a.pct);
-      const predicted = picks[0].key;
-      const sameSide = m.home_team_id === p.home_team_id;
-      const actualHome = sameSide ? (m.home_goals ?? 0) : (m.away_goals ?? 0);
-      const actualAway = sameSide ? (m.away_goals ?? 0) : (m.home_goals ?? 0);
-      const actual = actualHome > actualAway ? "home" : actualHome < actualAway ? "away" : "draw";
-      const wasCorrect = predicted === actual;
-      await supabase.from("predictions").update({ result_checked: true, was_correct: wasCorrect }).eq("id", p.id);
+      const predictedWinner = picks[0].key;
+      const actualWinner = actualHome > actualAway ? "home" : actualHome < actualAway ? "away" : "draw";
+      const wasCorrect = predictedWinner === actualWinner;
+
+      // Over/Under 2.5
+      const overUnderCorrect = d.over25Pct != null
+        ? (d.over25Pct >= 50) === (actualTotalGoals > 2.5)
+        : null;
+
+      // Ambas marcam (BTTS)
+      const bttsCorrect = d.bttsPct != null
+        ? (d.bttsPct >= 50) === (actualHome > 0 && actualAway > 0)
+        : null;
+
+      // Escanteios: acerta se o total real caiu dentro da faixa prevista
+      const actualCorners = (m.home_corners ?? 0) + (m.away_corners ?? 0);
+      const cornersCorrect = d.expectedCornersMin != null && d.expectedCornersMax != null && actualCorners > 0
+        ? actualCorners >= d.expectedCornersMin && actualCorners <= d.expectedCornersMax
+        : null;
+
+      // Cartões amarelos: tolerância de ±1 em relação ao previsto
+      const actualYellow = (m.home_yellow ?? 0) + (m.away_yellow ?? 0);
+      const cardsCorrect = d.expectedYellow != null && actualYellow > 0
+        ? Math.abs(actualYellow - d.expectedYellow) <= 1
+        : null;
+
+      await supabase.from("predictions").update({
+        result_checked: true,
+        was_correct: wasCorrect,
+        over_under_correct: overUnderCorrect,
+        btts_correct: bttsCorrect,
+        corners_correct: cornersCorrect,
+        cards_correct: cardsCorrect,
+      }).eq("id", p.id);
       checked++;
       if (wasCorrect) correct++;
     }
