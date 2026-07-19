@@ -221,6 +221,36 @@ export const trackLeague = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const trackAllLeagues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
+    const leagues = (json.response ?? []).map((r) => ({
+      user_id: userId,
+      league_id: r.league.id as number,
+      season: ((r.seasons ?? []).find((s: any) => s.current)?.year
+        ?? (r.seasons ?? [])[0]?.year
+        ?? new Date().getUTCFullYear()) as number,
+      league_name: r.league.name as string,
+      country: (r.country?.name as string) ?? null,
+      include_stats: false,
+    }));
+    if (leagues.length === 0) return { ok: true, count: 0 };
+    // Upsert em lotes para evitar payload gigante
+    const chunkSize = 200;
+    let inserted = 0;
+    for (let i = 0; i < leagues.length; i += chunkSize) {
+      const chunk = leagues.slice(i, i + chunkSize);
+      const { error } = await supabase
+        .from("tracked_leagues")
+        .upsert(chunk, { onConflict: "user_id,league_id,season" });
+      if (error) throw new Error(error.message);
+      inserted += chunk.length;
+    }
+    return { ok: true, count: inserted };
+  });
+
 export const untrackLeague = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))

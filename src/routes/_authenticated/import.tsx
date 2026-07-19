@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Search, Download, Loader2, Radio, Trash2, RefreshCw, Globe, CheckCircle2, XCircle } from "lucide-react";
 import {
-  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues, listAllLeagues,
+  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues, listAllLeagues, trackAllLeagues,
 } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
@@ -25,6 +25,16 @@ function ImportPage() {
   const untrackFn = useServerFn(untrackLeague);
   const listTracked = useServerFn(listTrackedLeagues);
   const listAll = useServerFn(listAllLeagues);
+  const trackAllFn = useServerFn(trackAllLeagues);
+
+  const trackAllMut = useMutation({
+    mutationFn: async () => trackAllFn({}),
+    onSuccess: (r: any) => {
+      toast.success(`${r.count} ligas habilitadas para monitoramento automático.`);
+      qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<League[]>([]);
 
@@ -150,6 +160,29 @@ function ImportPage() {
       )}
 
       <div className="card-surface p-4 mb-6">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-2">
+            <Radio className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-display font-semibold">Habilitar TODAS as ligas por padrão</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Marca todas as competições da temporada corrente (~1000+) como monitoradas. O cron diário passa a atualizá-las automaticamente. Não importa jogos agora — só liga o monitoramento.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => trackAllMut.mutate()}
+            disabled={trackAllMut.isPending}
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 text-primary px-4 py-2 text-sm font-medium disabled:opacity-50 shrink-0"
+          >
+            {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+            {trackAllMut.isPending ? "Habilitando..." : "Habilitar todas"}
+          </button>
+        </div>
+      </div>
+
+      <div className="card-surface p-4 mb-6">
+
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary shrink-0 mt-0.5" />
