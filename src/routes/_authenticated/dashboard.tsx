@@ -28,7 +28,12 @@ function Dashboard() {
   const { data } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
-      const [teams, trackedLeagues, allMatches, preds, aiGenerated, todayFixtures, favorites, weekFixtures] = await Promise.all([
+      // Antes buscava "hoje" e "semana" em duas chamadas separadas — como a
+      // semana já inclui hoje, isso dobrava à toa o número de chamadas à
+      // API externa (que agora tem um throttle conservador de propósito,
+      // então cada chamada a mais soma segundos reais de espera). Busca só
+      // a semana uma vez e filtra "hoje" a partir dela.
+      const [teams, trackedLeagues, allMatches, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
         supabase.from("teams").select("id", { count: "exact", head: true }),
         supabase.from("tracked_leagues").select("id", { count: "exact", head: true }),
         supabase
@@ -42,10 +47,10 @@ function Dashboard() {
         // depois (predictions) — antes essas duas coisas estavam confundidas
         // e o card sempre mostrava 0 pra quem gerava sem salvar.
         supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
-        listFixtures({ data: { days: 1 } }).catch(() => []),
         loadFavorites().catch(() => []),
-        listFixtures({ data: { days: 7 } }).catch(() => []),
+        listFixtures({ data: { days: 3 } }).catch(() => []),
       ]);
+      const todayFixtures = (weekFixtures ?? []).filter((m: any) => (m.date as string).slice(0, 10) === todayStr);
       const favTeamIds = new Set(
         (favorites ?? []).filter((f: any) => f.kind === "team").map((f: any) => f.ref_id),
       );
@@ -55,7 +60,7 @@ function Dashboard() {
       return {
         teamsCount: teams.count ?? 0,
         trackedLeaguesCount: trackedLeagues.count ?? 0,
-        todayFixtures: (todayFixtures ?? []) as any[],
+        todayFixtures: todayFixtures as any[],
         favFixtures: favFixtures as any[],
         allMatches: allMatches.data ?? [],
         preds: preds.data ?? [],
@@ -168,7 +173,7 @@ function Dashboard() {
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" /> Meus favoritos (7 dias)
+              <Star className="h-4 w-4 text-primary" /> Meus favoritos (3 dias)
             </h2>
             <Link to="/teams" className="text-xs text-primary hover:underline">Gerenciar</Link>
           </div>
