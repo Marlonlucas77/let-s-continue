@@ -55,6 +55,13 @@ function AuthPage() {
           <div className="mx-auto mb-3 flex justify-center"><Logo size={48} /></div>
           <h1 className="font-display text-2xl font-bold">Placar<span className="text-primary"> Certo</span></h1>
           <p className="text-sm text-muted-foreground">{mode === "login" ? "Entre para analisar seus jogos" : "Crie sua conta grátis"}</p>
+          {mode === "login" && (
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-left animate-in fade-in slide-in-from-top-1">
+              <p className="font-semibold mb-1 text-primary">Acesso Demonstrativo:</p>
+              <p><span className="font-medium">Email:</span> admin@placarcerto.com</p>
+              <p><span className="font-medium">Senha:</span> PlacarCerto_@2026_Secure</p>
+            </div>
+          )}
         </div>
 
         <form onSubmit={submit} className="card-surface p-6 space-y-4">
