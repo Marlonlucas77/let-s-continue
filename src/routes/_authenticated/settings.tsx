@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles } from "lucide-react";
+import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
 import {
   listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague,
 } from "@/lib/api-sports.functions";
@@ -71,6 +71,20 @@ function SettingsPage() {
     mutationFn: async () => trackAllFn({}),
     onSuccess: (r: any) => {
       toast.success(`${r.count} ligas habilitadas.`);
+      qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const cronMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/public/cron/refresh-fixtures", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Erro ${res.status}`);
+      return json as { processed: number; results: any[] };
+    },
+    onSuccess: (r) => {
+      toast.success(`${r.processed} liga(s) processada(s) agora.`);
       qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
     },
     onError: (e: any) => toast.error(e.message),
@@ -145,6 +159,40 @@ function SettingsPage() {
           {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
           {trackAllMut.isPending ? "Habilitando..." : "Habilitar principais"}
         </button>
+      </div>
+
+      <div className="card-surface p-4 mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+          <div>
+            <h2 className="font-display font-semibold">Forçar importação agora</h2>
+            <p className="text-xs text-muted-foreground">O cron roda sozinho de tempos em tempos — clique aqui pra rodar na hora, sem esperar, e ver o resultado de cada liga processada.</p>
+          </div>
+          <button
+            onClick={() => cronMut.mutate()}
+            disabled={cronMut.isPending}
+            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-input disabled:opacity-50 shrink-0"
+          >
+            {cronMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {cronMut.isPending ? "Rodando..." : "Rodar agora"}
+          </button>
+        </div>
+        {cronMut.error && <p className="text-xs text-destructive">{(cronMut.error as Error).message}</p>}
+        {cronMut.data && (
+          <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+            <p className="text-xs text-muted-foreground mb-1">{cronMut.data.processed} liga(s) processada(s) nessa execução:</p>
+            {cronMut.data.results.map((r: any, i: number) => (
+              <div key={i} className="flex items-center justify-between text-xs rounded-md bg-input/40 px-2 py-1.5">
+                <span className="truncate">{translateLeague(r.league)}</span>
+                <span className={r.error ? "text-destructive" : "text-primary"}>
+                  {r.error ? r.error : `${r.imported ?? 0} jogo(s), ${r.teamsCreated ?? 0} time(s)`}
+                </span>
+              </div>
+            ))}
+            {cronMut.data.processed === 0 && (
+              <p className="text-xs text-muted-foreground">Nenhuma liga estava elegível pra rodar agora (todas rodaram nas últimas 12h).</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card-surface p-4">
