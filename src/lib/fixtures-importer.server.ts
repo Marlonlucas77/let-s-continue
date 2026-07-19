@@ -285,15 +285,25 @@ export async function importFixturesFor({
   const fixtures: any[] = [...(jsonFT.response ?? []), ...(jsonNS.response ?? [])];
   if (fixtures.length === 0) return { imported: 0, teamsCreated: 0, skipped: 0, statsFetched: 0 };
 
-  const teamMap = new Map<number, { name: string; logo: string }>();
+  const teamMap = new Map<number, { name: string; logo: string; leagueName: string | null; country: string | null }>();
   for (const f of fixtures) {
-    teamMap.set(f.teams.home.id, { name: f.teams.home.name, logo: f.teams.home.logo });
-    teamMap.set(f.teams.away.id, { name: f.teams.away.name, logo: f.teams.away.logo });
+    // Usa a liga/país de cada jogo específico (vindo direto da API-Sports,
+    // f.league), não o parâmetro genérico passado pra função inteira — se
+    // o league_id salvo em "ligas monitoradas" estiver levemente errado
+    // (aconteceu no import em massa antigo), isso evitava que TODO time
+    // daquela chamada herdasse um rótulo de liga errado.
+    const fixtureLeague = (f.league?.name as string) ?? leagueName ?? null;
+    const fixtureCountry = (f.league?.country as string) ?? country ?? null;
+    teamMap.set(f.teams.home.id, { name: f.teams.home.name, logo: f.teams.home.logo, leagueName: fixtureLeague, country: fixtureCountry });
+    teamMap.set(f.teams.away.id, { name: f.teams.away.name, logo: f.teams.away.logo, leagueName: fixtureLeague, country: fixtureCountry });
   }
 
-  const { data: existingTeams } = await supabase.from("teams").select("id, name, api_id").eq("user_id", userId);
+  const { data: existingTeams } = await supabase.from("teams").select("id, name, api_id, league, country").eq("user_id", userId);
   const byName = new Map<string, string>((existingTeams ?? []).map((t: any) => [t.name.toLowerCase() as string, t.id as string]));
   const byApiId = new Map<number, string>((existingTeams ?? []).filter((t: any) => t.api_id != null).map((t: any) => [t.api_id as number, t.id as string]));
+  const existingLeagueByName = new Map<string, { league: string | null; country: string | null }>(
+    (existingTeams ?? []).map((t: any) => [t.name.toLowerCase() as string, { league: t.league, country: t.country }]),
+  );
 
   // Times criados antes desta correção não têm api_id salvo — preenche agora
   // para que a página de jogos consiga casar o histórico local com a API.
@@ -311,16 +321,27 @@ export async function importFixturesFor({
 
   let teamsCreated = 0;
   const toInsert: { user_id: string; name: string; logo_url: string; league: string | null; country: string | null; api_id: number }[] = [];
+  const toFixLabel: { id: string; league: string | null; country: string | null }[] = [];
   for (const [apiId, t] of teamMap) {
     if (!byName.has(t.name.toLowerCase())) {
       toInsert.push({
         user_id: userId,
         name: t.name,
         logo_url: t.logo,
-        league: leagueName ?? null,
-        country: country ?? null,
+        league: t.leagueName,
+        country: t.country,
         api_id: apiId,
       });
+    } else {
+      // Time já existe: se o rótulo salvo estiver vazio ou diferente do que
+      // essa importação encontrou de verdade, corrige — assim rótulos
+      // errados (ex: de quando 1.233 ligas foram habilitadas de uma vez)
+      // se autocorrigem conforme os times voltam a ser importados.
+      const localId = byName.get(t.name.toLowerCase())!;
+      const current = existingLeagueByName.get(t.name.toLowerCase());
+      if (t.leagueName && current && current.league !== t.leagueName) {
+        toFixLabel.push({ id: localId, league: t.leagueName, country: t.country });
+      }
     }
   }
   if (toInsert.length > 0) {
@@ -331,6 +352,9 @@ export async function importFixturesFor({
       if (t.api_id != null) byApiId.set(t.api_id as number, t.id as string);
     }
     teamsCreated = created?.length ?? 0;
+  }
+  if (toFixLabel.length > 0) {
+    await Promise.all(toFixLabel.map((f) => supabase.from("teams").update({ league: f.league, country: f.country }).eq("id", f.id)));
   }
 
   const { data: existing } = await supabase
