@@ -24,10 +24,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const listFixtures = useServerFn(listUpcomingFixtures);
+  const loadFavorites = useServerFn(listFavorites);
   const { data } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
-      const [teams, trackedLeagues, allMatches, preds, todayFixtures] = await Promise.all([
+      const [teams, trackedLeagues, allMatches, preds, todayFixtures, favorites, weekFixtures] = await Promise.all([
         supabase.from("teams").select("id", { count: "exact", head: true }),
         supabase.from("tracked_leagues").select("id", { count: "exact", head: true }),
         supabase
@@ -37,11 +38,20 @@ function Dashboard() {
           .limit(20),
         supabase.from("predictions").select("id, result_checked, was_correct"),
         listFixtures({ data: { days: 1 } }).catch(() => []),
+        loadFavorites().catch(() => []),
+        listFixtures({ data: { days: 7 } }).catch(() => []),
       ]);
+      const favTeamIds = new Set(
+        (favorites ?? []).filter((f: any) => f.kind === "team").map((f: any) => f.ref_id),
+      );
+      const favFixtures = (weekFixtures ?? []).filter(
+        (m: any) => favTeamIds.has(m.home.id) || favTeamIds.has(m.away.id),
+      );
       return {
         teamsCount: teams.count ?? 0,
         trackedLeaguesCount: trackedLeagues.count ?? 0,
         todayFixtures: (todayFixtures ?? []) as any[],
+        favFixtures: favFixtures as any[],
         allMatches: allMatches.data ?? [],
         preds: preds.data ?? [],
       };
