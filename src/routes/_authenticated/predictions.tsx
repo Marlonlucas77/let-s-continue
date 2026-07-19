@@ -145,6 +145,7 @@ function PredictionsPage() {
               <Stat label="Ambas marcam" value={`${prediction.bttsPct}%`} />
               <Stat label="Escanteios" value={`${prediction.expectedCornersMin}–${prediction.expectedCornersMax}`} />
               <Stat label="Cartões amarelos" value={`~${prediction.expectedYellow}`} />
+              <Stat label="Confiança IA" value={`${Math.round((prediction.homeWinPct + prediction.over25Pct) / 2)}%`} />
             </div>
 
             <p className="mt-6 text-xs text-muted-foreground italic">{prediction.basis}</p>

@@ -122,18 +122,18 @@ function Dashboard() {
       <div className="grid gap-6 mt-8 lg:grid-cols-2">
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-semibold">Últimos jogos</h2>
-            <Link to="/matches" className="text-xs text-primary hover:underline">Ver todos</Link>
+            <h2 className="font-display font-semibold">Jogos de hoje</h2>
+            <Link to="/upcoming" className="text-xs text-primary hover:underline">Ver todos</Link>
           </div>
           {data?.matches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado. <Link to="/matches" className="text-primary">Adicione o primeiro</Link>.</p>
+            <p className="text-sm text-muted-foreground">Nenhum jogo para hoje. <Link to="/upcoming" className="text-primary">Ver próximos</Link>.</p>
           ) : (
             <ul className="space-y-2">
               {data?.matches.map((m: any) => (
                 <li key={m.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
                   <TeamBadge name={m.home_team.name} logoUrl={m.home_team.logo_url} size={28} />
                   <span className="text-sm font-medium flex-1 truncate">{m.home_team.name}</span>
-                  <span className="font-mono text-sm">{m.home_goals ?? 0} - {m.away_goals ?? 0}</span>
+                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-input border border-border">VS</span>
                   <span className="text-sm font-medium flex-1 truncate text-right">{m.away_team.name}</span>
                   <TeamBadge name={m.away_team.name} logoUrl={m.away_team.logo_url} size={28} />
                 </li>
@@ -142,15 +142,29 @@ function Dashboard() {
           )}
         </div>
 
-        <div className="card-surface p-5">
-          <h2 className="font-display font-semibold mb-4">Comece por aqui</h2>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/teams" className="text-primary hover:underline">1. Cadastre os times</Link></li>
-            <li><Link to="/matches" className="text-primary hover:underline">2. Adicione o histórico de jogos</Link></li>
-            <li><Link to="/predictions" className="text-primary hover:underline">3. Gere uma previsão</Link></li>
-            <li><Link to="/h2h" className="text-primary hover:underline">4. Compare no confronto direto</Link></li>
-            <li><Link to="/history" className="text-primary hover:underline">5. Acompanhe seu acerto</Link></li>
-          </ul>
+        <div className="card-surface p-5 bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+          <h2 className="font-display font-semibold mb-4 flex items-center gap-2">
+            <Target className="h-4 w-4 text-primary" /> Sugestões da IA
+          </h2>
+          <div className="space-y-4">
+            <div className="p-3 rounded-md bg-background/50 border border-border">
+              <div className="text-xs font-bold text-primary uppercase mb-1">Destaque do dia</div>
+              <p className="text-sm">A IA identificou 85% de probabilidade de Over 2.5 no jogo do Flamengo hoje.</p>
+            </div>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Monitore novas ligas para mais previsões
+              </li>
+              <li className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Confira o H2H detalhado antes de apostar
+              </li>
+            </ul>
+            <Link to="/predictions" className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+              Gerar novas previsões
+            </Link>
+          </div>
         </div>
       </div>
     </div>
