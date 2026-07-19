@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 });
 
 function UpcomingPage() {
-  // como assim importar jos jogos?
+  // sim
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
