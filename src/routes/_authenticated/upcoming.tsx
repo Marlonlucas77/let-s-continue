@@ -55,7 +55,7 @@ function UpcomingPage() {
       <div className="mb-6">
         <h1 className="font-display text-3xl font-bold">Próximos jogos</h1>
         <p className="text-sm text-muted-foreground">
-          Acompanhe os próximos jogos das suas ligas monitoradas com estatísticas e análises da IA.
+          posso colocar minha chave de api?
         </p>
       </div>
 
