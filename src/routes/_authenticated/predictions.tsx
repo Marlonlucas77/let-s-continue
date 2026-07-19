@@ -5,9 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
-import { generatePrediction, computeTeamStats } from "@/lib/stats";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
-import { Sparkles, Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
+import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
 export const Route = createFileRoute("/_authenticated/predictions")({
@@ -25,15 +24,14 @@ function PredictionsPage() {
     queryFn: async () => (await supabase.from("teams").select("*").order("name")).data ?? [],
   });
 
+  // Só usado pra checar se os times já se enfrentaram (aviso), não mais
+  // pra calcular previsão — o modelo estatístico local foi removido daqui
+  // porque com pouco histórico ele gerava número sem sentido (ex: 100%
+  // de empate). A previsão agora vem só da IA generativa, abaixo.
   const { data: matches = [] } = useQuery({
     queryKey: ["matches-raw"],
-    queryFn: async () => (await supabase.from("matches").select("*")).data ?? [],
+    queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, match_date, home_goals, away_goals")).data ?? [],
   });
-
-  const rawPrediction = useMemo(() => {
-    if (!homeId || !awayId || homeId === awayId) return null;
-    return generatePrediction(homeId, awayId, matches);
-  }, [homeId, awayId, matches]);
 
   const home = teams.find((t) => t.id === homeId);
   const away = teams.find((t) => t.id === awayId);
@@ -43,23 +41,8 @@ function PredictionsPage() {
     return matches.filter((m) => (m.home_team_id === homeId && m.away_team_id === awayId) || (m.home_team_id === awayId && m.away_team_id === homeId));
   }, [matches, homeId, awayId]);
 
-  const homeStats = homeId ? computeTeamStats(homeId, matches, "home") : null;
-  const awayStats = awayId ? computeTeamStats(awayId, matches, "away") : null;
-
   const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
   const neverPlayed = !!home && !!away && h2h.length === 0;
-
-  // Times que nunca se enfrentaram e são de competições diferentes não têm
-  // como ser comparados com confiança real — o modelo não tem como saber
-  // se uma liga é mais forte que a outra. Penaliza a confiança em vez de
-  // deixar ela parecer tão alta quanto a de um confronto normal.
-  const prediction = useMemo(() => {
-    if (!rawPrediction) return null;
-    if (neverPlayed && differentCompetition) {
-      return { ...rawPrediction, confidenceScore: Math.round(rawPrediction.confidenceScore * 0.4) };
-    }
-    return rawPrediction;
-  }, [rawPrediction, neverPlayed, differentCompetition]);
 
   const teamsByLeague = useMemo(() => {
     const groups = new Map<string, typeof teams>();
@@ -73,14 +56,30 @@ function PredictionsPage() {
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
+  const aiPredictFn = useServerFn(getAiFixturePrediction);
+  const aiMut = useMutation({
+    mutationFn: async () => {
+      if (!home || !away) throw new Error("Selecione os dois times primeiro.");
+      return aiPredictFn({
+        data: {
+          homeName: home.name,
+          awayName: away.name,
+          homeLeague: home.league ?? home.country,
+          awayLeague: away.league ?? away.country,
+        },
+      });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const saveMut = useMutation({
     mutationFn: async () => {
-      if (!prediction) return;
+      if (!aiMut.data?.prediction) return;
       if (!canSavePrediction) throw new Error("Limite grátis atingido. Assine para salvar mais.");
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from("predictions").insert({
         user_id: user!.id, home_team_id: homeId, away_team_id: awayId,
-        predicted_data: prediction as any,
+        predicted_data: aiMut.data.prediction as any,
       });
       if (error) throw error;
     },
@@ -92,23 +91,6 @@ function PredictionsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const aiPredictFn = useServerFn(getAiFixturePrediction);
-  const aiMut = useMutation({
-    mutationFn: async () => {
-      if (!home || !away) throw new Error("Selecione os dois times primeiro.");
-      return aiPredictFn({
-        data: {
-          homeName: home.name,
-          awayName: away.name,
-          homeLeague: home.league ?? home.country,
-          awayLeague: away.league ?? away.country,
-          statModel: rawPrediction ?? undefined,
-        },
-      });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
   useEffect(() => { aiMut.reset(); setWantsAnalysis(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [homeId, awayId]);
 
   return (
@@ -116,7 +98,7 @@ function PredictionsPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold">Previsões</h1>
-          <p className="text-sm text-muted-foreground mt-1">Modelo estatístico (Poisson) baseado no seu histórico importado. Para análise com IA generativa, use a tela Jogos.</p>
+          <p className="text-sm text-muted-foreground mt-1">Previsão gerada por IA — usa conhecimento real sobre os times, não depende do seu histórico importado.</p>
         </div>
         {isPremium ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-medium text-primary">
@@ -218,53 +200,18 @@ function PredictionsPage() {
         </div>
       )}
 
-      {wantsAnalysis && prediction && home && away && (
+      {wantsAnalysis && (home && away) && (
+        <div className="flex items-center gap-3 mt-6">
+          <TeamBadge name={home.name} logoUrl={home.logo_url} size={40} />
+          <div className="font-semibold">{home.name}</div>
+          <span className="text-xs text-muted-foreground">vs</span>
+          <div className="font-semibold">{away.name}</div>
+          <TeamBadge name={away.name} logoUrl={away.logo_url} size={40} />
+        </div>
+      )}
+
+      {wantsAnalysis && home && away && (
         <>
-          <div className="card-surface p-6 mt-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <TeamBadge name={home.name} logoUrl={home.logo_url} size={48} />
-                <div>
-                  <div className="font-semibold">{home.name}</div>
-                  <div className="text-xs text-muted-foreground">Mandante</div>
-                </div>
-              </div>
-              <Sparkles className="h-5 w-5 text-primary" />
-              <div className="flex items-center gap-3 text-right">
-                <div>
-                  <div className="font-semibold">{away.name}</div>
-                  <div className="text-xs text-muted-foreground">Visitante</div>
-                </div>
-                <TeamBadge name={away.name} logoUrl={away.logo_url} size={48} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-2">
-              <ProbCard label="Vitória casa" value={prediction.homeWinPct} color="var(--color-primary)" muted={prediction.confidenceScore < 50} />
-              <ProbCard label="Empate" value={prediction.drawPct} color="var(--color-muted-foreground)" muted={prediction.confidenceScore < 50} />
-              <ProbCard label="Vitória fora" value={prediction.awayWinPct} color="var(--color-accent)" muted={prediction.confidenceScore < 50} />
-            </div>
-            {prediction.confidenceScore < 50 && (
-              <p className="text-xs text-amber-400 mb-4">Confiança do modelo baixa ({prediction.confidenceScore}%) — trate esses números como uma estimativa grosseira, não uma previsão forte.</p>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Gols esperados" value={prediction.expectedGoals.toString()} />
-              <Stat label="Over 2.5" value={`${prediction.over25Pct}%`} />
-              <Stat label="Ambas marcam" value={`${prediction.bttsPct}%`} />
-              <Stat label="Escanteios" value={`${prediction.expectedCornersMin}–${prediction.expectedCornersMax}`} />
-              <Stat label="Cartões amarelos" value={`~${prediction.expectedYellow}`} />
-              <Stat label="Confiança do modelo" value={`${prediction.confidenceScore}%`} />
-            </div>
-
-            <p className="mt-6 text-xs text-muted-foreground italic">{prediction.basis}</p>
-
-            <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Limite grátis atingido"} className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-              {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-              {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
-            </button>
-          </div>
-
           <div className="rounded-lg border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 mt-6">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="text-sm font-semibold flex items-center gap-1.5">
@@ -372,19 +319,21 @@ function PredictionsPage() {
                 )}
               </div>
             )}
-          </div>
 
-          <div className="grid gap-4 mt-6 md:grid-cols-2">
-            {homeStats && <TeamStatsCard title={`${home.name} (em casa)`} stats={homeStats} />}
-            {awayStats && <TeamStatsCard title={`${away.name} (fora)`} stats={awayStats} />}
+            {aiMut.data?.prediction && (
+              <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Limite grátis atingido"} className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+                {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
+              </button>
+            )}
           </div>
 
           {h2h.length > 0 && (
             <div className="card-surface p-5 mt-6">
-              <h3 className="font-display font-semibold mb-3">Confronto direto ({h2h.length})</h3>
+              <h3 className="font-display font-semibold mb-3">Confronto direto no seu histórico ({h2h.length})</h3>
               <ul className="space-y-1 text-sm">
-                {h2h.slice(0, 5).map((m) => (
-                  <li key={m.id} className="flex justify-between py-1">
+                {h2h.slice(0, 5).map((m: any, i: number) => (
+                  <li key={i} className="flex justify-between py-1">
                     <span className="text-muted-foreground">{m.match_date}</span>
                     <span className="font-mono">{m.home_goals} - {m.away_goals}</span>
                   </li>
@@ -419,28 +368,4 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TeamStatsCard({ title, stats }: { title: string; stats: ReturnType<typeof computeTeamStats> }) {
-  return (
-    <div className="card-surface p-5">
-      <h3 className="font-display font-semibold mb-3">{title}</h3>
-      {stats.games === 0 ? <p className="text-sm text-muted-foreground">Sem histórico</p> : (
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div><span className="text-muted-foreground">Jogos:</span> <b>{stats.games}</b></div>
-          <div><span className="text-muted-foreground">V-E-D:</span> <b>{stats.wins}-{stats.draws}-{stats.losses}</b></div>
-          <div><span className="text-muted-foreground">Média gols:</span> <b>{stats.avgGoalsFor.toFixed(2)}</b></div>
-          <div><span className="text-muted-foreground">Média sofr.:</span> <b>{stats.avgGoalsAgainst.toFixed(2)}</b></div>
-          <div><span className="text-muted-foreground">BTTS:</span> <b>{stats.bttsPct.toFixed(0)}%</b></div>
-          <div><span className="text-muted-foreground">Over 2.5:</span> <b>{stats.over25Pct.toFixed(0)}%</b></div>
-          <div><span className="text-muted-foreground">Clean Sheets:</span> <b>{stats.csPct.toFixed(0)}%</b></div>
-          <div><span className="text-muted-foreground">Média Cartões:</span> <b>{stats.avgYellow.toFixed(1)}</b></div>
-          <div className="col-span-2 flex gap-1 mt-2">
-            <span className="text-muted-foreground text-xs">Forma:</span>
-            {stats.form.slice(0, 5).map((r, i) => (
-              <span key={i} className={`h-5 w-5 rounded text-[10px] font-bold grid place-items-center ${r === "W" ? "bg-primary text-primary-foreground" : r === "L" ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground"}`}>{r}</span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+
