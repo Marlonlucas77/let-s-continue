@@ -48,17 +48,25 @@ function LeaderboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {data.map((row, i) => (
-                <tr key={row.user_id}>
-                  <td className="p-3 font-mono">
-                    {i < 3 ? <Medal className={`inline h-4 w-4 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : "text-amber-700"}`} /> : i + 1}
-                  </td>
-                  <td className="p-3">{row.display_name}</td>
-                  <td className="p-3 text-right font-mono font-bold text-primary">{row.correct}</td>
-                  <td className="p-3 text-right font-mono text-muted-foreground">{row.total}</td>
-                  <td className="p-3 text-right font-mono">{row.accuracy ?? 0}%</td>
-                </tr>
-              ))}
+              {data.map((row, i) => {
+                const acc = Number(row.accuracy ?? 0);
+                const badge = row.total >= 10
+                  ? acc >= 70 ? "🏆" : acc >= 55 ? "🥈" : acc >= 40 ? "🥉" : ""
+                  : "";
+                return (
+                  <tr key={row.user_id}>
+                    <td className="p-3 font-mono">
+                      {i < 3 ? <Medal className={`inline h-4 w-4 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : "text-amber-700"}`} /> : i + 1}
+                    </td>
+                    <td className="p-3">
+                      <span className="mr-1">{badge}</span>{row.display_name}
+                    </td>
+                    <td className="p-3 text-right font-mono font-bold text-primary">{row.correct}</td>
+                    <td className="p-3 text-right font-mono text-muted-foreground">{row.total}</td>
+                    <td className="p-3 text-right font-mono">{acc.toFixed(1)}%</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
