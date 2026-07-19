@@ -227,6 +227,11 @@ export const trackAllLeagues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { getUserPlan } = await import("@/lib/plan-limits.server");
+    const { plan, limits } = await getUserPlan(supabase, userId);
+    if (limits.leagues !== Infinity) {
+      throw new Error(`Plano ${plan.toUpperCase()} permite apenas ${limits.leagues} liga(s). Faça upgrade para Elite em /pricing para habilitar todas.`);
+    }
     const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
     const leagues = (json.response ?? []).map((r) => ({
       user_id: userId,
