@@ -32,6 +32,21 @@ export type Database = {
         }
         Relationships: []
       }
+      api_sports_rate_limit: {
+        Row: {
+          id: number
+          last_dispatch_at: string
+        }
+        Insert: {
+          id?: number
+          last_dispatch_at?: string
+        }
+        Update: {
+          id?: number
+          last_dispatch_at?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
