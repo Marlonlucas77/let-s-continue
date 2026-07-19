@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { generatePrediction, computeTeamStats } from "@/lib/stats";
-import { Sparkles, Save, Crown, Lock, AlertTriangle } from "lucide-react";
+import { getAiTeamPrediction } from "@/lib/predictions.functions";
+import { Sparkles, Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
 export const Route = createFileRoute("/_authenticated/predictions")({
@@ -87,6 +89,25 @@ function PredictionsPage() {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const aiPredictFn = useServerFn(getAiTeamPrediction);
+  const aiMut = useMutation({
+    mutationFn: async () => {
+      if (!home || !away) throw new Error("Selecione os dois times primeiro.");
+      return aiPredictFn({
+        data: {
+          homeName: home.name,
+          awayName: away.name,
+          homeLeague: home.league ?? home.country,
+          awayLeague: away.league ?? away.country,
+          statModel: rawPrediction ?? undefined,
+        },
+      });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  useEffect(() => { aiMut.reset(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [homeId, awayId]);
 
   return (
     <div className="max-w-5xl">
@@ -218,6 +239,91 @@ function PredictionsPage() {
               {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
               {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
             </button>
+          </div>
+
+          <div className="rounded-lg border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 mt-6">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="text-sm font-semibold flex items-center gap-1.5">
+                <Wand2 className="h-4 w-4 text-primary" />
+                Palpite da IA generativa
+                <span className="text-[10px] uppercase tracking-wider text-primary/70 ml-1">conhecimento real dos times</span>
+              </div>
+              {!aiMut.data && (
+                <button
+                  onClick={() => aiMut.mutate()}
+                  disabled={aiMut.isPending}
+                  className="text-xs rounded-md bg-primary hover:bg-primary/90 px-3 py-1.5 text-primary-foreground font-medium disabled:opacity-50 inline-flex items-center gap-1"
+                >
+                  {aiMut.isPending ? <><Loader2 className="h-3 w-3 animate-spin" /> Consultando IA...</> : <>Gerar previsão com IA</>}
+                </button>
+              )}
+            </div>
+
+            {!aiMut.data && !aiMut.isPending && (
+              <p className="text-xs text-muted-foreground">
+                Diferente do modelo acima (que só enxerga o seu histórico importado), a IA usa conhecimento real sobre a força dos times, elenco e competição — útil quando os times são de níveis muito diferentes ou nunca se enfrentaram.
+              </p>
+            )}
+
+            {aiMut.data?.prediction && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-4 py-2">
+                  <div className="text-right flex-1 min-w-0">
+                    <div className="text-xs text-muted-foreground truncate">{home.name}</div>
+                    <div className="font-display text-4xl font-bold">{aiMut.data.prediction.predictedScore?.home ?? "-"}</div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">×</div>
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="text-xs text-muted-foreground truncate">{away.name}</div>
+                    <div className="font-display text-4xl font-bold">{aiMut.data.prediction.predictedScore?.away ?? "-"}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <ProbCard label="Vitória casa" value={aiMut.data.prediction.homeWinPct ?? 0} color="var(--color-primary)" />
+                  <ProbCard label="Empate" value={aiMut.data.prediction.drawPct ?? 0} color="var(--color-muted-foreground)" />
+                  <ProbCard label="Vitória fora" value={aiMut.data.prediction.awayWinPct ?? 0} color="var(--color-accent)" />
+                </div>
+
+                <div className="flex items-center justify-center gap-2 text-xs">
+                  <span className="rounded-full bg-primary/20 text-primary px-2 py-0.5 font-medium">
+                    Confiança {aiMut.data.prediction.confidence ?? 0}%
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${
+                    aiMut.data.prediction.risk === "baixo" ? "bg-green-500/20 text-green-400" :
+                    aiMut.data.prediction.risk === "alto" ? "bg-red-500/20 text-red-400" :
+                    "bg-amber-500/20 text-amber-400"
+                  }`}>
+                    Risco {aiMut.data.prediction.risk ?? "medio"}
+                  </span>
+                </div>
+
+                {aiMut.data.prediction.keyInsight && (
+                  <p className="text-sm italic text-center text-foreground/90 border-y border-primary/20 py-2">
+                    "{aiMut.data.prediction.keyInsight}"
+                  </p>
+                )}
+
+                {Array.isArray(aiMut.data.prediction.topPicks) && aiMut.data.prediction.topPicks.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      <Target className="h-3 w-3" /> Melhores palpites
+                    </div>
+                    {aiMut.data.prediction.topPicks.slice(0, 3).map((pick: any, i: number) => (
+                      <div key={i} className="flex items-start gap-2 rounded-md bg-background/60 border border-border p-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">
+                            <span className="text-muted-foreground">{pick.market}:</span> {pick.pick}
+                          </div>
+                          {pick.reason && <div className="text-[11px] text-muted-foreground mt-0.5">{pick.reason}</div>}
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-primary shrink-0">{pick.confidence ?? 0}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 mt-6 md:grid-cols-2">
