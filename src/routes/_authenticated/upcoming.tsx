@@ -102,13 +102,8 @@ function UpcomingPage() {
           Todos os jogos dos próximos dias com filtros por competição, país e time. Clique num jogo para ver a previsão da IA.
         </p>
         {teamsCount === 0 && (
-          <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs flex items-center justify-between gap-3 flex-wrap">
-            <span className="text-muted-foreground">
-              Você ainda não importou nenhum time. Sem histórico, a previsão fica mais limitada (sem escanteios/cartões).
-            </span>
-            <Link to="/import" className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-primary-foreground font-medium hover:opacity-90">
-              Importar dados
-            </Link>
+          <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Ainda não há times no seu histórico. A previsão pode ficar mais limitada até o cron popular os dados.
           </div>
         )}
       </div>
