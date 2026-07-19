@@ -256,15 +256,15 @@ function FixtureCard({ f }: { f: any }) {
 
   const prefetch = () => {
     if (!homeApiId || !awayApiId) return;
+    // Só pré-carrega a previsão local (consulta ao próprio banco, sem custo
+    // de cota externa). O prefetch de odds foi removido daqui: com 300+
+    // jogos na lista, passar o mouse por cima de vários cards disparava
+    // dezenas de chamadas à API externa sem o usuário nem clicar em nada,
+    // o que ajudava a estourar o limite de requisições à toa.
     queryClient.prefetchQuery({
       queryKey: ["local-prediction", homeApiId, awayApiId],
       queryFn: async () => await localPredFn({ data: { homeApiId, awayApiId } }),
       staleTime: 10 * 60 * 1000,
-    });
-    queryClient.prefetchQuery({
-      queryKey: ["odds", f.fixtureId],
-      queryFn: async () => await oddsFn({ data: { fixtureId: f.fixtureId } }),
-      staleTime: 15 * 60 * 1000,
     });
   };
 
