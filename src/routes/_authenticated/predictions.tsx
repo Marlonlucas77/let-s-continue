@@ -108,7 +108,21 @@ function PredictionsPage() {
       )}
 
 
+      {teams.length === 0 && (
+        <div className="mt-6 card-surface p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-3">Você ainda não importou nenhum time. Importe uma liga pra começar a gerar previsões.</p>
+          <Link to="/import" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+            Ir para Importar
+          </Link>
+        </div>
+      )}
+
+      {teams.length > 0 && (
       <div className="card-surface p-5 mt-6 grid gap-4 md:grid-cols-2">
+        <div className="md:col-span-2 -mt-1 mb-1 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
+          <span>{teams.length} time(s) disponível(eis) — só aparecem times que você já importou.</span>
+          <Link to="/import" className="text-primary hover:underline shrink-0">Importar mais ligas/times →</Link>
+        </div>
         <div>
           <label className="text-sm font-medium">Time mandante</label>
           <select value={homeId} onChange={(e) => setHomeId(e.target.value)} className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm">
@@ -132,6 +146,7 @@ function PredictionsPage() {
           </select>
         </div>
       </div>
+      )}
 
       {neverPlayed && differentCompetition && (
         <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3">
