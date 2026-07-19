@@ -88,7 +88,12 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
     const errs = json.errors;
     if (errs && !Array.isArray(errs) && typeof errs === "object" && Object.keys(errs).length > 0) {
       const msg = Object.values(errs).join(" · ");
-      if (/rate|limit|requests/i.test(msg)) {
+      // Precisa combinar uma frase específica de limite/cota — "requests"
+      // sozinha é palavra comum demais e aparecia em mensagens de erro de
+      // validação sem relação nenhuma com limite (ex: parâmetro inválido),
+      // disparando o bloqueio de 90s sem necessidade.
+      const isRateLimitMsg = /rate.?limit|too many requests|requests?\s*per\s*(day|minute|second|hour)|maximum\s*(number\s*of\s*)?requests|request\s*limit|quota\s*exceed|exceed.*quota/i.test(msg);
+      if (isRateLimitMsg) {
         const err = applyRateLimit(msg);
         if (hit) return hit.data;
         throw err;
