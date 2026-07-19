@@ -14,7 +14,7 @@ let _rateLimitedUntil = 0;
 // de requisições por minuto já estourou. Todas as chamadas passam por essa
 // mesma fila, então não importa quantos jogos/telas disparem chamadas ao
 // mesmo tempo — elas são processadas uma de cada vez, espaçadas.
-const MIN_REQUEST_INTERVAL_MS = 2000; // ~30 req/min no máximo — bem conservador de propósito
+const MIN_REQUEST_INTERVAL_MS = 350; // ~170 req/min — evita rajada mas não trava a UI
 let _dispatchChain: Promise<void> = Promise.resolve();
 let _lastDispatchAt = 0;
 
@@ -101,7 +101,16 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
 
   const p = (async () => {
     await throttledSlot();
-    const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
+    let res: Response;
+    try {
+      res = await fetch(`${BASE}${path}`, {
+        headers: { "x-apisports-key": key },
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (e: any) {
+      if (hit) return hit.data;
+      throw new Error(`API-Sports não respondeu em 15s (${e?.name ?? "erro de rede"}).`);
+    }
     if (res.status === 429) {
       let reason = res.statusText || "";
       try {
