@@ -37,18 +37,25 @@ function UpcomingPage() {
     queryFn: async () => (await listFn({ data: { days: 4 } })) as any[],
   });
 
-  const filtered = fixtures.filter((f: any) => {
-    if (leagueSearch.trim()) {
-      const q = leagueSearch.toLowerCase();
-      const label = `${f.country ?? ""} ${translateCountry(f.country)} ${f.league} ${translateLeague(f.league)}`.toLowerCase();
-      if (!label.includes(q)) return false;
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      if (!f.home.name.toLowerCase().includes(q) && !f.away.name.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return fixtures.filter((f: any) => {
+      if (leagueSearch.trim()) {
+        const q = leagueSearch.toLowerCase();
+        const label = `${f.country ?? ""} ${translateCountry(f.country)} ${f.league} ${translateLeague(f.league)}`.toLowerCase();
+        if (!label.includes(q)) return false;
+      }
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        if (
+          !f.home.name.toLowerCase().includes(q) && 
+          !f.away.name.toLowerCase().includes(q) &&
+          !translateTeam(f.home.name).toLowerCase().includes(q) &&
+          !translateTeam(f.away.name).toLowerCase().includes(q)
+        ) return false;
+      }
+      return true;
+    });
+  }, [fixtures, leagueSearch, search]);
 
   return (
     <div className="max-w-5xl">
@@ -60,20 +67,40 @@ function UpcomingPage() {
       </div>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2">
-        <input
-          type="text"
-          placeholder="Filtrar por liga ou país..."
-          value={leagueSearch}
-          onChange={(e) => setLeagueSearch(e.target.value)}
-          className="rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <input
-          type="text"
-          placeholder="Filtrar por time..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Filtrar por liga ou país..."
+            value={leagueSearch}
+            onChange={(e) => setLeagueSearch(e.target.value)}
+            className="w-full rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
+          />
+          {leagueSearch && (
+            <button 
+              onClick={() => setLeagueSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Filtrar por time..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
+          />
+          {search && (
+            <button 
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="mb-3 text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
