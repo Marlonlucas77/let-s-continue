@@ -32,6 +32,28 @@ function ttlFor(path: string): number {
   return 5 * 60 * 1000;
 }
 
+let _rateLimitedIsDaily = false;
+
+function nextUtcMidnight(): number {
+  const d = new Date();
+  d.setUTCHours(24, 0, 0, 0);
+  return d.getTime();
+}
+
+function applyRateLimit(msg: string): Error {
+  // API-Sports usa mensagens diferentes pra "muitas requisições agora" (passa
+  // em segundos) e "cota diária do plano esgotada" (só libera na virada do
+  // dia, em UTC). Tratar as duas como "espere alguns segundos" é enganoso —
+  // se for cota diária, a pessoa pode ficar horas achando que vai resolver
+  // sozinho em instantes.
+  const isDaily = /day|daily|dia\b|diári/i.test(msg);
+  _rateLimitedIsDaily = isDaily;
+  _rateLimitedUntil = isDaily ? nextUtcMidnight() : Date.now() + 90 * 1000;
+  return isDaily
+    ? new Error("Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.")
+    : new Error("Limite de requisições da API-Sports atingido. Aguarde alguns segundos e tente novamente.");
+}
+
 export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsResponse<T>> {
   const key = process.env.API_SPORTS_KEY;
   if (!key) throw new Error("API_SPORTS_KEY não configurada");
@@ -44,6 +66,9 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   // Usa cache antigo quando existir e, quando não existir, falha rápido até liberar.
   if (now < _rateLimitedUntil) {
     if (hit) return hit.data;
+    if (_rateLimitedIsDaily) {
+      throw new Error("Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.");
+    }
     const wait = Math.max(10, Math.ceil((_rateLimitedUntil - now) / 1000));
     throw new Error(`Limite temporário da API externa. Tente novamente em ${wait}s.`);
   }
@@ -54,9 +79,9 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   const p = (async () => {
     const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
     if (res.status === 429) {
-      _rateLimitedUntil = Date.now() + 90 * 1000;
+      const err = applyRateLimit(res.statusText || "");
       if (hit) return hit.data;
-      throw new Error("Limite de requisições da API-Sports atingido. Aguarde alguns segundos e tente novamente.");
+      throw err;
     }
     if (!res.ok) throw new Error(`API-Sports ${res.status}`);
     const json = await res.json();
@@ -64,9 +89,9 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
     if (errs && !Array.isArray(errs) && typeof errs === "object" && Object.keys(errs).length > 0) {
       const msg = Object.values(errs).join(" · ");
       if (/rate|limit|requests/i.test(msg)) {
-        _rateLimitedUntil = Date.now() + 90 * 1000;
+        const err = applyRateLimit(msg);
         if (hit) return hit.data;
-        throw new Error("Limite de requisições da API-Sports atingido. Aguarde alguns segundos.");
+        throw err;
       }
       throw new Error(`API-Sports: ${msg}`);
     }
