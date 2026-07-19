@@ -1,16 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, Suspense, useMemo } from "react";
-import { listUpcomingFixtures, getFixtureOdds, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
-import { getLocalPrediction, getAiFixturePrediction } from "@/lib/predictions.functions";
-import type { TeamStats } from "@/lib/stats";
-import { useSubscription } from "@/hooks/useSubscription";
+import { listUpcomingFixtures, getFixtureOdds } from "@/lib/api-sports.functions";
+import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, BarChart3, ChevronDown, Brain, Wand2, Target, Zap, Save } from "lucide-react";
+import { CalendarClock, TrendingUp, Trophy, Loader2, Sparkles, ChevronDown, Wand2, Target } from "lucide-react";
 import { FixtureCardSkeleton } from "@/components/Skeletons";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 
@@ -255,46 +252,16 @@ function formatMarketOutcome(market: string, outcome: string, homeName: string, 
 function FixtureCard({ f }: { f: any }) {
   const [open, setOpen] = useState(false);
   const oddsFn = useServerFn(getFixtureOdds);
-  const localPredFn = useServerFn(getLocalPrediction);
   const aiFixtureFn = useServerFn(getAiFixturePrediction);
   const queryClient = useQueryClient();
 
   const homeApiId: number | undefined = f.home?.apiId;
   const awayApiId: number | undefined = f.away?.apiId;
 
-  const prefetch = () => {
-    if (!homeApiId || !awayApiId) return;
-    // Só pré-carrega a previsão local (consulta ao próprio banco, sem custo
-    // de cota externa). O prefetch de odds foi removido daqui: com 300+
-    // jogos na lista, passar o mouse por cima de vários cards disparava
-    // dezenas de chamadas à API externa sem o usuário nem clicar em nada,
-    // o que ajudava a estourar o limite de requisições à toa.
-    queryClient.prefetchQuery({
-      queryKey: ["local-prediction", homeApiId, awayApiId],
-      queryFn: async () => await localPredFn({ data: { homeApiId, awayApiId } }),
-      staleTime: 10 * 60 * 1000,
-    });
-  };
-
-  // Caminho rápido: previsão calculada a partir do histórico já importado no
-  // banco (sem chamar a API externa). Cobre gols, 1x2, BTTS, over/under —
-  // e é a única fonte "de verdade" que temos para escanteios e cartões.
-  const { data: localPred, isLoading: localLoading } = useQuery({
-    queryKey: ["local-prediction", homeApiId, awayApiId],
-    queryFn: async () => await localPredFn({ data: { homeApiId: homeApiId!, awayApiId: awayApiId! } }),
-    enabled: open && !!homeApiId && !!awayApiId,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
-    retry: 1,
-  });
-
-  const hasLocal = localPred?.available === true;
-
-  // Sem histórico local, a previsão vem direto da IA generativa (usando só
-  // os nomes/liga do confronto — sem puxar estatísticas jogo a jogo da
-  // API-Sports). Mais rápido e não arrisca estourar limite de requisições.
-  const shouldFetchAi = open && !localLoading && !hasLocal;
-  const { data: aiFixturePred, error: aiFixtureError, refetch: refetchAiFixture } = useQuery({
+  // Previsão sempre vem da IA generativa (usando só os nomes/liga do
+  // confronto — sem depender de histórico local nem puxar estatísticas
+  // jogo a jogo da API-Sports). Mais rápido e consistente pra todo jogo.
+  const { data: aiFixturePred, isLoading: aiLoading, error: aiFixtureError, refetch: refetchAiFixture } = useQuery({
     queryKey: ["ai-fixture-prediction", f.fixtureId],
     queryFn: async () => await aiFixtureFn({
       data: {
@@ -304,7 +271,7 @@ function FixtureCard({ f }: { f: any }) {
         matchDate: f.date,
       },
     }),
-    enabled: shouldFetchAi,
+    enabled: open,
     staleTime: 60 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     retry: 1,
@@ -320,62 +287,7 @@ function FixtureCard({ f }: { f: any }) {
     retry: 1,
   });
 
-  // Dados combinados para os chips de cima do card: modelo local quando
-  // disponível (mais rápido e com escanteios/cartões reais), IA generativa
-  // como fonte principal quando não há histórico importado.
-  const p = hasLocal ? localPred.prediction : aiFixturePred?.prediction;
-
-  // Adapta o formato do stats.ts (histórico local) para o mesmo shape que
-  // o TeamPanel já sabe renderizar.
-  const toTeamPanelData = (stats: TeamStats) => ({
-    games: stats.games, wins: stats.wins, draws: stats.draws, losses: stats.losses,
-    avgFor: stats.avgGoalsFor, avgAgainst: stats.avgGoalsAgainst,
-    bttsPct: stats.bttsPct, over25Pct: stats.over25Pct,
-    form: stats.form, recent: [] as any[],
-  });
-  const homePanelData = hasLocal && localPred.available ? toTeamPanelData(localPred.home) : null;
-  const awayPanelData = hasLocal && localPred.available ? toTeamPanelData(localPred.away) : null;
-
-  const aiAnalysisPayload = hasLocal
-    ? { home: homePanelData, away: awayPanelData, h2h: { games: 0 }, prediction: localPred.prediction }
-    : null;
-
-  const { canSavePrediction } = useSubscription();
-  const saveMut = useMutation({
-    mutationFn: async () => {
-      if (!hasLocal || !localPred.available) throw new Error("Previsão local indisponível para salvar.");
-      if (!canSavePrediction) throw new Error("Limite grátis de previsões salvas atingido. Assine para salvar mais.");
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("predictions").insert({
-        user_id: user!.id,
-        home_team_id: localPred.homeTeamId,
-        away_team_id: localPred.awayTeamId,
-        predicted_data: localPred.prediction as any,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Previsão salva no histórico");
-      queryClient.invalidateQueries({ queryKey: ["predictions-month"] });
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const aiFn = useServerFn(getAiInsights);
-  const aiMut = useMutation({
-    mutationFn: async () => await aiFn({
-      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis: aiAnalysisPayload },
-    }),
-  });
-
-  const predictFn = useServerFn(getAiPrediction);
-  const predictMut = useMutation({
-    mutationFn: async () => await predictFn({
-      data: { fixtureId: f.fixtureId, homeName: f.home.name, awayName: f.away.name, analysis: aiAnalysisPayload },
-    }),
-  });
-
-
+  const p = aiFixturePred?.prediction;
 
   const dt = new Date(f.date);
   const dateStr = dt.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -391,16 +303,14 @@ function FixtureCard({ f }: { f: any }) {
   const bestOddForPick = odds?.markets.find((m: any) => m.market === bestPick?.market && m.outcome === bestPick?.outcome);
   const ev = bestPick && bestOddForPick ? (bestPick.pct / 100) * bestOddForPick.odd : null;
 
-  // Escanteios e cartões: vêm do modelo local OU da IA generativa — ambos
-  // os caminhos agora estimam isso, sem precisar da API-Sports pra tal.
   const corners = p ? { min: p.expectedCornersMin, max: p.expectedCornersMax } : null;
   const yellowCards = p?.expectedYellow ?? null;
 
-  const isWaiting = open && (localLoading || (shouldFetchAi && !aiFixturePred && !aiFixtureError));
-  const showAiError = !hasLocal && !!aiFixtureError && !aiFixturePred;
+  const isWaiting = open && aiLoading;
+  const showAiError = !!aiFixtureError && !aiFixturePred;
 
   return (
-    <div className="card-surface p-4" onMouseEnter={prefetch} onTouchStart={prefetch}>
+    <div className="card-surface p-4">
 
       <button onClick={() => setOpen((v) => !v)} className="w-full text-left">
 
@@ -428,11 +338,7 @@ function FixtureCard({ f }: { f: any }) {
 
       {open && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
-          {localLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Consultando histórico local...
-            </div>
-          ) : showAiError ? (
+          {showAiError ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
               <div className="text-destructive font-medium mb-1">Não foi possível gerar a previsão com IA</div>
               <div className="text-xs text-muted-foreground mb-2">{(aiFixtureError as Error).message || "Erro ao consultar a IA."}</div>
@@ -440,30 +346,13 @@ function FixtureCard({ f }: { f: any }) {
             </div>
           ) : isWaiting || !p ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> {hasLocal ? "Calculando previsão..." : "Consultando a IA..."}
+              <Loader2 className="h-4 w-4 animate-spin" /> Consultando a IA...
             </div>
           ) : (
 
             <>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  {hasLocal ? (
-                    <><Zap className="h-3 w-3 text-primary" /> Previsão instantânea · histórico local ({localPred.home.games + localPred.away.games} jogos)</>
-                  ) : (
-                    <><Wand2 className="h-3 w-3 text-primary" /> Previsão gerada por IA · sem histórico importado</>
-                  )}
-                </div>
-                {hasLocal && (
-                  <button
-                    onClick={() => saveMut.mutate()}
-                    disabled={saveMut.isPending || saveMut.isSuccess}
-                    className="text-[11px] rounded-md border border-border px-2 py-1 hover:bg-input inline-flex items-center gap-1 disabled:opacity-50"
-                    title="Salva esta previsão no histórico para conferir a taxa de acertos depois"
-                  >
-                    {saveMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                    {saveMut.isSuccess ? "Salva" : "Salvar previsão"}
-                  </button>
-                )}
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Wand2 className="h-3 w-3 text-primary" /> Previsão gerada por IA
               </div>
 
               <div>
@@ -485,21 +374,9 @@ function FixtureCard({ f }: { f: any }) {
                   <StatChip label="Cartões amarelos" value={yellowCards != null ? `~${yellowCards}` : "—"} />
                   <StatChip label="Confiança" value={`${p!.confidenceScore ?? 0}%`} highlight={(p!.confidenceScore ?? 0) > 75} />
                 </div>
-                {!hasLocal && (
-                  <p className="text-[11px] text-muted-foreground/70 mt-1.5">
-                    Estimativa da IA (sem histórico importado desse time) — <Link to="/import" className="text-primary hover:underline">importar dados</Link> traz números baseados em jogos reais.
-                  </p>
-                )}
               </div>
 
-              {homePanelData && awayPanelData && (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <TeamPanel title={translateTeam(f.home.name)} data={homePanelData} accent="home" />
-                  <TeamPanel title={translateTeam(f.away.name)} data={awayPanelData} accent="away" />
-                </div>
-              )}
-
-              {!hasLocal && (aiFixturePred?.homeAnalysis || aiFixturePred?.awayAnalysis) && (
+              {(aiFixturePred?.homeAnalysis || aiFixturePred?.awayAnalysis) && (
                 <div className="grid gap-3 md:grid-cols-2">
                   {aiFixturePred?.homeAnalysis && (
                     <div className="rounded-md border border-border bg-input/40 p-3">
@@ -516,13 +393,13 @@ function FixtureCard({ f }: { f: any }) {
                 </div>
               )}
 
-              {!hasLocal && aiFixturePred?.keyInsight && (
+              {aiFixturePred?.keyInsight && (
                 <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
                   <p className="text-sm italic text-foreground/90">"{aiFixturePred.keyInsight}"</p>
                 </div>
               )}
 
-              {!hasLocal && Array.isArray(aiFixturePred?.topPicks) && aiFixturePred.topPicks.length > 0 && (
+              {Array.isArray(aiFixturePred?.topPicks) && aiFixturePred.topPicks.length > 0 && (
                 <div className="space-y-1.5">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
                     <Target className="h-3 w-3" /> Palpites por mercado
@@ -542,44 +419,6 @@ function FixtureCard({ f }: { f: any }) {
               )}
 
               <p className="text-xs text-muted-foreground italic">{p!.basis}</p>
-
-              {hasLocal && (
-                <>
-                  <AiPredictorCard
-                    data={predictMut.data?.prediction}
-                    loading={predictMut.isPending}
-                    error={predictMut.error as Error | null}
-                    onGenerate={() => predictMut.mutate()}
-                    homeName={translateTeam(f.home.name)}
-                    awayName={translateTeam(f.away.name)}
-                  />
-
-                  <div className="rounded-md border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
-
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="text-xs uppercase text-muted-foreground flex items-center gap-1">
-                        <Brain className="h-3.5 w-3.5 text-primary" /> Análise por IA
-                      </div>
-                      {!aiMut.data && (
-                        <button
-                          onClick={() => aiMut.mutate()}
-                          disabled={aiMut.isPending}
-                          className="text-xs rounded-md bg-primary/90 hover:bg-primary px-2.5 py-1 text-primary-foreground font-medium disabled:opacity-50 inline-flex items-center gap-1"
-                        >
-                          {aiMut.isPending ? <><Loader2 className="h-3 w-3 animate-spin" /> Gerando...</> : <>Gerar análise</>}
-                        </button>
-                      )}
-                    </div>
-                    {aiMut.error && <p className="text-xs text-destructive">{(aiMut.error as Error).message}</p>}
-                    {aiMut.data?.summary && (
-                      <div className="text-sm whitespace-pre-line leading-relaxed">{aiMut.data.summary}</div>
-                    )}
-                    {!aiMut.data && !aiMut.error && !aiMut.isPending && (
-                      <p className="text-xs text-muted-foreground">Resumo em texto do confronto com base na forma, gols e H2H.</p>
-                    )}
-                  </div>
-                </>
-              )}
             </>
           )}
 
@@ -643,55 +482,6 @@ function FixtureCard({ f }: { f: any }) {
   );
 }
 
-function TeamPanel({ title, data, accent }: { title: string; data: any; accent: "home" | "away" }) {
-  return (
-    <div className="rounded-md border border-border bg-input/40 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-medium truncate">{title}</div>
-        <div className="flex gap-1">
-          {data.form.slice(0, 5).map((r: string, i: number) => (
-            <span
-              key={i}
-              className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded ${
-                r === "W" ? "bg-green-500/20 text-green-400" :
-                r === "L" ? "bg-red-500/20 text-red-400" : "bg-muted text-muted-foreground"
-              }`}
-            >{r}</span>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-1.5 text-xs">
-        <Stat label="Vitórias" value={`${data.wins}/${data.games}`} />
-        <Stat label="Empates" value={String(data.draws)} />
-        <Stat label="Gols pró" value={data.avgFor.toFixed(2)} />
-        <Stat label="Gols sofr." value={data.avgAgainst.toFixed(2)} />
-        <Stat label="BTTS" value={`${Math.round(data.bttsPct)}%`} />
-        <Stat label="Over 2.5" value={`${Math.round(data.over25Pct)}%`} />
-      </div>
-      {data.recent?.length > 0 && (
-        <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground">
-          {data.recent.slice(0, 3).map((r: any, i: number) => (
-            <div key={i} className="flex justify-between font-mono">
-              <span className="truncate">{r.home ? "vs" : "@"} {r.opponent}</span>
-              <span className={r.result === "W" ? "text-green-400" : r.result === "L" ? "text-red-400" : ""}>{r.gf}-{r.ga}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <span className="sr-only">{accent}</span>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono">{value}</span>
-    </div>
-  );
-}
-
 function StatChip({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
     <div className={`rounded-md px-3 py-2 border ${highlight ? "border-primary/50 bg-primary/10" : "border-border bg-input/40"}`} title={hint}>
@@ -713,96 +503,3 @@ function ResultBar({ label, value, color, highlight }: { label: string; value: n
   );
 }
 
-function AiPredictorCard({
-  data, loading, error, onGenerate, homeName, awayName,
-}: {
-  data: any;
-  loading: boolean;
-  error: Error | null;
-  onGenerate: () => void;
-  homeName: string;
-  awayName: string;
-}) {
-  return (
-    <div className="rounded-lg border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="text-sm font-semibold flex items-center gap-1.5">
-          <Wand2 className="h-4 w-4 text-primary" />
-          Palpite da IA
-          <span className="text-[10px] uppercase tracking-wider text-primary/70 ml-1">exclusivo</span>
-        </div>
-        {!data && (
-          <button
-            onClick={onGenerate}
-            disabled={loading}
-            className="text-xs rounded-md bg-primary hover:bg-primary/90 px-3 py-1.5 text-primary-foreground font-medium disabled:opacity-50 inline-flex items-center gap-1"
-          >
-            {loading ? <><Loader2 className="h-3 w-3 animate-spin" /> Prevendo...</> : <>Gerar previsão</>}
-          </button>
-        )}
-      </div>
-
-      {error && <p className="text-xs text-destructive mb-2">{error.message}</p>}
-
-      {!data && !loading && !error && (
-        <p className="text-xs text-muted-foreground">
-          A IA analisa forma, gols, H2H e cotações — retorna placar previsto, confiança e os 3 melhores palpites do jogo.
-        </p>
-      )}
-
-      {data && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-center gap-4 py-2">
-            <div className="text-right flex-1 min-w-0">
-              <div className="text-xs text-muted-foreground truncate">{homeName}</div>
-              <div className="font-display text-4xl font-bold">{data.predictedScore?.home ?? "-"}</div>
-            </div>
-            <div className="text-xs text-muted-foreground">×</div>
-            <div className="text-left flex-1 min-w-0">
-              <div className="text-xs text-muted-foreground truncate">{awayName}</div>
-              <div className="font-display text-4xl font-bold">{data.predictedScore?.away ?? "-"}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 text-xs">
-            <span className="rounded-full bg-primary/20 text-primary px-2 py-0.5 font-medium">
-              Confiança {data.confidence ?? 0}%
-            </span>
-            <span className={`rounded-full px-2 py-0.5 font-medium ${
-              data.risk === "baixo" ? "bg-green-500/20 text-green-400" :
-              data.risk === "alto" ? "bg-red-500/20 text-red-400" :
-              "bg-amber-500/20 text-amber-400"
-            }`}>
-              Risco {data.risk ?? "medio"}
-            </span>
-          </div>
-
-          {data.keyInsight && (
-            <p className="text-sm italic text-center text-foreground/90 border-y border-primary/20 py-2">
-              "{data.keyInsight}"
-            </p>
-          )}
-
-          {Array.isArray(data.topPicks) && data.topPicks.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <Target className="h-3 w-3" /> Melhores palpites
-              </div>
-              {data.topPicks.slice(0, 3).map((pick: any, i: number) => (
-                <div key={i} className="flex items-start gap-2 rounded-md bg-background/60 border border-border p-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">
-                      <span className="text-muted-foreground">{pick.market}:</span> {pick.pick}
-                    </div>
-                    {pick.reason && <div className="text-[11px] text-muted-foreground mt-0.5">{pick.reason}</div>}
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-primary shrink-0">{pick.confidence ?? 0}%</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
