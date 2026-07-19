@@ -72,8 +72,8 @@ function applyRateLimit(msg: string): Error {
   _lastRateLimitReason = msg;
   const reasonSuffix = msg ? ` (${msg})` : "";
   return isDaily
-    ? new Error(`Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.${reasonSuffix}`)
-    : new Error(`Limite de requisições da API-Sports atingido (provavelmente rajada — muitas chamadas em pouco tempo). Aguarde alguns segundos e tente novamente.${reasonSuffix}`);
+    ? new Error(`Cota diária da API-Sports (fornecedor externo de dados de futebol, api-sports.io) esgotada. Isso é do plano da API-Sports — não do seu plano Lovable. Libera na virada do dia (UTC) ou faça upgrade em api-sports.io.${reasonSuffix}`)
+    : new Error(`Rajada de requisições à API-Sports (fornecedor externo de dados de futebol, api-sports.io) — o limite é POR MINUTO do plano da API-Sports, não do seu plano Lovable. Aguarde alguns segundos.${reasonSuffix}`);
 }
 
 export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsResponse<T>> {
