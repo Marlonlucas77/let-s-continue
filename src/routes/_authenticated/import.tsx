@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Search, Download, Loader2, Radio, Trash2, RefreshCw, Globe, CheckCircle2, XCircle } from "lucide-react";
 import {
-  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues, listAllLeagues,
+  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues, listAllLeagues, trackAllLeagues,
 } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
