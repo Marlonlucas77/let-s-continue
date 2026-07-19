@@ -12,18 +12,36 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // dar pra usar como fonte da previsão em qualquer tela sem precisar
 // adaptar a interface.
 const aiPredictionSchema = z.object({
+  fixtureId: z.number().int().optional(),
+  homeApiId: z.number().int().optional(),
+  awayApiId: z.number().int().optional(),
   homeName: z.string(),
   awayName: z.string(),
   homeLeague: z.string().nullable().optional(),
   awayLeague: z.string().nullable().optional(),
   matchDate: z.string().nullable().optional(),
-  statModel: z.any().optional(), // previsão estatística local, se existir, como contexto extra
+  statModel: z.any().optional(),
 });
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
 export const getAiFixturePrediction = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => aiPredictionSchema.parse(d))
   .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
+    // 1) Cache global por fixture — serve todos os usuários e economiza IA + quota.
+    if (data.fixtureId) {
+      const { data: cached } = await context.supabase
+        .from("fixture_analysis_cache")
+        .select("analysis, updated_at")
+        .eq("fixture_id", data.fixtureId)
+        .maybeSingle();
+      if (cached?.analysis && cached.updated_at) {
+        const age = Date.now() - new Date(cached.updated_at as string).getTime();
+        if (age < CACHE_TTL_MS) return cached.analysis as any;
+      }
+    }
+
     const { assertPredictionQuota } = await import("@/lib/plan-limits.server");
     await assertPredictionQuota(context.supabase, context.userId);
     const apiKey = process.env.LOVABLE_API_KEY;
