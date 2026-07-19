@@ -156,7 +156,7 @@ function ImportPage() {
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50 shrink-0"
           >
             {bulkRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {bulkRunning ? "Importando..." : "Importar tudo"}
+            {bulkRunning ? "Importando..." : "IMPORTE TODAS AS LIGAS"}
           </button>
         </div>
 
