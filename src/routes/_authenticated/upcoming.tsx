@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 });
 
 function UpcomingPage() {
-  console.log("Olha");
+  // Olha
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
