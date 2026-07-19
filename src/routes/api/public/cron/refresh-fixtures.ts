@@ -7,18 +7,20 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+        // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas
+        const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
         const { data: leagues, error } = await supabaseAdmin
           .from("tracked_leagues")
           .select("*")
           .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
-          .limit(50);
+          .limit(5);
+
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         }
-        const list = leagues ?? [];
+
         const results: any[] = [];
-        for (const l of list) {
+        for (const l of (leagues ?? [])) {
           try {
             const r = await importFixturesFor({
               supabase: supabaseAdmin,
@@ -30,16 +32,21 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
               includeStats: l.include_stats ?? false,
             });
             await supabaseAdmin.from("tracked_leagues").update({ last_run_at: new Date().toISOString() }).eq("id", l.id);
-            results.push({ id: l.id, league: l.league_name, ...r });
+            results.push({ id: l.id, type: 'fixtures', league: l.league_name, ...r });
           } catch (e: any) {
-            results.push({ id: l.id, league: l.league_name, error: e.message });
+            results.push({ id: l.id, type: 'fixtures', league: l.league_name, error: e.message });
           }
         }
-        return new Response(JSON.stringify({ processed: results.length, results }), {
+
+        return new Response(JSON.stringify({ 
+          timestamp: new Date().toISOString(),
+          processed: results.length, 
+          results 
+        }), {
           headers: { "content-type": "application/json" },
         });
       },
-      GET: async () => new Response("ok"),
+      GET: async () => new Response("Cron endpoint active."),
     },
   },
 });
