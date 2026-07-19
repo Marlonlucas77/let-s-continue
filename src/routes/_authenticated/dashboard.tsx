@@ -162,7 +162,7 @@ function Dashboard() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Acompanhe suas ligas monitoradas para receber mais sugestões
+                UI/UX (virtualização da lista de jogos, skeletons, otimização de re-renders)
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
