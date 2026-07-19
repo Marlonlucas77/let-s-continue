@@ -169,10 +169,19 @@ export function generatePrediction(homeId: string, awayId: string, matches: Matc
   const cornersAvg = ((homeAll.avgCorners || 5) + (awayAll.avgCorners || 5));
   const yellowAvg = ((homeAll.avgYellow || 2) + (awayAll.avgYellow || 2));
   
-  const confidenceScore = Math.min(100, Math.max(0, 
-    (homeAll.games >= 5 && awayAll.games >= 5 ? 20 : 10) +
-    (Math.abs(homeWinProb - awayWinProb) * 100 * 0.5) +
-    (homeExp + awayExp > 2 ? 10 : 0)
+  // Confiança: cresce com a quantidade de jogos disponíveis de cada time
+  // (contínuo, não mais um corte binário em 5 jogos) e com o quão distante
+  // do "50/50" ficou o resultado. Times com pouquíssimo histórico (ex: 1-2
+  // jogos importados) agora puxam a confiança pra baixo de propósito —
+  // antes um time com 1 jogo só e um com 20 jogos podiam gerar a mesma
+  // confiança "alta", o que não faz sentido.
+  const minGames = Math.min(homeAll.games, awayAll.games);
+  const sampleSizeScore = Math.min(35, minGames * 3.5); // até 35 pontos, satura em 10 jogos
+  const separationScore = Math.abs(homeWinProb - awayWinProb) * 100 * 0.5; // até ~50 pontos
+  const goalsVolumeScore = homeExp + awayExp > 2 ? 10 : 0;
+
+  const confidenceScore = Math.min(100, Math.max(0,
+    sampleSizeScore + separationScore + goalsVolumeScore
   ));
 
   return {
@@ -186,7 +195,7 @@ export function generatePrediction(homeId: string, awayId: string, matches: Matc
     expectedCornersMax: Math.ceil(cornersAvg + 1.5),
     expectedYellow: Math.round(yellowAvg),
     confidenceScore: Math.round(confidenceScore),
-    basis: `Poisson model com momentum. ${homeAll.games + awayAll.games} jogos analisados.`,
+    basis: `Poisson model com momentum. ${homeAll.games + awayAll.games} jogos analisados (${minGames} do time com menos histórico).`,
   };
 }
 

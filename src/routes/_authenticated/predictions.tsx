@@ -28,7 +28,7 @@ function PredictionsPage() {
     queryFn: async () => (await supabase.from("matches").select("*")).data ?? [],
   });
 
-  const prediction = useMemo(() => {
+  const rawPrediction = useMemo(() => {
     if (!homeId || !awayId || homeId === awayId) return null;
     return generatePrediction(homeId, awayId, matches);
   }, [homeId, awayId, matches]);
@@ -46,6 +46,18 @@ function PredictionsPage() {
 
   const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
   const neverPlayed = !!home && !!away && h2h.length === 0;
+
+  // Times que nunca se enfrentaram e são de competições diferentes não têm
+  // como ser comparados com confiança real — o modelo não tem como saber
+  // se uma liga é mais forte que a outra. Penaliza a confiança em vez de
+  // deixar ela parecer tão alta quanto a de um confronto normal.
+  const prediction = useMemo(() => {
+    if (!rawPrediction) return null;
+    if (neverPlayed && differentCompetition) {
+      return { ...rawPrediction, confidenceScore: Math.round(rawPrediction.confidenceScore * 0.4) };
+    }
+    return rawPrediction;
+  }, [rawPrediction, neverPlayed, differentCompetition]);
 
   const teamsByLeague = useMemo(() => {
     const groups = new Map<string, typeof teams>();
