@@ -89,6 +89,9 @@ homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks,
       ai = m ? JSON.parse(m[0]) : {};
     }
 
+    await context.supabase.from("ai_prediction_usage").insert({ user_id: context.userId });
+
+
     return {
       prediction: {
         homeWinPct: ai.homeWinPct ?? 33,
