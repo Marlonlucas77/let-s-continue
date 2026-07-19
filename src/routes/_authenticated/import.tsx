@@ -25,6 +25,16 @@ function ImportPage() {
   const untrackFn = useServerFn(untrackLeague);
   const listTracked = useServerFn(listTrackedLeagues);
   const listAll = useServerFn(listAllLeagues);
+  const trackAllFn = useServerFn(trackAllLeagues);
+
+  const trackAllMut = useMutation({
+    mutationFn: async () => trackAllFn({}),
+    onSuccess: (r: any) => {
+      toast.success(`${r.count} ligas habilitadas para monitoramento automático.`);
+      qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<League[]>([]);
 
