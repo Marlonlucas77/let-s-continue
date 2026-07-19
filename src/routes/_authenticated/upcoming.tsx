@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 
 function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
-  const [leagueSearch, setLeagueSearch] = useState("");
+  const [leagueSearch, setLeagueSearch] = useState("Brasil");
   const [search, setSearch] = useState("");
   // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
   // valor inicial menor evita estourar o limite de requisições logo na entrada.

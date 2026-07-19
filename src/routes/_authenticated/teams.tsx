@@ -101,10 +101,11 @@ function TeamsPage() {
 
 function TeamDetail({ team, onBack }: { team: Team; onBack: () => void }) {
   const analyzeFn = useServerFn(getTeamAnalysis);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["team-analysis", team.id],
     queryFn: async () => await analyzeFn({ data: { teamId: team.id } }),
     staleTime: 15 * 60 * 1000,
+    retry: false,
   });
 
   return (
@@ -123,7 +124,15 @@ function TeamDetail({ team, onBack }: { team: Team; onBack: () => void }) {
         </div>
       </div>
 
-      {isLoading || !data ? (
+      {error ? (
+        <div className="card-surface p-8 text-center">
+          <p className="text-sm text-destructive font-medium mb-1">Não foi possível carregar as estatísticas</p>
+          <p className="text-xs text-muted-foreground mb-4">{(error as Error).message || "Erro na API de futebol."}</p>
+          <button onClick={() => refetch()} className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90">
+            Tentar novamente
+          </button>
+        </div>
+      ) : isLoading || !data ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" /> Analisando últimos 20 jogos...
         </div>

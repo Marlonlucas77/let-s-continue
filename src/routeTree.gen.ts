@@ -19,7 +19,6 @@ import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
-import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
 import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
 import { Route as AuthenticatedPredictionsRouteImport } from './routes/_authenticated/predictions'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
@@ -79,11 +78,6 @@ const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMatchesRoute = AuthenticatedMatchesRouteImport.update({
-  id: '/matches',
-  path: '/matches',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedPoolsRoute = AuthenticatedPoolsRouteImport.update({
   id: '/pools',
   path: '/pools',
@@ -139,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/import': typeof AuthenticatedImportRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/matches': typeof AuthenticatedMatchesRoute
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
@@ -159,7 +152,6 @@ export interface FileRoutesByTo {
   '/import': typeof AuthenticatedImportRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/matches': typeof AuthenticatedMatchesRoute
   '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
@@ -181,7 +173,6 @@ export interface FileRoutesById {
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
-  '/_authenticated/matches': typeof AuthenticatedMatchesRoute
   '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/_authenticated/predictions': typeof AuthenticatedPredictionsRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
@@ -203,7 +194,6 @@ export interface FileRouteTypes {
     | '/import'
     | '/leaderboard'
     | '/live'
-    | '/matches'
     | '/pools'
     | '/predictions'
     | '/pricing'
@@ -223,7 +213,6 @@ export interface FileRouteTypes {
     | '/import'
     | '/leaderboard'
     | '/live'
-    | '/matches'
     | '/pools'
     | '/predictions'
     | '/pricing'
@@ -244,7 +233,6 @@ export interface FileRouteTypes {
     | '/_authenticated/import'
     | '/_authenticated/leaderboard'
     | '/_authenticated/live'
-    | '/_authenticated/matches'
     | '/_authenticated/pools'
     | '/_authenticated/predictions'
     | '/_authenticated/pricing'
@@ -335,13 +323,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/matches': {
-      id: '/_authenticated/matches'
-      path: '/matches'
-      fullPath: '/matches'
-      preLoaderRoute: typeof AuthenticatedMatchesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/pools': {
       id: '/_authenticated/pools'
       path: '/pools'
@@ -420,7 +401,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
-  AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
   AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
   AuthenticatedPredictionsRoute: typeof AuthenticatedPredictionsRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
@@ -436,7 +416,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
-  AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,
   AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,
   AuthenticatedPredictionsRoute: AuthenticatedPredictionsRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
@@ -457,3 +436,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
