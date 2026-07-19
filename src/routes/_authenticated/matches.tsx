@@ -250,13 +250,33 @@ function MatchesPage() {
           </div>
         ))}
         {filteredMatches.length === 0 && (
-          <div className="p-8 text-sm text-muted-foreground text-center space-y-3">
-            <p>Nenhum jogo {(lq || tq) ? "encontrado com esse filtro" : "registrado ainda"}.</p>
-            {!lq && !tq && matches.length === 0 && (
-              <a href="/import" className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-                Importar jogos das suas ligas
-              </a>
-            )}
+          <div className="p-12 text-center">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/30 mb-4">
+              <Plus className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-lg font-medium text-foreground">Nenhum jogo encontrado</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
+              {matches.length > 0 
+                ? "Não encontramos resultados para os filtros aplicados. Tente mudar sua busca."
+                : "Você ainda não tem jogos registrados. Importe ou adicione manualmente para começar as análises."}
+            </p>
+            <div className="flex justify-center gap-3">
+              {(leagueFilter || teamFilter) ? (
+                <button
+                  onClick={() => { setLeagueFilter(""); setTeamFilter(""); }}
+                  className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-input transition-colors"
+                >
+                  Limpar filtros
+                </button>
+              ) : (
+                <Link
+                  to="/upcoming"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Ver próximos jogos
+                </Link>
+              )}
+            </div>
           </div>
         )}
 
