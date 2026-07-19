@@ -282,15 +282,11 @@ function FixtureCard({ f }: { f: any }) {
 
   const hasLocal = localPred?.available === true;
 
-  // Caminho lento (API-Sports ao vivo): só é acionado quando não há
-  // histórico local suficiente, ou sob demanda para ver H2H/forma detalhada.
+  // Caminho lento (API-Sports ao vivo): dispara automaticamente quando o
+  // usuário clica pra abrir o jogo e não há histórico local suficiente —
+  // um clique já deve trazer o dado, sem exigir confirmação extra.
   const [wantsLiveDetails, setWantsLiveDetails] = useState(false);
-  // Antes, sem histórico local, a análise ao vivo (3 chamadas à API externa:
-  // últimos jogos do mandante, do visitante e H2H) disparava sozinha assim
-  // que o card abria. Com centenas de jogos na lista, abrir vários cards de
-  // times sem histórico rápido estourava o limite de requisições à toa.
-  // Agora sempre exige um clique explícito, igual ao "ver H2H" do caminho local.
-  const shouldFetchLive = open && !!homeApiId && !!awayApiId && wantsLiveDetails;
+  const shouldFetchLive = open && !!homeApiId && !!awayApiId && (wantsLiveDetails || (!localLoading && !hasLocal));
 
   const { data: analysis, error: analysisError, refetch: refetchAnalysis } = useQuery({
     queryKey: ["analysis", f.fixtureId],
@@ -421,18 +417,6 @@ function FixtureCard({ f }: { f: any }) {
           {localLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" /> Consultando histórico local...
-            </div>
-          ) : !hasLocal && !wantsLiveDetails ? (
-            <div className="rounded-md border border-border bg-input/30 p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-3">
-                Este jogo não tem histórico importado. A análise ao vivo consulta a API externa (gasta cota do plano).
-              </p>
-              <button
-                onClick={() => setWantsLiveDetails(true)}
-                className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90 inline-flex items-center gap-1.5"
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Carregar análise ao vivo
-              </button>
             </div>
           ) : showLiveError ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">

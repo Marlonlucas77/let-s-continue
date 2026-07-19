@@ -39,7 +39,7 @@ function H2HPage() {
 
       <div className="grid gap-4 md:grid-cols-2 mb-6">
         <TeamPicker label="Time A (mandante)" team={teamA} onSelect={setTeamA} />
-        <TeamPicker label="Time B (visitante)" team={teamB} onSelect={setTeamB} />
+        <TeamPicker label="Time B (visitante)" team={teamB} onSelect={setTeamB} restrictCountry={teamA?.country} restrictLabel={teamA ? translateCountry(teamA.country) || teamA.country : undefined} />
       </div>
 
       {teamA && teamB && teamA.id === teamB.id && (
@@ -179,12 +179,15 @@ function TeamStatsCard({ team, data }: { team: Team; data: any }) {
   );
 }
 
-function TeamPicker({ label, team, onSelect }: { label: string; team: Team | null; onSelect: (t: Team | null) => void }) {
+function TeamPicker({ label, team, onSelect, restrictCountry, restrictLabel }: {
+  label: string; team: Team | null; onSelect: (t: Team | null) => void;
+  restrictCountry?: string; restrictLabel?: string;
+}) {
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
   const searchFn = useServerFn(searchTeams);
 
-  const { data: results = [], isFetching, error } = useQuery({
+  const { data: rawResults = [], isFetching, error } = useQuery({
     queryKey: ["h2h-search", label, term],
     queryFn: async () => (await searchFn({ data: { query: term } })) as Team[],
     enabled: term.length >= 2,
@@ -193,6 +196,10 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
     refetchOnWindowFocus: false,
   });
 
+  // H2H só faz sentido comparando times que podem realmente se enfrentar —
+  // restringe a busca do segundo time ao mesmo país do primeiro.
+  const results = restrictCountry ? rawResults.filter((t) => t.country === restrictCountry) : rawResults;
+  const hiddenByFilter = restrictCountry ? rawResults.length - results.length : 0;
 
   if (team) {
     return (
@@ -215,6 +222,9 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
   return (
     <div className="card-surface p-4">
       <div className="text-xs uppercase text-muted-foreground mb-2">{label}</div>
+      {restrictLabel && (
+        <p className="text-[11px] text-muted-foreground mb-2">Mostrando só times de {restrictLabel} (mesmo país do Time A) — H2H só faz sentido entre times que podem se enfrentar de verdade.</p>
+      )}
       <form onSubmit={(e) => { e.preventDefault(); setTerm(query.trim()); }} className="flex gap-2 mb-3">
         <div className="flex-1 flex items-center gap-2 bg-input border border-border rounded-md px-2">
           <Search className="h-4 w-4 text-muted-foreground" />
@@ -232,7 +242,11 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
         <div className="text-xs text-destructive">{(error as Error).message || "Erro ao buscar. Tente novamente."}</div>
       )}
       {!isFetching && !error && term.length >= 2 && results.length === 0 && (
-        <div className="text-xs text-muted-foreground">Nenhum resultado.</div>
+        <div className="text-xs text-muted-foreground">
+          {hiddenByFilter > 0
+            ? `Nenhum time de ${restrictLabel} encontrado para "${term}" (${hiddenByFilter} resultado(s) de outros países escondido(s)).`
+            : "Nenhum resultado."}
+        </div>
       )}
       <div className="space-y-1 max-h-64 overflow-y-auto">
         {results.map((t) => (

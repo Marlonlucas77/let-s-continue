@@ -71,6 +71,8 @@ function PredictionsPage() {
     return Array.from(groups.entries());
   }, [teams]);
 
+  const [wantsAnalysis, setWantsAnalysis] = useState(false);
+
   const saveMut = useMutation({
     mutationFn: async () => {
       if (!prediction) return;
@@ -107,7 +109,7 @@ function PredictionsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  useEffect(() => { aiMut.reset(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [homeId, awayId]);
+  useEffect(() => { aiMut.reset(); setWantsAnalysis(false); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [homeId, awayId]);
 
   return (
     <div className="max-w-5xl">
@@ -181,7 +183,29 @@ function PredictionsPage() {
       </div>
       )}
 
-      {neverPlayed && differentCompetition && (
+      {home && away && homeId !== awayId && !wantsAnalysis && (
+        <div className="card-surface p-6 mt-6 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <TeamBadge name={home.name} logoUrl={home.logo_url} size={36} />
+              <span className="font-medium text-sm">{home.name}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">vs</span>
+            <div className="flex items-center gap-2">
+              <TeamBadge name={away.name} logoUrl={away.logo_url} size={36} />
+              <span className="font-medium text-sm">{away.name}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => { setWantsAnalysis(true); aiMut.mutate(); }}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            <Wand2 className="h-4 w-4" /> Analisar com IA
+          </button>
+        </div>
+      )}
+
+      {wantsAnalysis && neverPlayed && differentCompetition && (
         <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm">
@@ -194,7 +218,7 @@ function PredictionsPage() {
         </div>
       )}
 
-      {prediction && home && away && (
+      {wantsAnalysis && prediction && home && away && (
         <>
           <div className="card-surface p-6 mt-6">
             <div className="flex items-center justify-between mb-6">
