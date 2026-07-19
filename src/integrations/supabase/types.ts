@@ -169,9 +169,13 @@ export type Database = {
       predictions: {
         Row: {
           away_team_id: string | null
+          btts_correct: boolean | null
+          cards_correct: boolean | null
+          corners_correct: boolean | null
           created_at: string | null
           home_team_id: string | null
           id: string
+          over_under_correct: boolean | null
           predicted_data: Json
           result_checked: boolean | null
           user_id: string
@@ -179,9 +183,13 @@ export type Database = {
         }
         Insert: {
           away_team_id?: string | null
+          btts_correct?: boolean | null
+          cards_correct?: boolean | null
+          corners_correct?: boolean | null
           created_at?: string | null
           home_team_id?: string | null
           id?: string
+          over_under_correct?: boolean | null
           predicted_data: Json
           result_checked?: boolean | null
           user_id: string
@@ -189,9 +197,13 @@ export type Database = {
         }
         Update: {
           away_team_id?: string | null
+          btts_correct?: boolean | null
+          cards_correct?: boolean | null
+          corners_correct?: boolean | null
           created_at?: string | null
           home_team_id?: string | null
           id?: string
+          over_under_correct?: boolean | null
           predicted_data?: Json
           result_checked?: boolean | null
           user_id?: string
@@ -267,6 +279,7 @@ export type Database = {
       }
       teams: {
         Row: {
+          api_id: number | null
           color: string | null
           country: string | null
           created_at: string | null
@@ -277,6 +290,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          api_id?: number | null
           color?: string | null
           country?: string | null
           created_at?: string | null
@@ -287,6 +301,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          api_id?: number | null
           color?: string | null
           country?: string | null
           created_at?: string | null
