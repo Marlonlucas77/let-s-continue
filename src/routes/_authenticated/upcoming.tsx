@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -72,8 +72,26 @@ function UpcomingPage() {
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando jogos...
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card-surface p-6 text-sm text-muted-foreground">
-          Nenhum jogo encontrado com esse filtro.
+        <div className="card-surface p-8 text-center">
+          <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+          <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
+            Estamos buscando jogos das suas ligas monitoradas. Tente aumentar o período ou verifique se você está seguindo alguma liga ativa.
+          </p>
+          <div className="flex justify-center gap-2">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
+            >
+              Recarregar página
+            </button>
+            <Link 
+              to="/import" 
+              className="text-xs rounded-md border border-border bg-input/50 px-3 py-1.5 text-foreground font-medium hover:bg-input"
+            >
+              Monitorar novas ligas
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
