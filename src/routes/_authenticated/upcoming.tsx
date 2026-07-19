@@ -309,7 +309,7 @@ function FixtureCard({ f }: { f: any }) {
   const showAiError = !!aiFixtureError && !aiFixturePred;
 
   return (
-    <div className="card-surface p-4">
+    <div className="list-row-surface p-4">
 
       <button onClick={() => setOpen((v) => !v)} className="w-full text-left">
 

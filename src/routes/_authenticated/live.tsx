@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listLiveFixtures } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
-import { Loader2, Radio } from "lucide-react";
+import { Loader2, Radio, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/live")({
   head: () => ({
@@ -21,9 +21,11 @@ function LivePage() {
   const { data: fixtures = [], isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["live-fixtures"],
     queryFn: async () => (await liveFn()) as any[],
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-    staleTime: 15_000,
+    // Sem atualização automática: um polling a cada 30s consumia cota da
+    // API o tempo todo, mesmo sem ninguém pedindo, e contribuía bastante
+    // pros erros de limite de requisições. Agora só atualiza quando a
+    // pessoa pede.
+    staleTime: 20_000,
     retry: false,
   });
 
@@ -45,10 +47,17 @@ function LivePage() {
             Ao vivo
           </h1>
           <p className="text-sm text-muted-foreground">
-            Atualiza a cada 30s · {fixtures.length} jogo(s) em andamento
+            {fixtures.length} jogo(s) em andamento · clique em atualizar pra ver o placar mais recente
           </p>
         </div>
-        {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />}
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="inline-flex items-center gap-2 rounded-md bg-input border border-border px-3 py-1.5 text-xs font-medium hover:bg-card disabled:opacity-50 shrink-0"
+        >
+          {isFetching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          Atualizar
+        </button>
       </div>
 
       {isLoading ? (

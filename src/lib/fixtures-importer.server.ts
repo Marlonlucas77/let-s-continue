@@ -14,7 +14,12 @@ let _rateLimitedUntil = 0;
 // de requisições por minuto já estourou. Todas as chamadas passam por essa
 // mesma fila, então não importa quantos jogos/telas disparem chamadas ao
 // mesmo tempo — elas são processadas uma de cada vez, espaçadas.
-const MIN_REQUEST_INTERVAL_MS = 350; // ~170 req/min — evita rajada mas não trava a UI
+//
+// ATENÇÃO: esse valor já foi reduzido antes (de 2000ms pra 350ms) achando
+// que deixaria mais rápido, e isso trouxe de volta os erros de "rajada de
+// requisições" com frequência. Não reduza sem confirmar o limite real de
+// requisições/minuto do seu plano na API-Sports primeiro.
+const MIN_REQUEST_INTERVAL_MS = 2200; // ~27 req/min no máximo — conservador de propósito
 let _dispatchChain: Promise<void> = Promise.resolve();
 let _lastDispatchAt = 0;
 

@@ -83,6 +83,17 @@
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+}
+
+/* Só pra itens de lista longa (ex: cards da tela Jogos) — nunca usar em
+   cards que contêm dropdown/combobox, porque content-visibility aplica
+   containment e corta qualquer conteúdo que precise ultrapassar a borda
+   do card (foi exatamente isso que quebrou os seletores de time em
+   Previsão IA e H2H). */
+@utility list-row-surface {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   content-visibility: auto;
   contain-intrinsic-size: 1px 100px;
 }

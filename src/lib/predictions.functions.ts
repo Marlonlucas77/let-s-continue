@@ -78,7 +78,9 @@ Responda estritamente neste JSON:
   "keyInsight": "<uma frase decisiva sobre o jogo, mencionando o motivo real>",
   "basis": "<frase curta explicando a base da previsão, ex: 'IA generativa — conhecimento geral de futebol, sem histórico jogo a jogo'>"
 }
-homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks, cobrindo mercados variados: Resultado Final (1x2), Dupla Chance, Over/Under 2.5 gols, Ambas Marcam, Escanteios (over/under), Cartões (over/under) — um de cada, com motivo específico pro confronto. Seja realista e direto.`;
+homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks, cobrindo mercados variados: Resultado Final (1x2), Dupla Chance, Total de gols, Ambas Marcam, Escanteios, Cartões — um de cada, com motivo específico pro confronto.
+
+IMPORTANTE: escreva tudo em português do Brasil, incluindo o campo "pick". Nunca use "Over"/"Under" em inglês — use "Mais de X gols"/"Menos de X gols", "Mais de X escanteios"/"Menos de X escanteios", "Mais de X cartões"/"Menos de X cartões". Seja realista e direto.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
