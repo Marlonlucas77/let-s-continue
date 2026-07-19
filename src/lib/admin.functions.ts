@@ -1,0 +1,105 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+async function requireAdmin(context: any) {
+  const { data } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!data) throw new Error("Acesso restrito: apenas administradores.");
+}
+
+export const adminListUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if (error) throw new Error(error.message);
+
+    const { data: profiles } = await supabaseAdmin.from("profiles").select("*");
+    const { data: roles } = await supabaseAdmin.from("user_roles").select("*");
+    const { data: subs } = await supabaseAdmin.from("subscriptions").select("*");
+
+    const profMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+    const roleMap = new Map<string, string[]>();
+    for (const r of roles ?? []) {
+      const arr = roleMap.get(r.user_id) ?? [];
+      arr.push(r.role);
+      roleMap.set(r.user_id, arr);
+    }
+    const subMap = new Map((subs ?? []).map((s: any) => [s.user_id, s]));
+
+    return users.users.map((u) => ({
+      id: u.id,
+      email: u.email ?? "",
+      created_at: u.created_at,
+      last_sign_in_at: u.last_sign_in_at,
+      display_name: (profMap.get(u.id) as any)?.display_name ?? null,
+      roles: roleMap.get(u.id) ?? [],
+      plan: (subMap.get(u.id) as any)?.plan ?? "free",
+      sub_status: (subMap.get(u.id) as any)?.status ?? null,
+    }));
+  });
+
+export const adminToggleRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; role: "admin" | "moderator" | "user"; grant: boolean }) =>
+    z.object({
+      userId: z.string().uuid(),
+      role: z.enum(["admin", "moderator", "user"]),
+      grant: z.boolean(),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.grant) {
+      const { error } = await supabaseAdmin.from("user_roles").upsert({ user_id: data.userId, role: data.role });
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("role", data.role);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  });
+
+export const adminStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ count: users }, { count: matches }, { count: predictions }, { count: teams }, { count: tracked }, { data: activeSubs }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("matches").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("predictions").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("teams").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("tracked_leagues").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("subscriptions").select("plan").eq("status", "active"),
+    ]);
+    const plans: Record<string, number> = {};
+    for (const s of activeSubs ?? []) plans[s.plan] = (plans[s.plan] ?? 0) + 1;
+    return {
+      users: users ?? 0,
+      matches: matches ?? 0,
+      predictions: predictions ?? 0,
+      teams: teams ?? 0,
+      trackedLeagues: tracked ?? 0,
+      plans,
+    };
+  });
+
+export const checkIsAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    return { isAdmin: !!data };
+  });
