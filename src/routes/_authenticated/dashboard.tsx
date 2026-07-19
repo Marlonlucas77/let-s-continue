@@ -9,6 +9,8 @@ import { DashboardSkeleton } from "@/components/Skeletons";
 import { Suspense } from "react";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 import { listUpcomingFixtures } from "@/lib/api-sports.functions";
+import { listFavorites } from "@/lib/favorites.functions";
+import { Star } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   errorComponent: (props) => <LocalErrorBoundary {...props} boundaryName="dashboard" />,
