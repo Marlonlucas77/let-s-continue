@@ -102,6 +102,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     ]);
     const teams = teamsRes.data ?? [];
     const byName = new Map(teams.map((t: any) => [t.name.toLowerCase(), t]));
+    const byApiId = new Map(teams.map((t: any) => [t.api_id, t]));
     const trackedList: { league_id: number; season: number }[] = tracked.data ?? [];
 
     const today = new Date();
@@ -157,8 +158,8 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         if (status && status !== "NS" && status !== "TBD") continue;
         if (seen.has(f.fixture.id)) continue;
         seen.add(f.fixture.id);
-        const home = byName.get(f.teams.home.name.toLowerCase());
-        const away = byName.get(f.teams.away.name.toLowerCase());
+        const home = byApiId.get(f.teams.home.id) || byName.get(f.teams.home.name.toLowerCase());
+        const away = byApiId.get(f.teams.away.id) || byName.get(f.teams.away.name.toLowerCase());
         out.push({
           fixtureId: f.fixture.id as number,
           date: f.fixture.date as string,
