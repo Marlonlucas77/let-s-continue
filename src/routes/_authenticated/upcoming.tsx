@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, Suspense, useMemo, useCallback } from "react";
+// @ts-ignore - react-window types mismatch
 import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
