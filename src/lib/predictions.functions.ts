@@ -109,8 +109,7 @@ homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks,
 
     await context.supabase.from("ai_prediction_usage").insert({ user_id: context.userId });
 
-
-    return {
+    const result = {
       prediction: {
         homeWinPct: ai.homeWinPct ?? 33,
         drawPct: ai.drawPct ?? 34,
@@ -131,4 +130,23 @@ homeWinPct + drawPct + awayWinPct deve somar 100. Inclua 6 palpites em topPicks,
       homeAnalysis: ai.homeAnalysis,
       awayAnalysis: ai.awayAnalysis,
     };
+
+    // Grava no cache global (bypassa RLS — política só permite escrita a admin).
+    if (data.fixtureId) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await supabaseAdmin.from("fixture_analysis_cache").upsert({
+          fixture_id: data.fixtureId,
+          home_id: data.homeApiId ?? 0,
+          away_id: data.awayApiId ?? 0,
+          analysis: result as any,
+          ai_summary: ai.keyInsight ?? null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "fixture_id" });
+      } catch (e) {
+        console.error("Falha ao gravar cache de previsão:", e);
+      }
+    }
+
+    return result;
   });
