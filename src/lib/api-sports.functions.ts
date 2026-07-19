@@ -325,6 +325,9 @@ export const getFixtureOdds = createServerFn({ method: "POST" })
       "Match Winner": "1x2",
       "Both Teams Score": "BTTS",
       "Goals Over/Under": "Over/Under",
+      "Corners Over Under": "Escanteios",
+      "Total Corners": "Escanteios",
+      "Cards Over Under": "Cartões",
     };
 
     for (const bm of (resp.bookmakers ?? [])) {
@@ -335,6 +338,9 @@ export const getFixtureOdds = createServerFn({ method: "POST" })
           const odd = parseFloat(v.odd);
           if (!isFinite(odd)) continue;
           const outcome = String(v.value);
+          // Gols: só a linha de 2.5, que é o mercado mais comum. Escanteios
+          // e cartões variam bastante de linha por jogo, então mantém todas
+          // as linhas que as casas oferecem em vez de filtrar uma fixa.
           if (label === "Over/Under" && !/2\.5/.test(outcome)) continue;
           const key = `${label}::${outcome}`;
           const prev = best.get(key);

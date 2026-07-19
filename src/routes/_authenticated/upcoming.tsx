@@ -241,6 +241,14 @@ function formatMarketOutcome(market: string, outcome: string, homeName: string, 
     if (/^Over/i.test(outcome)) return `Mais de ${outcome.replace(/Over\s*/i, "")} gols`;
     if (/^Under/i.test(outcome)) return `Menos de ${outcome.replace(/Under\s*/i, "")} gols`;
   }
+  if (market === "Escanteios") {
+    if (/^Over/i.test(outcome)) return `Mais de ${outcome.replace(/Over\s*/i, "")} escanteios`;
+    if (/^Under/i.test(outcome)) return `Menos de ${outcome.replace(/Under\s*/i, "")} escanteios`;
+  }
+  if (market === "Cartões") {
+    if (/^Over/i.test(outcome)) return `Mais de ${outcome.replace(/Over\s*/i, "")} cartões`;
+    if (/^Under/i.test(outcome)) return `Menos de ${outcome.replace(/Under\s*/i, "")} cartões`;
+  }
   return `${market} · ${outcome}`;
 }
 
@@ -452,16 +460,38 @@ function FixtureCard({ f }: { f: any }) {
                 )}
               </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
-                <StatChip label="Casa" value={`${p!.homeWinPct}%`} highlight={bestPick?.outcome === "Home"} />
-                <StatChip label="Empate" value={`${p!.drawPct}%`} highlight={bestPick?.outcome === "Draw"} />
-                <StatChip label="Fora" value={`${p!.awayWinPct}%`} highlight={bestPick?.outcome === "Away"} />
-                <StatChip label="Over 2.5" value={`${p!.over25Pct}%`} highlight={bestPick?.market === "Over/Under"} />
-                <StatChip label="Ambas marcam" value={`${p!.bttsPct}%`} highlight={bestPick?.market === "BTTS"} />
-                <StatChip label="Gols esperados" value={String(p!.expectedGoals)} />
-                {corners && <StatChip label="Escanteios" value={`${corners.min}-${corners.max}`} />}
-                {yellowCards != null && <StatChip label="Cartões amarelos" value={String(yellowCards)} />}
-                <StatChip label="Confiança" value={`${p!.confidenceScore ?? 0}%`} highlight={(p!.confidenceScore ?? 0) > 75} />
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Resultado</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <ResultBar label="Casa" value={p!.homeWinPct} color="var(--color-primary)" highlight={bestPick?.outcome === "Home"} />
+                  <ResultBar label="Empate" value={p!.drawPct} color="var(--color-muted-foreground)" highlight={bestPick?.outcome === "Draw"} />
+                  <ResultBar label="Fora" value={p!.awayWinPct} color="#3b82f6" highlight={bestPick?.outcome === "Away"} />
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Mercados mais apostados</div>
+                <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+                  <StatChip label="Over 2.5 gols" value={`${p!.over25Pct}%`} highlight={bestPick?.market === "Over/Under"} />
+                  <StatChip label="Ambas marcam" value={`${p!.bttsPct}%`} highlight={bestPick?.market === "BTTS"} />
+                  <StatChip label="Gols esperados" value={String(p!.expectedGoals)} />
+                  {corners ? (
+                    <StatChip label="Escanteios" value={`${corners.min}-${corners.max}`} />
+                  ) : (
+                    <StatChip label="Escanteios" value="—" hint="Sem estimativa nesta análise" />
+                  )}
+                  {yellowCards != null ? (
+                    <StatChip label="Cartões amarelos" value={`~${yellowCards}`} />
+                  ) : (
+                    <StatChip label="Cartões amarelos" value="—" hint="Sem estimativa nesta análise" />
+                  )}
+                  <StatChip label="Confiança" value={`${p!.confidenceScore ?? 0}%`} highlight={(p!.confidenceScore ?? 0) > 75} />
+                </div>
+                {(!corners || yellowCards == null) && (
+                  <p className="text-[11px] text-muted-foreground/70 mt-1.5">
+                    Escanteios/cartões só aparecem quando o time tem histórico importado — <Link to="/import" className="text-primary hover:underline">importar dados</Link>.
+                  </p>
+                )}
               </div>
 
               {homePanelData && awayPanelData && (
@@ -635,11 +665,23 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatChip({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function StatChip({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
-    <div className={`rounded-md px-3 py-2 border ${highlight ? "border-primary/50 bg-primary/10" : "border-border bg-input/40"}`}>
+    <div className={`rounded-md px-3 py-2 border ${highlight ? "border-primary/50 bg-primary/10" : "border-border bg-input/40"}`} title={hint}>
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="font-mono font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function ResultBar({ label, value, color, highlight }: { label: string; value: number; color: string; highlight?: boolean }) {
+  return (
+    <div className={`rounded-md border p-2.5 text-center ${highlight ? "border-primary/50 bg-primary/10" : "border-border bg-input/40"}`}>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="font-display text-xl font-bold mt-0.5" style={{ color }}>{value}%</div>
+      <div className="mt-1.5 h-1 bg-background rounded-full overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+      </div>
     </div>
   );
 }
