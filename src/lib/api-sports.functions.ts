@@ -223,17 +223,63 @@ export const trackLeague = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const trackAllLeagues = createServerFn({ method: "POST" })
+// Lista curada das ~100 competições mais relevantes do mundo — em vez de
+// habilitar literalmente tudo que a API-Sports tem (milhares de
+// competições, incluindo categorias de base e ligas amadoras obscuras),
+// que gerava uma fila de importação gigante e impossível de acompanhar.
+// Quem quiser algo fora dessa lista ainda pode buscar e habilitar
+// manualmente em Configurações.
+const TOP_LEAGUE_PATTERNS = [
+  // Europa — primeiras divisões
+  "premier league", "la liga", "serie a", "bundesliga", "ligue 1",
+  "primeira liga", "eredivisie", "pro league", "premiership",
+  "süper lig", "super lig", "super league", "superliga", "allsvenskan",
+  "eliteserien", "ekstraklasa", "fortuna liga", "hnl", "super liga",
+  "liga i", "nb i", "ligat ha'al", "premier liga",
+  // Europa — segundas divisões
+  "championship", "segunda división", "segunda divisao", "serie b",
+  "2. bundesliga", "ligue 2", "eerste divisie",
+  // Europa — copas nacionais
+  "fa cup", "copa del rey", "coppa italia", "dfb pokal", "coupe de france",
+  "efl cup", "carabao cup",
+  // América do Sul
+  "brasileirao", "brasileirão", "liga profesional", "primera división",
+  "primera division", "serie a" /* Equador */, "liga 1",
+  // América do Norte/Central
+  "mls", "liga mx", "leagues cup",
+  // Ásia
+  "j1 league", "k league 1", "chinese super league", "saudi pro league",
+  "stars league", "persian gulf", "isl", "a-league", "uae league",
+  // África
+  "egyptian premier league", "premier soccer league", "botola", "npfl",
+  // Copas nacionais (Brasil/América do Sul)
+  "copa do brasil", "copa argentina",
+  // Continentais e seleções
+  "champions league", "europa league", "conference league",
+  "libertadores", "sudamericana", "concacaf champions", "afc champions",
+  "caf champions league", "world cup", "nations league", "euro championship",
+  "copa america", "copa américa", "africa cup of nations", "asian cup",
+  "gold cup",
+];
+
+function matchesTopLeague(name: string): boolean {
+  const n = name.toLowerCase();
+  return TOP_LEAGUE_PATTERNS.some((p) => n.includes(p));
+}
+
+export const trackTopLeagues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { getUserPlan } = await import("@/lib/plan-limits.server");
-    const { plan, limits } = await getUserPlan(supabase, userId);
-    if (limits.leagues !== Infinity) {
-      throw new Error(`Plano ${plan.toUpperCase()} permite apenas ${limits.leagues} liga(s). Faça upgrade para Elite em /pricing para habilitar todas.`);
-    }
+    const { limits } = await getUserPlan(supabase, userId);
     const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
-    const leagues = (json.response ?? []).map((r) => ({
+    let matched = (json.response ?? []).filter((r) => matchesTopLeague(r.league.name as string));
+    // Cada plano tem um limite de ligas — quem não é Elite ganha as
+    // primeiras N da lista curada (que já está em ordem de relevância),
+    // em vez de travar a ação inteira como antes.
+    if (limits.leagues !== Infinity) matched = matched.slice(0, limits.leagues);
+    const leagues = matched.map((r) => ({
       user_id: userId,
       league_id: r.league.id as number,
       season: ((r.seasons ?? []).find((s: any) => s.current)?.year
@@ -244,18 +290,11 @@ export const trackAllLeagues = createServerFn({ method: "POST" })
       include_stats: false,
     }));
     if (leagues.length === 0) return { ok: true, count: 0 };
-    // Upsert em lotes para evitar payload gigante
-    const chunkSize = 200;
-    let inserted = 0;
-    for (let i = 0; i < leagues.length; i += chunkSize) {
-      const chunk = leagues.slice(i, i + chunkSize);
-      const { error } = await supabase
-        .from("tracked_leagues")
-        .upsert(chunk, { onConflict: "user_id,league_id,season" });
-      if (error) throw new Error(error.message);
-      inserted += chunk.length;
-    }
-    return { ok: true, count: inserted };
+    const { error } = await supabase
+      .from("tracked_leagues")
+      .upsert(leagues, { onConflict: "user_id,league_id,season" });
+    if (error) throw new Error(error.message);
+    return { ok: true, count: leagues.length };
   });
 
 export const untrackLeague = createServerFn({ method: "POST" })

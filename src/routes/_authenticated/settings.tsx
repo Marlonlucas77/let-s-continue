@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles } from "lucide-react";
 import {
-  listAllLeagues, listTrackedLeagues, trackLeague, trackAllLeagues, untrackLeague,
+  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague,
 } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
@@ -25,7 +25,7 @@ function SettingsPage() {
   const listAll = useServerFn(listAllLeagues);
   const listTracked = useServerFn(listTrackedLeagues);
   const trackFn = useServerFn(trackLeague);
-  const trackAllFn = useServerFn(trackAllLeagues);
+  const trackAllFn = useServerFn(trackTopLeagues);
   const untrackFn = useServerFn(untrackLeague);
 
   const [query, setQuery] = useState("");
@@ -90,7 +90,7 @@ function SettingsPage() {
             <div className="flex-1">
               <h2 className="font-display font-semibold mb-1">Bem-vindo(a)!</h2>
               <p className="text-sm text-muted-foreground mb-3">
-                Para começar, selecione as ligas que você quer acompanhar — ou habilite todas de uma vez. Depois é só ir para o painel.
+                Para começar, selecione as ligas que você quer acompanhar — ou habilite as principais do mundo de uma vez. Depois é só ir para o painel.
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button
@@ -99,7 +99,7 @@ function SettingsPage() {
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-                  Habilitar todas as ligas
+                  Habilitar principais ligas
                 </button>
                 <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-input">
                   Ir para o painel
@@ -134,8 +134,8 @@ function SettingsPage() {
 
       <div className="card-surface p-4 mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-display font-semibold">Habilitar todas as ligas</h2>
-          <p className="text-xs text-muted-foreground">Marca todas as competições da temporada corrente (~1000+) como monitoradas.</p>
+          <h2 className="font-display font-semibold">Habilitar as principais ligas do mundo</h2>
+          <p className="text-xs text-muted-foreground">~100 competições mais relevantes (grandes ligas, copas nacionais, continentais e seleções) — não a lista inteira da API (milhares, incluindo categorias de base e ligas amadoras). Quer algo específico fora dessa lista? Busca abaixo.</p>
         </div>
         <button
           onClick={() => trackAllMut.mutate()}
@@ -143,7 +143,7 @@ function SettingsPage() {
           className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 text-primary px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-          {trackAllMut.isPending ? "Habilitando..." : "Habilitar todas"}
+          {trackAllMut.isPending ? "Habilitando..." : "Habilitar principais"}
         </button>
       </div>
 
