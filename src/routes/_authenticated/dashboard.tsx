@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
-import { Users, ListOrdered, Target, TrendingUp } from "lucide-react";
+import { Users, ListOrdered, Target, TrendingUp, Trophy } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { DashboardSkeleton } from "@/components/Skeletons";
 import { Suspense } from "react";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
+import { listUpcomingFixtures } from "@/lib/api-sports.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   errorComponent: (props) => <LocalErrorBoundary {...props} boundaryName="dashboard" />,
@@ -19,20 +21,35 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const todayStr = new Date().toISOString().slice(0, 10);
+  const listFixtures = useServerFn(listUpcomingFixtures);
   const { data } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
-      const [teams, recent, allMatches, preds] = await Promise.all([
-        supabase.from("teams").select("*").order("created_at", { ascending: false }),
-        supabase.from("matches").select("*, home_team:home_team_id(name,logo_url), away_team:away_team_id(name,logo_url)").eq("match_date", todayStr).order("match_date", { ascending: false }).limit(5),
-        supabase.from("matches").select("match_date, home_goals, away_goals, home_corners, away_corners").order("match_date", { ascending: false }).limit(20),
-        supabase.from("predictions").select("*"),
+      const [teams, trackedLeagues, allMatches, preds, todayFixtures] = await Promise.all([
+        supabase.from("teams").select("id", { count: "exact", head: true }),
+        supabase.from("tracked_leagues").select("id", { count: "exact", head: true }),
+        supabase
+          .from("matches")
+          .select("match_date, home_goals, away_goals, home_corners, away_corners, home_team:home_team_id(name), away_team:away_team_id(name)")
+          .order("match_date", { ascending: false })
+          .limit(20),
+        supabase.from("predictions").select("id, result_checked, was_correct"),
+        listFixtures({ data: { days: 1 } }).catch(() => []),
       ]);
-      return { teams: teams.data ?? [], matches: recent.data ?? [], allMatches: allMatches.data ?? [], preds: preds.data ?? [] };
+      return {
+        teamsCount: teams.count ?? 0,
+        trackedLeaguesCount: trackedLeagues.count ?? 0,
+        todayFixtures: (todayFixtures ?? []) as any[],
+        allMatches: allMatches.data ?? [],
+        preds: preds.data ?? [],
+      };
     },
+    staleTime: 5 * 60 * 1000,
   });
 
-  const teamsCount = data?.teams.length ?? 0;
+  const teamsCount = data?.teamsCount ?? 0;
+  const trackedLeaguesCount = data?.trackedLeaguesCount ?? 0;
+  const todayFixtures = data?.todayFixtures ?? [];
   const predsCount = data?.preds.length ?? 0;
   const correct = data?.preds.filter((p) => p.result_checked && p.was_correct).length ?? 0;
   const checked = data?.preds.filter((p) => p.result_checked).length ?? 0;
@@ -47,7 +64,7 @@ function Dashboard() {
 
   const teamBars = (() => {
     const map = new Map<string, { name: string; gf: number; ga: number; games: number }>();
-    for (const m of data?.matches ?? []) {
+    for (const m of data?.allMatches ?? []) {
       const h = m.home_team?.name; const a = m.away_team?.name;
       if (h) {
         const e = map.get(h) ?? { name: h, gf: 0, ga: 0, games: 0 };
@@ -68,10 +85,10 @@ function Dashboard() {
   })();
 
   const cards = [
-    { label: "Times cadastrados", value: teamsCount, icon: Users },
-    { label: "Jogos recentes", value: data?.matches.length ?? 0, icon: ListOrdered },
+    { label: "Ligas habilitadas", value: trackedLeaguesCount, icon: Trophy },
+    { label: "Times no histórico", value: teamsCount, icon: Users },
+    { label: "Jogos hoje", value: todayFixtures.length, icon: ListOrdered },
     { label: "Previsões geradas", value: predsCount, icon: Target },
-    { label: "Taxa de acerto", value: `${accuracy}%`, icon: TrendingUp },
   ];
 
   return (
@@ -134,19 +151,25 @@ function Dashboard() {
             <h2 className="font-display font-semibold">Jogos de hoje</h2>
             <Link to="/upcoming" className="text-xs text-primary hover:underline">Ver todos</Link>
           </div>
-          {data?.matches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum jogo para hoje. <Link to="/upcoming" className="text-primary">Ver próximos</Link>.</p>
+          {todayFixtures.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum jogo encontrado hoje. <Link to="/upcoming" className="text-primary">Ver próximos</Link>.</p>
           ) : (
             <ul className="space-y-2">
-              {data?.matches.map((m: any) => (
-                <li key={m.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  <TeamBadge name={m.home_team.name} logoUrl={m.home_team.logo_url} size={28} />
-                  <span className="text-sm font-medium flex-1 truncate">{m.home_team.name}</span>
+              {todayFixtures.slice(0, 5).map((m: any) => (
+                <li key={m.fixtureId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                  <TeamBadge name={m.home.name} logoUrl={m.home.logo} size={28} />
+                  <span className="text-sm font-medium flex-1 truncate">{m.home.name}</span>
                   <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-input border border-border">VS</span>
-                  <span className="text-sm font-medium flex-1 truncate text-right">{m.away_team.name}</span>
-                  <TeamBadge name={m.away_team.name} logoUrl={m.away_team.logo_url} size={28} />
+                  <span className="text-xs text-muted-foreground tabular-nums">{formatKickoff(m.date)}</span>
+                  <span className="text-sm font-medium flex-1 truncate text-right">{m.away.name}</span>
+                  <TeamBadge name={m.away.name} logoUrl={m.away.logo} size={28} />
                 </li>
               ))}
+              {todayFixtures.length > 5 && (
+                <li className="pt-2 text-xs text-muted-foreground">
+                  +{todayFixtures.length - 5} jogo(s) hoje. <Link to="/upcoming" className="text-primary">Abrir lista completa</Link>.
+                </li>
+              )}
             </ul>
           )}
         </div>
@@ -169,7 +192,11 @@ function Dashboard() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Times com histórico importado geram previsão instantânea com escanteios e cartões
+                {trackedLeaguesCount} liga(s) habilitada(s) para monitoramento
+              </li>
+              <li className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Taxa de acerto atual: {accuracy}% em {checked} previsão(ões) conferida(s)
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -184,4 +211,12 @@ function Dashboard() {
       </div>
     </div>
   );
+}
+
+function formatKickoff(date: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(date));
 }
