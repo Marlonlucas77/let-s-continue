@@ -22,13 +22,13 @@ let _rateLimitedUntil = 0;
 // mesmo com o throttle "ativo". O banco resolve isso porque é compartilhado
 // de verdade entre todas as instâncias.
 //
-// ATENÇÃO: esse valor já foi reduzido antes (de 2000ms pra 350ms) achando
-// que deixaria mais rápido, e isso trouxe de volta os erros de "rajada de
-// requisições" com frequência. Mesmo 2200ms ainda deixou passar um 429
-// real durante um lote de 12 ligas — aumentado pra uma margem bem mais
-// folgada. Não reduza sem confirmar o limite real de requisições/minuto
-// do seu plano na API-Sports primeiro (painel da API-Sports mostra isso).
-const MIN_REQUEST_INTERVAL_MS = 4000; // ~15 req/min no máximo
+// Confirmado pelo usuário: plano Pro da API-Sports = 300 requisições por
+// minuto. Os valores anteriores (350ms, depois 2200ms, depois 4000ms)
+// eram todos chutes às cegas tentando adivinhar esse número — e estavam
+// bem mais conservadores do que precisava, o que não deveria ter causado
+// os erros de rajada vistos. Com o número real confirmado, usa uma
+// margem de segurança generosa mas sem travar a aplicação à toa.
+const MIN_REQUEST_INTERVAL_MS = 250; // 300rpm real → 240rpm com margem de 20%
 const DB_SLOT_TIMEOUT_MS = 4000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
 
 // Fallback em memória, usado se a chamada ao banco falhar ou demorar

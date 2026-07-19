@@ -16,17 +16,16 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
         // Não aumentei mais que isso pra não arriscar estourar o tempo
         // máximo de execução da função (cada liga espera o throttle
         // compartilhado, ~2.2s por chamada à API).
-        // Processa menos ligas por execução (12 → 6) — com o throttle mais
-        // conservador (4s por chamada), um lote menor evita que a função
-        // demore demais e ainda cobre o backlog em poucas execuções, já
-        // que agora só existem ~100 ligas priorizadas, não 1.233.
+        // Com o limite real confirmado (300 req/min), dá pra processar bem
+        // mais ligas por execução sem risco — cada liga usa só 2-3
+        // chamadas, então mesmo 30 ligas ficam bem dentro da margem.
         const { data: leagues, error } = await supabaseAdmin
           .from("tracked_leagues")
           .select("*")
           .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
           .order("priority", { ascending: false })
           .order("last_run_at", { ascending: true, nullsFirst: true })
-          .limit(6);
+          .limit(30);
 
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
