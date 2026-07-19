@@ -695,4 +695,22 @@ Inclua 3 palpites em topPicks (ex: Resultado Final, Over/Under 2.5, Ambas Marcam
     return { prediction, cached: false };
   });
 
+export const listLiveFixtures = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const json = await apiSportsFetch("/fixtures?live=all");
+    return (json.response ?? []).map((f: any) => ({
+      fixtureId: f.fixture.id as number,
+      date: f.fixture.date as string,
+      status: f.fixture.status.short as string,
+      elapsed: f.fixture.status.elapsed as number | null,
+      league: f.league.name as string,
+      leagueLogo: f.league.logo as string | undefined,
+      country: f.league.country as string | undefined,
+      home: { name: f.teams.home.name as string, logo: f.teams.home.logo as string, goals: f.goals.home ?? 0 },
+      away: { name: f.teams.away.name as string, logo: f.teams.away.logo as string, goals: f.goals.away ?? 0 },
+    })).sort((a: any, b: any) => a.league.localeCompare(b.league));
+  });
+
+
 
