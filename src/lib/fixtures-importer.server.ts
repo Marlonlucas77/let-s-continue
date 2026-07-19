@@ -1,6 +1,5 @@
 // Server-only shared fixtures importer used by both server functions and cron.
 import { ApiSportsResponse } from "./api-sports.types";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -28,32 +27,50 @@ let _rateLimitedUntil = 0;
 // requisições" com frequência. Não reduza sem confirmar o limite real de
 // requisições/minuto do seu plano na API-Sports primeiro.
 const MIN_REQUEST_INTERVAL_MS = 2200; // ~27 req/min no máximo — conservador de propósito
+const DB_SLOT_TIMEOUT_MS = 4000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
 
-// Fallback em memória, só usado se a chamada ao banco falhar por algum
-// motivo — melhor que nenhum throttle, mas não é a proteção principal.
+// Fallback em memória, usado se a chamada ao banco falhar ou demorar
+// demais — não protege entre instâncias diferentes, mas garante que a
+// aplicação nunca trava esperando o banco pra sempre.
 let _dispatchChain: Promise<void> = Promise.resolve();
 let _lastDispatchAt = 0;
 
+function localFallbackSlot(): Promise<void> {
+  const slot = _dispatchChain.then(async () => {
+    const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    _lastDispatchAt = Date.now();
+  });
+  _dispatchChain = slot.catch(() => {});
+  return slot;
+}
+
 async function throttledSlot(): Promise<void> {
   try {
-    const { data, error } = await supabaseAdmin.rpc("claim_api_sports_slot", {
-      min_interval_ms: MIN_REQUEST_INTERVAL_MS,
-    });
-    if (error) throw error;
-    const slotAt = new Date(data as unknown as string).getTime();
+    // Importação tardia (mesmo padrão usado no resto do projeto pra esse
+    // cliente) — evita qualquer problema de ordem de carregamento de módulo.
+    const dbCall = (async () => {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin.rpc("claim_api_sports_slot", {
+        min_interval_ms: MIN_REQUEST_INTERVAL_MS,
+      });
+      if (error) throw error;
+      return data as unknown as string;
+    })();
+
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), DB_SLOT_TIMEOUT_MS));
+    const result = await Promise.race([dbCall, timeout]);
+
+    if (result === null) {
+      // Banco não respondeu a tempo — não trava a aplicação esperando.
+      await localFallbackSlot();
+      return;
+    }
+    const slotAt = new Date(result).getTime();
     const wait = Math.max(0, slotAt - Date.now());
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    return;
   } catch {
-    // Fallback: throttle local (não protege entre instâncias, mas é
-    // melhor que disparar sem nenhum espaçamento).
-    const slot = _dispatchChain.then(async () => {
-      const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
-      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-      _lastDispatchAt = Date.now();
-    });
-    _dispatchChain = slot.catch(() => {});
-    return slot;
+    await localFallbackSlot();
   }
 }
 
