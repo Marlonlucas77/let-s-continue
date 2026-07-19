@@ -5,6 +5,7 @@ import { useState } from "react";
 import { searchTeams, getTeamAnalysis } from "@/lib/api-sports.functions";
 import { Search, Loader2, ArrowLeft, Trophy, Target, Shield } from "lucide-react";
 import { translateCountry, translateTeam } from "@/lib/country-i18n";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/_authenticated/teams")({
   component: TeamsPage,
