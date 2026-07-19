@@ -23,6 +23,7 @@ function MatchesPage() {
   const [form, setForm] = useState(empty);
   const [leagueFilter, setLeagueFilter] = useState<string>("");
   const [teamFilter, setTeamFilter] = useState<string>("");
+  const [isDebouncing, setIsDebouncing] = useState(false);
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
@@ -40,8 +41,23 @@ function MatchesPage() {
   const lq = leagueFilter.trim().toLowerCase();
   const tq = teamFilter.trim().toLowerCase();
   const filteredMatches = matches.filter((m: any) => {
-    const leagueOk = !lq || [m.home_team?.league, m.away_team?.league, m.home_team?.country, m.away_team?.country, translateLeague(m.home_team?.league), translateLeague(m.away_team?.league), translateCountry(m.home_team?.country), translateCountry(m.away_team?.country)].some(v => v?.toLowerCase().includes(lq));
-    const teamOk = !tq || (m.home_team?.name?.toLowerCase().includes(tq) || m.away_team?.name?.toLowerCase().includes(tq));
+    const leagueOk = !lq || [
+      m.home_team?.league, 
+      m.away_team?.league, 
+      m.home_team?.country, 
+      m.away_team?.country, 
+      translateLeague(m.home_team?.league), 
+      translateLeague(m.away_team?.league), 
+      translateCountry(m.home_team?.country), 
+      translateCountry(m.away_team?.country)
+    ].some(v => v?.toLowerCase().includes(lq));
+    
+    const teamOk = !tq || (
+      m.home_team?.name?.toLowerCase().includes(tq) || 
+      m.away_team?.name?.toLowerCase().includes(tq) ||
+      translateTeam(m.home_team?.name).toLowerCase().includes(tq) ||
+      translateTeam(m.away_team?.name).toLowerCase().includes(tq)
+    );
     return leagueOk && teamOk;
   });
 
@@ -138,21 +154,41 @@ function MatchesPage() {
         <div className="card-surface p-4 mb-4 text-sm text-muted-foreground">Cadastre ao menos 2 times antes de adicionar jogos.</div>
       )}
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2">
-        <input
-          type="text"
-          placeholder="Filtrar por liga..."
-          value={leagueFilter}
-          onChange={(e) => setLeagueFilter(e.target.value)}
-          className="rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <input
-          type="text"
-          placeholder="Filtrar por time..."
-          value={teamFilter}
-          onChange={(e) => setTeamFilter(e.target.value)}
-          className="rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary"
-        />
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 relative">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Filtrar por liga ou país..."
+            value={leagueFilter}
+            onChange={(e) => setLeagueFilter(e.target.value)}
+            className="w-full rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
+          />
+          {leagueFilter && (
+             <button 
+               onClick={() => setLeagueFilter("")}
+               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+             >
+               ×
+             </button>
+          )}
+        </div>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Filtrar por time..."
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="w-full rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
+          />
+          {teamFilter && (
+             <button 
+               onClick={() => setTeamFilter("")}
+               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+             >
+               ×
+             </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
