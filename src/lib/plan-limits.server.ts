@@ -64,7 +64,7 @@ export async function assertPredictionQuota(supabase: any, userId: string) {
   since.setUTCDate(1);
   since.setUTCHours(0, 0, 0, 0);
   const { count } = await supabase
-    .from("predictions")
+    .from("ai_prediction_usage")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .gte("created_at", since.toISOString());
