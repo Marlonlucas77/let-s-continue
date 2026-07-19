@@ -1,0 +1,1 @@
+delete from public.tracked_leagues where league_id = 71 and season = 2024;
