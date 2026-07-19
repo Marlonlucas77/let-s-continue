@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
@@ -40,26 +40,29 @@ function MatchesPage() {
 
   const lq = leagueFilter.trim().toLowerCase();
   const tq = teamFilter.trim().toLowerCase();
-  const filteredMatches = matches.filter((m: any) => {
-    const leagueOk = !lq || [
-      m.home_team?.league, 
-      m.away_team?.league, 
-      m.home_team?.country, 
-      m.away_team?.country, 
-      translateLeague(m.home_team?.league), 
-      translateLeague(m.away_team?.league), 
-      translateCountry(m.home_team?.country), 
-      translateCountry(m.away_team?.country)
-    ].some(v => v?.toLowerCase().includes(lq));
-    
-    const teamOk = !tq || (
-      m.home_team?.name?.toLowerCase().includes(tq) || 
-      m.away_team?.name?.toLowerCase().includes(tq) ||
-      translateTeam(m.home_team?.name).toLowerCase().includes(tq) ||
-      translateTeam(m.away_team?.name).toLowerCase().includes(tq)
-    );
-    return leagueOk && teamOk;
-  });
+
+  const filteredMatches = useMemo(() => {
+    return matches.filter((m: any) => {
+      const leagueOk = !lq || [
+        m.home_team?.league, 
+        m.away_team?.league, 
+        m.home_team?.country, 
+        m.away_team?.country, 
+        translateLeague(m.home_team?.league), 
+        translateLeague(m.away_team?.league), 
+        translateCountry(m.home_team?.country), 
+        translateCountry(m.away_team?.country)
+      ].some(v => v?.toLowerCase().includes(lq));
+      
+      const teamOk = !tq || (
+        m.home_team?.name?.toLowerCase().includes(tq) || 
+        m.away_team?.name?.toLowerCase().includes(tq) ||
+        translateTeam(m.home_team?.name).toLowerCase().includes(tq) ||
+        translateTeam(m.away_team?.name).toLowerCase().includes(tq)
+      );
+      return leagueOk && teamOk;
+    });
+  }, [matches, lq, tq]);
 
   const createMut = useMutation({
     mutationFn: async () => {

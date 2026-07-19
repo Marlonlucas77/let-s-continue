@@ -151,28 +151,31 @@ function UpcomingPage() {
           {[1,2,3,4,5].map(i => <FixtureCardSkeleton key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card-surface p-8 text-center">
-          <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
+        <div className="card-surface p-12 text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted/30 mb-6">
+            <CalendarClock className="h-8 w-8 text-muted-foreground/40" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Nenhum jogo encontrado</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-8">
             {fixtures.length > 0
-              ? "Há jogos carregados, mas nenhum combina com os filtros atuais. Limpe os filtros ou use outro termo."
-              : "A busca global não retornou partidas nesse período. Tente atualizar ou trocar o intervalo."}
+              ? "Não encontramos resultados para sua busca. Tente ajustar os filtros de liga, país ou time."
+              : "A busca global não retornou partidas para este período. Isso pode acontecer em dias de pouca atividade ou erro na API."}
           </p>
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-4">
             {(leagueSearch || search) && (
               <button
                 onClick={() => { setLeagueSearch(""); setSearch(""); }}
-                className="text-xs rounded-md border border-border px-3 py-1.5 font-medium hover:bg-input"
+                className="rounded-md border border-border px-6 py-2.5 text-sm font-semibold hover:bg-input transition-all"
               >
                 Limpar filtros
               </button>
             )}
             <button 
               onClick={() => refetch()} 
-              className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
+              className="rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition-all flex items-center gap-2"
             >
-              Atualizar jogos
+              <Loader2 className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              Atualizar agora
             </button>
           </div>
         </div>

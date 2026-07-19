@@ -231,7 +231,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const days = data.days ?? 4;
+    const days = data.days ?? 14; // Default to 14 days if not provided
 
     const [teamsRes] = await Promise.all([
       supabase.from("teams").select("id, name, logo_url, api_id").eq("user_id", userId),
@@ -307,7 +307,9 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         });
       }
     }
+    // Removendo duplicatas e garantindo que jogos importantes não sejam filtrados por engano
     out.sort((a, b) => a.date.localeCompare(b.date));
+    console.log(`[listUpcomingFixtures] Returning ${out.length} unique fixtures`);
     return out;
   });
 
