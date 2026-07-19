@@ -27,6 +27,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPoolsPoolIdRouteImport } from './routes/_authenticated/pools.$poolId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicCronRefreshFixturesRouteImport } from './routes/api/public/cron/refresh-fixtures'
+import { Route as ApiPublicAdminSeedPlansRouteImport } from './routes/api/public/admin/seed-plans'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -122,6 +123,11 @@ const ApiPublicCronRefreshFixturesRoute =
     path: '/api/public/cron/refresh-fixtures',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicAdminSeedPlansRoute = ApiPublicAdminSeedPlansRouteImport.update({
+  id: '/api/public/admin/seed-plans',
+  path: '/api/public/admin/seed-plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/admin/seed-plans': typeof ApiPublicAdminSeedPlansRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/admin/seed-plans': typeof ApiPublicAdminSeedPlansRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/_authenticated/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
+  '/api/public/admin/seed-plans': typeof ApiPublicAdminSeedPlansRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
+    | '/api/public/admin/seed-plans'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/teams'
     | '/upcoming'
     | '/pools/$poolId'
+    | '/api/public/admin/seed-plans'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   id:
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/_authenticated/teams'
     | '/_authenticated/upcoming'
     | '/_authenticated/pools/$poolId'
+    | '/api/public/admin/seed-plans'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicAdminSeedPlansRoute: typeof ApiPublicAdminSeedPlansRoute
   ApiPublicCronRefreshFixturesRoute: typeof ApiPublicCronRefreshFixturesRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -379,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronRefreshFixturesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/admin/seed-plans': {
+      id: '/api/public/admin/seed-plans'
+      path: '/api/public/admin/seed-plans'
+      fullPath: '/api/public/admin/seed-plans'
+      preLoaderRoute: typeof ApiPublicAdminSeedPlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -430,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicAdminSeedPlansRoute: ApiPublicAdminSeedPlansRoute,
   ApiPublicCronRefreshFixturesRoute: ApiPublicCronRefreshFixturesRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
