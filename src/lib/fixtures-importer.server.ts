@@ -101,7 +101,16 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
 
   const p = (async () => {
     await throttledSlot();
-    const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
+    let res: Response;
+    try {
+      res = await fetch(`${BASE}${path}`, {
+        headers: { "x-apisports-key": key },
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (e: any) {
+      if (hit) return hit.data;
+      throw new Error(`API-Sports não respondeu em 15s (${e?.name ?? "erro de rede"}).`);
+    }
     if (res.status === 429) {
       let reason = res.statusText || "";
       try {
