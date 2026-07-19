@@ -154,9 +154,14 @@ function ImportPage() {
           <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <h2 className="font-display font-semibold">Importar principais ligas do mundo</h2>
+              <h2 className="font-display font-semibold">Importar TODAS as ligas do mundo</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {POPULAR_LEAGUES.length} competições mais relevantes de uma vez (Premier League, La Liga, Brasileirão, Champions, Copa do Mundo e outras). Sem escanteios/cartões — importe individualmente depois se quiser esse detalhe.
+                Busca todas as competições da temporada corrente na API-Sports (~1000+ ligas em dezenas de países) e importa os jogos de cada uma. Atenção: consome muitas requisições — no plano Free (100/dia) só um pedaço vai completar antes de atingir a cota diária. Sem escanteios/cartões.
+                {bulkStats && (
+                  <span className="block mt-1 text-primary">
+                    Processadas: {bulkStats.done} · Jogos: {bulkStats.imported} · Times: {bulkStats.teams} · Erros: {bulkStats.errors}
+                  </span>
+                )}
               </p>
             </div>
           </div>
