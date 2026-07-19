@@ -1,16 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { Users, ListOrdered, Target, TrendingUp } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { DashboardSkeleton } from "@/components/Skeletons";
+import { Suspense } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  component: Dashboard,
+  component: () => (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <Dashboard />
+    </Suspense>
+  ),
 });
 
 function Dashboard() {
-  const { data } = useQuery({
+  const { data } = useSuspenseQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
       const [teams, recent, allMatches, preds] = await Promise.all([
@@ -21,6 +27,7 @@ function Dashboard() {
       ]);
       return { teams: teams.data ?? [], matches: recent.data ?? [], allMatches: allMatches.data ?? [], preds: preds.data ?? [] };
     },
+    staleTime: 60 * 1000, // 1 minute cache
   });
 
   const teamsCount = data?.teams.length ?? 0;
