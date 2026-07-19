@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, Suspense, useMemo, useCallback } from "react";
-import * as ReactWindow from "react-window";
+import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
@@ -102,7 +102,7 @@ function UpcomingPage() {
         </div>
       ) : (
         <div className="h-[calc(100vh-280px)] min-h-[500px]">
-          <ReactWindow.FixedSizeList
+          <List
             height={700}
             itemCount={filtered.length}
             itemSize={130}
@@ -114,7 +114,7 @@ function UpcomingPage() {
                 <FixtureCard f={filtered[index]} />
               </div>
             )}
-          </ReactWindow.FixedSizeList>
+          </List>
         </div>
       )}
     </div>
