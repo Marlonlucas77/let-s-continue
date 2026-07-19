@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Search, Download, Loader2, Radio, Trash2, RefreshCw, Globe, CheckCircle2, XCircle } from "lucide-react";
 import {
-  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues,
+  searchLeagues, importFixtures, trackLeague, untrackLeague, listTrackedLeagues, listAllLeagues,
 } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
@@ -15,20 +15,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 
 type League = { id: number; name: string; type: string; country: string; logo: string; seasons: number[]; };
 
-// Lista curada das ligas mais relevantes do mundo — "todas as ligas" de
-// verdade seria milhares de competições (toda divisão, todo país,
-// categorias de base, feminino...), o que estouraria qualquer cota de
-// API rapidamente e na prática não seria útil. Isso cobre o que a
-// grande maioria das pessoas realmente acompanha.
-const POPULAR_LEAGUES = [
-  "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1",
-  "Brasileirao Serie A", "Brasileirao Serie B", "Primeira Liga",
-  "Eredivisie", "Primera Division Argentina", "UEFA Champions League",
-  "UEFA Europa League", "World Cup", "Copa Libertadores", "Copa America",
-  "MLS", "Liga MX",
-];
-
-type BulkProgressItem = { name: string; status: "pending" | "loading" | "done" | "error"; detail?: string };
+type BulkProgressItem = { name: string; country: string; status: "pending" | "loading" | "done" | "error"; detail?: string };
 
 function ImportPage() {
   const qc = useQueryClient();
@@ -37,6 +24,7 @@ function ImportPage() {
   const trackFn = useServerFn(trackLeague);
   const untrackFn = useServerFn(untrackLeague);
   const listTracked = useServerFn(listTrackedLeagues);
+  const listAll = useServerFn(listAllLeagues);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<League[]>([]);
 
@@ -77,34 +65,56 @@ function ImportPage() {
 
   const [bulkProgress, setBulkProgress] = useState<BulkProgressItem[] | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkStats, setBulkStats] = useState<{ imported: number; teams: number; done: number; errors: number } | null>(null);
 
   const runBulkImport = async () => {
     setBulkRunning(true);
-    const items: BulkProgressItem[] = POPULAR_LEAGUES.map((name) => ({ name, status: "pending" }));
+    setBulkStats({ imported: 0, teams: 0, done: 0, errors: 0 });
+    let allLeagues: { id: number; name: string; country: string; season: number }[] = [];
+    try {
+      toast.info("Buscando lista completa de ligas na API-Sports...");
+      allLeagues = (await listAll({})) as any[];
+    } catch (e: any) {
+      toast.error(`Falha ao listar ligas: ${e.message}`);
+      setBulkRunning(false);
+      return;
+    }
+    if (allLeagues.length === 0) {
+      toast.error("Nenhuma liga retornada pela API");
+      setBulkRunning(false);
+      return;
+    }
+    toast.success(`${allLeagues.length} ligas encontradas. Importando — isso pode consumir muitas requisições da API.`);
+    const items: BulkProgressItem[] = allLeagues.map((l) => ({ name: l.name, country: l.country, status: "pending" }));
     setBulkProgress(items);
 
-    for (let i = 0; i < POPULAR_LEAGUES.length; i++) {
-      const name = POPULAR_LEAGUES[i];
+    let imported = 0, teams = 0, done = 0, errors = 0;
+    for (let i = 0; i < allLeagues.length; i++) {
+      const l = allLeagues[i];
       setBulkProgress((prev) => prev!.map((it, idx) => idx === i ? { ...it, status: "loading" } : it));
       try {
-        const found = (await search({ data: { query: name } })) as League[];
-        // Prefere resultado do tipo "League" (evita pegar uma copa/torneio
-        // secundário quando o nome bate com mais de uma competição).
-        const best = found.find((l) => l.type === "League") ?? found[0];
-        if (!best) throw new Error("Não encontrada");
-        const season = best.seasons[0] ?? new Date().getFullYear();
-        const r: any = await importFn({ data: { leagueId: best.id, season, leagueName: best.name, country: best.country, includeStats: false } });
+        const r: any = await importFn({ data: { leagueId: l.id, season: l.season, leagueName: l.name, country: l.country, includeStats: false } });
+        imported += r.imported ?? 0;
+        teams += r.teamsCreated ?? 0;
+        done++;
         setBulkProgress((prev) => prev!.map((it, idx) => idx === i
           ? { ...it, status: "done", detail: `${r.imported} jogo(s), ${r.teamsCreated} time(s)` }
           : it));
       } catch (e: any) {
+        errors++;
         setBulkProgress((prev) => prev!.map((it, idx) => idx === i ? { ...it, status: "error", detail: e.message } : it));
+        // Se estourou cota diária, para de tentar — não adianta continuar
+        if (/diário|daily|day/i.test(e.message)) {
+          toast.error("Cota diária da API-Sports esgotada. Parando importação.");
+          break;
+        }
       }
+      setBulkStats({ imported, teams, done, errors });
     }
     setBulkRunning(false);
     qc.invalidateQueries({ queryKey: ["matches"] });
     qc.invalidateQueries({ queryKey: ["teams"] });
-    toast.success("Importação das principais ligas concluída");
+    toast.success(`Importação concluída: ${imported} jogos, ${teams} times, ${errors} erro(s).`);
   };
 
   return (
@@ -144,9 +154,14 @@ function ImportPage() {
           <div className="flex items-start gap-2">
             <Globe className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <h2 className="font-display font-semibold">Importar principais ligas do mundo</h2>
+              <h2 className="font-display font-semibold">Importar TODAS as ligas do mundo</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {POPULAR_LEAGUES.length} competições mais relevantes de uma vez (Premier League, La Liga, Brasileirão, Champions, Copa do Mundo e outras). Sem escanteios/cartões — importe individualmente depois se quiser esse detalhe.
+                Busca todas as competições da temporada corrente na API-Sports (~1000+ ligas em dezenas de países) e importa os jogos de cada uma. Atenção: consome muitas requisições — no plano Free (100/dia) só um pedaço vai completar antes de atingir a cota diária. Sem escanteios/cartões.
+                {bulkStats && (
+                  <span className="block mt-1 text-primary">
+                    Processadas: {bulkStats.done} · Jogos: {bulkStats.imported} · Times: {bulkStats.teams} · Erros: {bulkStats.errors}
+                  </span>
+                )}
               </p>
             </div>
           </div>

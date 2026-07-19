@@ -20,6 +20,23 @@ export const searchLeagues = createServerFn({ method: "POST" })
     }));
   });
 
+export const listAllLeagues = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    // /leagues?current=true retorna todas as ligas com a temporada corrente ativa
+    const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
+    return (json.response ?? []).map((r) => ({
+      id: r.league.id as number,
+      name: r.league.name as string,
+      type: r.league.type as string,
+      country: r.country.name as string,
+      logo: r.league.logo as string,
+      season: (r.seasons ?? []).find((s: any) => s.current)?.year
+        ?? (r.seasons ?? [])[0]?.year
+        ?? new Date().getUTCFullYear(),
+    }));
+  });
+
 export const searchTeams = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { query: string }) => z.object({ query: z.string().min(2) }).parse(d))
