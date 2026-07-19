@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { generatePrediction, computeTeamStats } from "@/lib/stats";
-import { Sparkles, Save, Crown, Lock } from "lucide-react";
+import { Sparkles, Save, Crown, Lock, AlertTriangle } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
 export const Route = createFileRoute("/_authenticated/predictions")({
@@ -44,6 +44,19 @@ function PredictionsPage() {
   const homeStats = homeId ? computeTeamStats(homeId, matches, "home") : null;
   const awayStats = awayId ? computeTeamStats(awayId, matches, "away") : null;
 
+  const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
+  const neverPlayed = !!home && !!away && h2h.length === 0;
+
+  const teamsByLeague = useMemo(() => {
+    const groups = new Map<string, typeof teams>();
+    for (const t of teams) {
+      const key = t.league || t.country || "Outros";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(t);
+    }
+    return Array.from(groups.entries());
+  }, [teams]);
+
   const saveMut = useMutation({
     mutationFn: async () => {
       if (!prediction) return;
@@ -68,7 +81,7 @@ function PredictionsPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold">Previsões</h1>
-          <p className="text-sm text-muted-foreground mt-1">Selecione dois times para gerar uma análise</p>
+          <p className="text-sm text-muted-foreground mt-1">Modelo estatístico (Poisson) baseado no seu histórico importado. Para análise com IA generativa, use a tela Jogos.</p>
         </div>
         {isPremium ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-medium text-primary">
@@ -100,17 +113,38 @@ function PredictionsPage() {
           <label className="text-sm font-medium">Time mandante</label>
           <select value={homeId} onChange={(e) => setHomeId(e.target.value)} className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm">
             <option value="">Selecionar...</option>
-            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {teamsByLeague.map(([league, ts]) => (
+              <optgroup key={league} label={league}>
+                {ts.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
         <div>
           <label className="text-sm font-medium">Time visitante</label>
           <select value={awayId} onChange={(e) => setAwayId(e.target.value)} className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm">
             <option value="">Selecionar...</option>
-            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {teamsByLeague.map(([league, ts]) => (
+              <optgroup key={league} label={league}>
+                {ts.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </optgroup>
+            ))}
           </select>
         </div>
       </div>
+
+      {neverPlayed && differentCompetition && (
+        <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <div className="font-semibold text-amber-400">Esses times nunca se enfrentaram</div>
+            <div className="text-muted-foreground mt-0.5">
+              {home?.name} e {away?.name} são de competições diferentes ({home?.league || home?.country || "?"} e {away?.league || away?.country || "?"}) e não há confronto direto no seu histórico.
+              A previsão abaixo é uma simulação estatística baseada só no desempenho isolado de cada time — não representa um jogo real esperado.
+            </div>
+          </div>
+        </div>
+      )}
 
       {prediction && home && away && (
         <>
@@ -145,7 +179,7 @@ function PredictionsPage() {
               <Stat label="Ambas marcam" value={`${prediction.bttsPct}%`} />
               <Stat label="Escanteios" value={`${prediction.expectedCornersMin}–${prediction.expectedCornersMax}`} />
               <Stat label="Cartões amarelos" value={`~${prediction.expectedYellow}`} />
-              <Stat label="Confiança IA" value={`${prediction.confidenceScore}%`} />
+              <Stat label="Confiança do modelo" value={`${prediction.confidenceScore}%`} />
             </div>
 
             <p className="mt-6 text-xs text-muted-foreground italic">{prediction.basis}</p>
