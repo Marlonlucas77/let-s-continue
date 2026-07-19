@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useState, Suspense, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useState, Suspense, useMemo } from "react";
 // @ts-ignore - react-window types mismatch
 import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
@@ -31,11 +31,12 @@ function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
-  const [days, setDays] = useState(4);
+  const [days, setDays] = useState(14);
 
-  const { data: fixtures = [], isFetching, refetch } = useQuery({
+  const { data: fixtures = [], isFetching, isLoading, error, refetch } = useQuery({
     queryKey: ["upcoming-fixtures", days],
     queryFn: async () => (await listFn({ data: { days } })) as any[],
+    staleTime: 5 * 60 * 1000,
   });
 
   const filtered = useMemo(() => {
@@ -80,7 +81,7 @@ function UpcomingPage() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Análise estatística e previsões de IA para os confrontos das suas ligas monitoradas.
+          Todos os jogos dos próximos dias com filtros por competição, país e time.
         </p>
       </div>
 
@@ -131,19 +132,47 @@ function UpcomingPage() {
       </div>
 
 
-      {filtered.length === 0 ? (
+      {error ? (
+        <div className="card-surface p-8 text-center">
+          <CalendarClock className="h-10 w-10 text-destructive/60 mx-auto mb-3" />
+          <h3 className="font-medium text-foreground mb-1">Não foi possível carregar os jogos</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+            {(error as Error).message || "A API de futebol não respondeu agora."}
+          </p>
+          <button 
+            onClick={() => refetch()} 
+            className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : isLoading ? (
+        <div className="space-y-3">
+          {[1,2,3,4,5].map(i => <FixtureCardSkeleton key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
-            Estamos buscando jogos de todas as ligas. Tente filtrar por outro termo ou recarregar.
+            {fixtures.length > 0
+              ? "Há jogos carregados, mas nenhum combina com os filtros atuais. Limpe os filtros ou use outro termo."
+              : "A busca global não retornou partidas nesse período. Tente atualizar ou trocar o intervalo."}
           </p>
           <div className="flex justify-center gap-2">
+            {(leagueSearch || search) && (
+              <button
+                onClick={() => { setLeagueSearch(""); setSearch(""); }}
+                className="text-xs rounded-md border border-border px-3 py-1.5 font-medium hover:bg-input"
+              >
+                Limpar filtros
+              </button>
+            )}
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => refetch()} 
               className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
             >
-              Recarregar página
+              Atualizar jogos
             </button>
           </div>
         </div>
