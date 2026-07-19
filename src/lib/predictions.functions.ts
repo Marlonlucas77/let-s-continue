@@ -23,7 +23,9 @@ const aiPredictionSchema = z.object({
 export const getAiFixturePrediction = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => aiPredictionSchema.parse(d))
   .middleware([requireSupabaseAuth])
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { assertPredictionQuota } = await import("@/lib/plan-limits.server");
+    await assertPredictionQuota(context.supabase, context.userId);
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY não configurado");
 
