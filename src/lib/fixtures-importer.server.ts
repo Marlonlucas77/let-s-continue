@@ -33,6 +33,7 @@ function ttlFor(path: string): number {
 }
 
 let _rateLimitedIsDaily = false;
+let _lastRateLimitReason = "";
 
 function nextUtcMidnight(): number {
   const d = new Date();
@@ -49,9 +50,11 @@ function applyRateLimit(msg: string): Error {
   const isDaily = /day|daily|dia\b|diári/i.test(msg);
   _rateLimitedIsDaily = isDaily;
   _rateLimitedUntil = isDaily ? nextUtcMidnight() : Date.now() + 90 * 1000;
+  _lastRateLimitReason = msg;
+  const reasonSuffix = msg ? ` (${msg})` : "";
   return isDaily
-    ? new Error("Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.")
-    : new Error("Limite de requisições da API-Sports atingido. Aguarde alguns segundos e tente novamente.");
+    ? new Error(`Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.${reasonSuffix}`)
+    : new Error(`Limite de requisições da API-Sports atingido (provavelmente rajada — muitas chamadas em pouco tempo). Aguarde alguns segundos e tente novamente.${reasonSuffix}`);
 }
 
 export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsResponse<T>> {
@@ -66,11 +69,12 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   // Usa cache antigo quando existir e, quando não existir, falha rápido até liberar.
   if (now < _rateLimitedUntil) {
     if (hit) return hit.data;
+    const reasonSuffix = _lastRateLimitReason ? ` (${_lastRateLimitReason})` : "";
     if (_rateLimitedIsDaily) {
-      throw new Error("Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.");
+      throw new Error(`Limite diário da API-Sports (plano grátis) esgotado. Libera automaticamente na virada do dia (horário UTC) — ou faça upgrade do plano em api-sports.io.${reasonSuffix}`);
     }
     const wait = Math.max(10, Math.ceil((_rateLimitedUntil - now) / 1000));
-    throw new Error(`Limite temporário da API externa. Tente novamente em ${wait}s.`);
+    throw new Error(`Limite de requisições da API-Sports atingido (provavelmente rajada). Tente novamente em ${wait}s.${reasonSuffix}`);
   }
 
   const pending = _inflight.get(path);
@@ -79,7 +83,13 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   const p = (async () => {
     const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
     if (res.status === 429) {
-      const err = applyRateLimit(res.statusText || "");
+      let reason = res.statusText || "";
+      try {
+        const body = await res.clone().json();
+        const errs = body?.errors;
+        if (errs && typeof errs === "object") reason = Object.values(errs).join(" · ") || reason;
+      } catch { /* corpo pode não ser JSON */ }
+      const err = applyRateLimit(reason);
       if (hit) return hit.data;
       throw err;
     }
@@ -113,7 +123,10 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
 // `season` e pegar os últimos N jogos nós mesmos. Como o ano da "season"
 // varia por convenção (ligas europeias usam o ano de início, ex: 2025
 // pra temporada 2025/26; ligas como o Brasileirão usam o ano corrente),
-// busca as duas temporadas mais prováveis e junta o resultado.
+// tenta a temporada mais provável primeiro e só busca a segunda se a
+// primeira não trouxer jogos suficientes — evita disparar 2 chamadas em
+// paralelo por time sempre, o que multiplica rápido quando vários jogos
+// são abertos em sequência (risco de estourar limite de rajada da API).
 export async function recentFixturesForTeam(teamId: number, limit: number): Promise<any[]> {
   const now = new Date();
   const month = now.getUTCMonth() + 1;
@@ -121,28 +134,32 @@ export async function recentFixturesForTeam(teamId: number, limit: number): Prom
   const euSeasonGuess = month >= 7 ? year : year - 1; // temporada europeia (ago-mai)
   const seasons = Array.from(new Set([year, euSeasonGuess]));
 
-  const settled = await Promise.allSettled(
-    seasons.map((s) => apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${s}`))
-  );
-  const all: any[] = [];
-  for (const r of settled) {
-    if (r.status === "fulfilled") all.push(...(r.value.response ?? []));
-  }
-  if (all.length === 0 && settled.every((r) => r.status === "rejected")) {
-    const firstError = settled.find((r): r is PromiseRejectedResult => r.status === "rejected");
-    throw firstError?.reason instanceof Error ? firstError.reason : new Error("Não foi possível carregar os jogos do time.");
+  const dedupe = (fixtures: any[]) => {
+    const seen = new Set<number>();
+    return fixtures.filter((f) => {
+      const id = f.fixture?.id;
+      if (id == null || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  };
+  const sortRecent = (fixtures: any[]) =>
+    [...fixtures].sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string));
+
+  const first = await apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${seasons[0]}`);
+  let all = first.response ?? [];
+  const finishedCount = all.filter((f: any) => f.fixture?.status?.short === "FT").length;
+
+  // Só busca a segunda temporada se a primeira não trouxe jogos finalizados
+  // suficientes (ex: início de temporada, ou convenção de ano errada).
+  if (finishedCount < limit && seasons[1] != null) {
+    try {
+      const second = await apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${seasons[1]}`);
+      all = [...all, ...(second.response ?? [])];
+    } catch { /* segue só com a primeira temporada */ }
   }
 
-  const seen = new Set<number>();
-  const deduped = all.filter((f) => {
-    const id = f.fixture?.id;
-    if (id == null || seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-  return deduped
-    .sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string))
-    .slice(0, limit);
+  return sortRecent(dedupe(all)).slice(0, limit);
 }
 
 // Mesma limitação vale pro head-to-head: busca o histórico completo entre
