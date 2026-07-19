@@ -2,8 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, Suspense, useMemo } from "react";
-// @ts-ignore - react-window types mismatch
-import { FixedSizeList as List } from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { getLocalPrediction } from "@/lib/predictions.functions";
 import type { TeamStats } from "@/lib/stats";
@@ -219,20 +217,10 @@ function UpcomingPage() {
           </div>
         </div>
       ) : (
-        <div className="h-[calc(100vh-280px)] min-h-[500px]">
-          <List
-            height={700}
-            itemCount={filtered.length}
-            itemSize={130}
-            width="100%"
-            className="scrollbar-hide"
-          >
-            {({ index, style }: any) => (
-              <div style={style} className="pb-3 px-1">
-                <FixtureCard f={filtered[index]} />
-              </div>
-            )}
-          </List>
+        <div className="space-y-3">
+          {filtered.map((f: any) => (
+            <FixtureCard key={f.fixtureId} f={f} />
+          ))}
         </div>
       )}
 
