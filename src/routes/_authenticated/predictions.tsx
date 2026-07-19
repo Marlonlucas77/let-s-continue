@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
-import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
+import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target, Search, X, ChevronDown } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
 export const Route = createFileRoute("/_authenticated/predictions")({
@@ -51,8 +51,14 @@ function PredictionsPage() {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(t);
     }
-    return Array.from(groups.entries());
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [teams]);
+
+  const [leagueFilter, setLeagueFilter] = useState("");
+  const filteredTeams = useMemo(() => {
+    if (!leagueFilter) return teams;
+    return teams.filter((t) => (t.league || t.country || "Outros") === leagueFilter);
+  }, [teams, leagueFilter]);
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
@@ -135,32 +141,43 @@ function PredictionsPage() {
       )}
 
       {teams.length > 0 && (
-      <div className="card-surface p-5 mt-6 grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2 -mt-1 mb-1 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
+      <div className="card-surface p-5 mt-6">
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
           <span>{teams.length} time(s) disponível(eis) — só aparecem times que você já importou.</span>
           <Link to="/import" className="text-primary hover:underline shrink-0">Importar mais ligas/times →</Link>
         </div>
-        <div>
-          <label className="text-sm font-medium">Time mandante</label>
-          <select value={homeId} onChange={(e) => setHomeId(e.target.value)} className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm">
-            <option value="">Selecionar...</option>
-            {teamsByLeague.map(([league, ts]) => (
-              <optgroup key={league} label={league}>
-                {ts.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </optgroup>
-            ))}
+
+        <div className="mb-4">
+          <label className="text-sm font-medium">Filtrar por liga</label>
+          <select
+            value={leagueFilter}
+            onChange={(e) => setLeagueFilter(e.target.value)}
+            className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm"
+          >
+            <option value="">Todas as ligas</option>
+            {teamsByLeague.map(([league]) => <option key={league} value={league}>{league}</option>)}
           </select>
         </div>
-        <div>
-          <label className="text-sm font-medium">Time visitante</label>
-          <select value={awayId} onChange={(e) => setAwayId(e.target.value)} className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-sm">
-            <option value="">Selecionar...</option>
-            {teamsByLeague.map(([league, ts]) => (
-              <optgroup key={league} label={league}>
-                {ts.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </optgroup>
-            ))}
-          </select>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium">Time mandante</label>
+            <TeamCombobox
+              teams={filteredTeams}
+              value={homeId}
+              onChange={setHomeId}
+              placeholder="Digite pra buscar..."
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Time visitante</label>
+            <TeamCombobox
+              teams={filteredTeams}
+              value={awayId}
+              onChange={setAwayId}
+              placeholder="Digite pra buscar..."
+            />
+          </div>
         </div>
       </div>
       )}
@@ -364,6 +381,83 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg bg-input border border-border p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="font-display font-bold text-lg mt-1">{value}</div>
+    </div>
+  );
+}
+
+type ComboTeam = { id: string; name: string; logo_url?: string | null; league?: string | null; country?: string | null };
+
+function TeamCombobox({ teams, value, onChange, placeholder }: {
+  teams: ComboTeam[]; value: string; onChange: (id: string) => void; placeholder?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selected = teams.find((t) => t.id === value);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const pool = q ? teams.filter((t) => t.name.toLowerCase().includes(q)) : teams;
+    return pool.slice(0, 50);
+  }, [teams, query]);
+
+  if (selected && !open) {
+    return (
+      <div className="mt-1 flex items-center gap-2 rounded-md bg-input border border-border px-3 py-2">
+        {selected.logo_url && <img src={selected.logo_url} alt="" className="h-5 w-5 object-contain shrink-0" />}
+        <span className="flex-1 text-sm truncate">{selected.name}</span>
+        <button
+          type="button"
+          onClick={() => { onChange(""); setQuery(""); setOpen(true); }}
+          className="text-muted-foreground hover:text-destructive shrink-0"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mt-1" ref={wrapperRef}>
+      <div className="flex items-center gap-2 rounded-md bg-input border border-border px-3 focus-within:border-primary transition-colors">
+        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 bg-transparent py-2 text-sm outline-none"
+        />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </div>
+      {open && (
+        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+          {results.length === 0 ? (
+            <div className="px-3 py-3 text-xs text-muted-foreground text-center">Nenhum time encontrado.</div>
+          ) : (
+            results.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => { onChange(t.id); setQuery(""); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-input"
+              >
+                {t.logo_url && <img src={t.logo_url} alt="" className="h-5 w-5 object-contain shrink-0" />}
+                <span className="flex-1 truncate">{t.name}</span>
+                <span className="text-[10px] text-muted-foreground truncate max-w-[35%]">{t.league || t.country}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
