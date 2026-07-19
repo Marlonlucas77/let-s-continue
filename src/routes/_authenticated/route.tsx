@@ -38,7 +38,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Dados",
     items: [
-      { to: "/import", label: "Importar", icon: Download },
       { to: "/teams", label: "Times", icon: Users },
     ],
   },
