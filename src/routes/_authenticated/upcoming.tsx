@@ -285,7 +285,12 @@ function FixtureCard({ f }: { f: any }) {
   // Caminho lento (API-Sports ao vivo): só é acionado quando não há
   // histórico local suficiente, ou sob demanda para ver H2H/forma detalhada.
   const [wantsLiveDetails, setWantsLiveDetails] = useState(false);
-  const shouldFetchLive = open && !!homeApiId && !!awayApiId && (wantsLiveDetails || (!localLoading && !hasLocal));
+  // Antes, sem histórico local, a análise ao vivo (3 chamadas à API externa:
+  // últimos jogos do mandante, do visitante e H2H) disparava sozinha assim
+  // que o card abria. Com centenas de jogos na lista, abrir vários cards de
+  // times sem histórico rápido estourava o limite de requisições à toa.
+  // Agora sempre exige um clique explícito, igual ao "ver H2H" do caminho local.
+  const shouldFetchLive = open && !!homeApiId && !!awayApiId && wantsLiveDetails;
 
   const { data: analysis, error: analysisError, refetch: refetchAnalysis } = useQuery({
     queryKey: ["analysis", f.fixtureId],
@@ -413,7 +418,23 @@ function FixtureCard({ f }: { f: any }) {
 
       {open && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
-          {showLiveError ? (
+          {localLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Consultando histórico local...
+            </div>
+          ) : !hasLocal && !wantsLiveDetails ? (
+            <div className="rounded-md border border-border bg-input/30 p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-3">
+                Este jogo não tem histórico importado. A análise ao vivo consulta a API externa (gasta cota do plano).
+              </p>
+              <button
+                onClick={() => setWantsLiveDetails(true)}
+                className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90 inline-flex items-center gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Carregar análise ao vivo
+              </button>
+            </div>
+          ) : showLiveError ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
               <div className="text-destructive font-medium mb-1">Não foi possível carregar as estatísticas</div>
               <div className="text-xs text-muted-foreground mb-2">{(analysisError as Error).message || "Erro na API. Pode ser limite de requisições."}</div>
@@ -421,7 +442,7 @@ function FixtureCard({ f }: { f: any }) {
             </div>
           ) : isWaiting || !p ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> {localLoading ? "Consultando histórico local..." : "Analisando últimos jogos..."}
+              <Loader2 className="h-4 w-4 animate-spin" /> Analisando últimos jogos...
             </div>
           ) : (
 
