@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useState, Suspense, useMemo, useCallback } from "react";
-import { FixedSizeList as List, ListChildComponentProps } from "react-window";
+import * as ReactWindow from "react-window";
 import { listUpcomingFixtures, getFixtureOdds, analyzeFixture, getAiInsights, getAiPrediction } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
@@ -102,19 +102,19 @@ function UpcomingPage() {
         </div>
       ) : (
         <div className="h-[calc(100vh-280px)] min-h-[500px]">
-          <List
+          <ReactWindow.FixedSizeList
             height={700}
             itemCount={filtered.length}
             itemSize={130}
             width="100%"
             className="scrollbar-hide"
           >
-            {({ index, style }: ListChildComponentProps) => (
+            {({ index, style }: any) => (
               <div style={style} className="pb-3 px-1">
                 <FixtureCard f={filtered[index]} />
               </div>
             )}
-          </List>
+          </ReactWindow.FixedSizeList>
         </div>
       )}
     </div>
