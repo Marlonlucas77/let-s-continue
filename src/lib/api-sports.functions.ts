@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { apiSportsFetch, importFixturesFor } from "@/lib/fixtures-importer.server";
+import { apiSportsFetch, importFixturesFor, getComputedCache, setComputedCache } from "@/lib/fixtures-importer.server";
 import { ApiSportsFixture, ApiSportsLeague, ApiSportsOdd } from "./api-sports.types";
+import { Json } from "@/integrations/supabase/types";
 
 export const searchLeagues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -266,18 +267,41 @@ export const analyzeFixture = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ data, context }) => {
+    interface TeamStat {
+      games: number;
+      wins: number; draws: number; losses: number;
+      goalsFor: number; goalsAgainst: number;
+      avgFor: number; avgAgainst: number;
+      bttsPct: number; over25Pct: number;
+      form: ("W" | "D" | "L")[];
+      recent: { date: string; opponent: string; gf: number; ga: number; result: "W" | "D" | "L"; home: boolean }[];
+    }
+
+    interface PredictionAnalysis {
+      home: TeamStat;
+      away: TeamStat;
+      h2h: TeamStat;
+      prediction: {
+        homeWinPct: number;
+        drawPct: number;
+        awayWinPct: number;
+        expectedGoals: number;
+        over25Pct: number;
+        bttsPct: number;
+        confidenceScore: number;
+        basis: string;
+      };
+    }
+
     // Cache: 1h para fixtures futuros/recentes — evita estourar cota da API-Sports
     const { data: cached } = await context.supabase
       .from("fixture_analysis_cache")
       .select("analysis, updated_at")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
-    if (cached && (Date.now() - new Date(cached.updated_at as string).getTime()) < 60 * 60 * 1000) {
-      return cached.analysis as PredictionAnalysis;
+    if (cached && cached.analysis && (Date.now() - new Date(cached.updated_at as string).getTime()) < 60 * 60 * 1000) {
+      return cached.analysis as unknown as PredictionAnalysis;
     }
-
-    interface PredictionAnalysis {
-      home: TeamStat;
       away: TeamStat;
       h2h: TeamStat;
       prediction: {
@@ -385,7 +409,7 @@ export const analyzeFixture = createServerFn({ method: "POST" })
         fixture_id: data.fixtureId,
         home_id: data.homeId,
         away_id: data.awayId,
-        analysis: result,
+        analysis: result as unknown as Json,
         updated_at: new Date().toISOString(),
       });
     } catch { /* cache é best-effort */ }
