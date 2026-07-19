@@ -209,6 +209,8 @@ export const trackLeague = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { assertLeagueQuota } = await import("@/lib/plan-limits.server");
+    await assertLeagueQuota(supabase, userId, 1);
     const { error } = await supabase.from("tracked_leagues").upsert({
       user_id: userId,
       league_id: data.leagueId,
