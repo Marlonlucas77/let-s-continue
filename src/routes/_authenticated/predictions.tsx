@@ -145,7 +145,7 @@ function PredictionsPage() {
               <Stat label="Ambas marcam" value={`${prediction.bttsPct}%`} />
               <Stat label="Escanteios" value={`${prediction.expectedCornersMin}–${prediction.expectedCornersMax}`} />
               <Stat label="Cartões amarelos" value={`~${prediction.expectedYellow}`} />
-              <Stat label="Confiança IA" value={`${Math.round((prediction.homeWinPct + prediction.over25Pct) / 2)}%`} />
+              <Stat label="Confiança IA" value={`${prediction.confidenceScore}%`} />
             </div>
 
             <p className="mt-6 text-xs text-muted-foreground italic">{prediction.basis}</p>
@@ -213,6 +213,8 @@ function TeamStatsCard({ title, stats }: { title: string; stats: ReturnType<type
           <div><span className="text-muted-foreground">Média sofr.:</span> <b>{stats.avgGoalsAgainst.toFixed(2)}</b></div>
           <div><span className="text-muted-foreground">BTTS:</span> <b>{stats.bttsPct.toFixed(0)}%</b></div>
           <div><span className="text-muted-foreground">Over 2.5:</span> <b>{stats.over25Pct.toFixed(0)}%</b></div>
+          <div><span className="text-muted-foreground">Clean Sheets:</span> <b>{stats.csPct.toFixed(0)}%</b></div>
+          <div><span className="text-muted-foreground">Média Cartões:</span> <b>{stats.avgYellow.toFixed(1)}</b></div>
           <div className="col-span-2 flex gap-1 mt-2">
             <span className="text-muted-foreground text-xs">Forma:</span>
             {stats.form.slice(0, 5).map((r, i) => (
