@@ -17,9 +17,8 @@ export const getMyAccount = createServerFn({ method: "GET" })
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId);
 
-    // Previsões IA do mês
+    // Previsões IA de hoje
     const since = new Date();
-    since.setUTCDate(1);
     since.setUTCHours(0, 0, 0, 0);
     const { count: aiCount } = await supabase
       .from("ai_prediction_usage")
@@ -45,7 +44,7 @@ export const getMyAccount = createServerFn({ method: "GET" })
       plan,
       limits: {
         leagues: limits.leagues === Infinity ? null : limits.leagues,
-        monthlyPredictions: limits.monthlyPredictions === Infinity ? null : limits.monthlyPredictions,
+        dailyPredictions: limits.dailyPredictions === Infinity ? null : limits.dailyPredictions,
       },
       usage: {
         leagues: leaguesCount ?? 0,

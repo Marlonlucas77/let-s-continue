@@ -59,7 +59,7 @@ function PricingPage() {
       priceId: "basic_monthly" as string | null,
       features: [
         "Até 3 ligas monitoradas",
-        "20 previsões de IA por mês",
+        "8 previsões de IA por dia",
         "Estatísticas básicas",
         "Alertas de jogos do dia",
       ],
@@ -73,7 +73,7 @@ function PricingPage() {
       highlight: true,
       features: [
         "Até 15 ligas monitoradas",
-        "150 previsões de IA por mês",
+        "25 previsões de IA por dia",
         "H2H e estatísticas avançadas",
         "Nível de confiança da IA",
         "Bolões privados (até 3)",

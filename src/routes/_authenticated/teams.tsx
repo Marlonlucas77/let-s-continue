@@ -6,6 +6,7 @@ import { searchTeams, getTeamAnalysis } from "@/lib/api-sports.functions";
 import { Search, Loader2, ArrowLeft, Trophy, Target, Shield } from "lucide-react";
 import { translateCountry, translateTeam } from "@/lib/country-i18n";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { TeamBadge } from "@/components/TeamBadge";
 
 export const Route = createFileRoute("/_authenticated/teams")({
   component: TeamsPage,
@@ -76,13 +77,7 @@ function TeamsPage() {
           {results.map((t) => (
             <div key={t.id} className="card-surface p-4 flex items-center gap-3 hover:border-primary/50 transition">
               <button onClick={() => setSelected(t)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                {t.logo ? (
-                  <img src={t.logo} alt="" className="h-11 w-11 object-contain" />
-                ) : (
-                  <div className="h-11 w-11 rounded-full bg-primary/20 grid place-items-center text-xs font-bold">
-                    {t.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
+                <TeamBadge name={t.name} size={44} />
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold truncate">{translateTeam(t.name)}</div>
                   <div className="text-xs text-muted-foreground truncate">
@@ -115,7 +110,7 @@ function TeamDetail({ team, onBack }: { team: Team; onBack: () => void }) {
       </button>
 
       <div className="card-surface p-5 mb-6 flex items-center gap-4">
-        {team.logo && <img src={team.logo} alt="" className="h-16 w-16 object-contain" />}
+        <TeamBadge name={team.name} size={64} />
         <div>
           <h1 className="font-display text-2xl font-bold">{translateTeam(team.name)}</h1>
           <p className="text-sm text-muted-foreground">
@@ -172,7 +167,6 @@ function TeamDetail({ team, onBack }: { team: Team; onBack: () => void }) {
                 <div key={i} className="flex items-center gap-3 text-sm border-b border-border/50 pb-2 last:border-0">
                   <span className="text-xs text-muted-foreground w-20">{m.date}</span>
                   <span className="text-xs text-muted-foreground w-10">{m.home ? "Casa" : "Fora"}</span>
-                  {m.opponentLogo && <img src={m.opponentLogo} className="h-5 w-5 object-contain" alt="" />}
                   <span className="flex-1 truncate">{m.opponent}</span>
                   <span className="font-mono font-semibold">{m.gf}-{m.ga}</span>
                   <span className={`text-xs font-bold w-5 text-center ${

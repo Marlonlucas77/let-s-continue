@@ -3,14 +3,25 @@ export type PlanId = "free" | "basic" | "pro" | "elite";
 
 export interface PlanLimits {
   leagues: number; // Infinity = ilimitado
-  monthlyPredictions: number;
+  dailyPredictions: number; // Infinity = ilimitado
 }
 
+// Limite DIÁRIO de previsões com IA (antes era mensal — trocado a pedido).
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  free: { leagues: 1, monthlyPredictions: 5 },
-  basic: { leagues: 3, monthlyPredictions: 20 },
-  pro: { leagues: 15, monthlyPredictions: 150 },
-  elite: { leagues: Infinity, monthlyPredictions: Infinity },
+  free: { leagues: 1, dailyPredictions: 2 },
+  basic: { leagues: 3, dailyPredictions: 8 },
+  pro: { leagues: 15, dailyPredictions: 25 },
+  elite: { leagues: Infinity, dailyPredictions: Infinity },
+};
+
+// Preços mensais (mesmos valores exibidos em /pricing) — usado pra
+// calcular a receita estimada no painel admin. Se o preço mudar lá,
+// atualize aqui também.
+export const PLAN_PRICES_BRL: Record<PlanId, number> = {
+  free: 0,
+  basic: 14.99,
+  pro: 29.99,
+  elite: 59.99,
 };
 
 function priceIdToPlan(priceId: string | null | undefined): PlanId {
@@ -59,9 +70,8 @@ export async function assertLeagueQuota(supabase: any, userId: string, adding = 
 
 export async function assertPredictionQuota(supabase: any, userId: string) {
   const { limits, plan } = await getUserPlan(supabase, userId);
-  if (limits.monthlyPredictions === Infinity) return;
+  if (limits.dailyPredictions === Infinity) return;
   const since = new Date();
-  since.setUTCDate(1);
   since.setUTCHours(0, 0, 0, 0);
   const { count } = await supabase
     .from("ai_prediction_usage")
@@ -69,9 +79,9 @@ export async function assertPredictionQuota(supabase: any, userId: string) {
     .eq("user_id", userId)
     .gte("created_at", since.toISOString());
   const current = count ?? 0;
-  if (current >= limits.monthlyPredictions) {
+  if (current >= limits.dailyPredictions) {
     throw new Error(
-      `Limite do plano ${plan.toUpperCase()} atingido: ${limits.monthlyPredictions} previsões IA/mês. Faça upgrade em /pricing.`,
+      `Limite do plano ${plan.toUpperCase()} atingido: ${limits.dailyPredictions} previsões IA/dia. Faça upgrade em /pricing.`,
     );
   }
 }

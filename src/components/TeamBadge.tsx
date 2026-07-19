@@ -1,9 +1,10 @@
 import { teamInitials } from "@/lib/stats";
 
-export function TeamBadge({ name, logoUrl, color, size = 40 }: { name: string; logoUrl?: string | null; color?: string | null; size?: number }) {
-  if (logoUrl) {
-    return <img src={logoUrl} alt={name} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />;
-  }
+// Não exibe o brasão/logo real do time — são marcas registradas dos
+// clubes e ligas, e mostrar isso publicamente num produto comercial é
+// risco de propriedade intelectual. Sempre usa um avatar genérico com as
+// iniciais do time em vez da imagem.
+export function TeamBadge({ name, color, size = 40 }: { name: string; logoUrl?: string | null; color?: string | null; size?: number }) {
   return (
     <div
       className="grid place-items-center rounded-full font-bold text-white shrink-0"

@@ -72,6 +72,7 @@ export const adminStats = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { PLAN_PRICES_BRL } = await import("@/lib/plan-limits.server");
     const [{ count: users }, { count: matches }, { count: predictions }, { count: teams }, { count: tracked }, { data: activeSubs }] = await Promise.all([
       supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }),
       supabaseAdmin.from("matches").select("*", { count: "exact", head: true }),
@@ -82,6 +83,18 @@ export const adminStats = createServerFn({ method: "GET" })
     ]);
     const plans: Record<string, number> = {};
     for (const s of activeSubs ?? []) plans[s.plan] = (plans[s.plan] ?? 0) + 1;
+
+    // Receita estimada = soma de (assinantes ativos × preço) por plano.
+    // "Estimada" porque não guardamos o valor exato cobrado por assinatura
+    // (a fonte de verdade real é o Stripe) — isso usa os preços atuais de
+    // /pricing, então planos comprados com preço antigo ficam levemente
+    // imprecisos se o preço já mudou.
+    let monthlyRevenueBRL = 0;
+    for (const [plan, count] of Object.entries(plans)) {
+      const price = (PLAN_PRICES_BRL as Record<string, number>)[plan] ?? 0;
+      monthlyRevenueBRL += price * count;
+    }
+
     return {
       users: users ?? 0,
       matches: matches ?? 0,
@@ -89,6 +102,7 @@ export const adminStats = createServerFn({ method: "GET" })
       teams: teams ?? 0,
       trackedLeagues: tracked ?? 0,
       plans,
+      monthlyRevenueBRL: Math.round(monthlyRevenueBRL * 100) / 100,
     };
   });
 

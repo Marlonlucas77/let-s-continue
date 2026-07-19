@@ -28,7 +28,7 @@ function Dashboard() {
   const { data } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
-      const [teams, trackedLeagues, allMatches, preds, todayFixtures, favorites, weekFixtures] = await Promise.all([
+      const [teams, trackedLeagues, allMatches, preds, aiGenerated, todayFixtures, favorites, weekFixtures] = await Promise.all([
         supabase.from("teams").select("id", { count: "exact", head: true }),
         supabase.from("tracked_leagues").select("id", { count: "exact", head: true }),
         supabase
@@ -37,6 +37,11 @@ function Dashboard() {
           .order("match_date", { ascending: false })
           .limit(20),
         supabase.from("predictions").select("id, result_checked, was_correct"),
+        // "Previsões geradas" precisa ser toda vez que a IA rodou de verdade
+        // (ai_prediction_usage), não só as que a pessoa clicou em "Salvar"
+        // depois (predictions) — antes essas duas coisas estavam confundidas
+        // e o card sempre mostrava 0 pra quem gerava sem salvar.
+        supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
         listFixtures({ data: { days: 1 } }).catch(() => []),
         loadFavorites().catch(() => []),
         listFixtures({ data: { days: 7 } }).catch(() => []),
@@ -54,6 +59,7 @@ function Dashboard() {
         favFixtures: favFixtures as any[],
         allMatches: allMatches.data ?? [],
         preds: preds.data ?? [],
+        aiGeneratedCount: aiGenerated.count ?? 0,
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -63,6 +69,7 @@ function Dashboard() {
   const trackedLeaguesCount = data?.trackedLeaguesCount ?? 0;
   const todayFixtures = data?.todayFixtures ?? [];
   const predsCount = data?.preds.length ?? 0;
+  const aiGeneratedCount = data?.aiGeneratedCount ?? 0;
   const correct = data?.preds.filter((p) => p.result_checked && p.was_correct).length ?? 0;
   const checked = data?.preds.filter((p) => p.result_checked).length ?? 0;
   const accuracy = checked > 0 ? Math.round((correct / checked) * 100) : 0;
@@ -100,7 +107,7 @@ function Dashboard() {
     { label: "Ligas habilitadas", value: trackedLeaguesCount, icon: Trophy },
     { label: "Times no histórico", value: teamsCount, icon: Users },
     { label: "Jogos hoje", value: todayFixtures.length, icon: ListOrdered },
-    { label: "Previsões geradas", value: predsCount, icon: Target },
+    { label: "Previsões geradas", value: aiGeneratedCount, icon: Target },
   ];
 
   return (

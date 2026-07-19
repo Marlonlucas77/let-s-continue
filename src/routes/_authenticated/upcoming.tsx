@@ -317,7 +317,6 @@ function FixtureCard({ f }: { f: any }) {
           <CalendarClock className="h-3.5 w-3.5" />
           {dateStr}
           <span className="mx-1">·</span>
-          {f.leagueLogo && <img src={f.leagueLogo} className="h-4 w-4 object-contain" alt="" />}
           <span className="truncate">{f.country ? `${translateCountry(f.country)} · ` : ""}{translateLeague(f.league)}</span>
           <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${open ? "rotate-180" : ""}`} />
         </div>

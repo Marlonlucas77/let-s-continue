@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, ChevronDown, Pencil } from "lucide-react";
+import { TeamBadge } from "@/components/TeamBadge";
 
 export type ComboTeam = { id: string; name: string; logo_url?: string | null; league?: string | null; country?: string | null };
 
@@ -44,13 +45,13 @@ export function TeamCombobox({ teams, value, onChange, placeholder }: {
   if (value && !open) {
     return (
       <div className="mt-1 flex items-center gap-2 rounded-md bg-input border border-border px-3 py-2">
-        {value.logo_url ? (
-          <img src={value.logo_url} alt="" className="h-5 w-5 object-contain shrink-0" />
-        ) : isCustomTeam(value) ? (
+        {isCustomTeam(value) ? (
           <span title="Time digitado, não está na sua lista importada">
             <Pencil className="h-4 w-4 text-muted-foreground shrink-0" />
           </span>
-        ) : null}
+        ) : (
+          <TeamBadge name={value.name} size={20} />
+        )}
         <span className="flex-1 text-sm truncate">{value.name}</span>
         <button
           type="button"
@@ -89,7 +90,7 @@ export function TeamCombobox({ teams, value, onChange, placeholder }: {
               onClick={() => { onChange(t); setQuery(""); setOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-input"
             >
-              {t.logo_url && <img src={t.logo_url} alt="" className="h-5 w-5 object-contain shrink-0" />}
+              <TeamBadge name={t.name} size={20} />
               <span className="flex-1 truncate">{t.name}</span>
               <span className="text-[10px] text-muted-foreground truncate max-w-[35%]">{t.league || t.country}</span>
             </button>

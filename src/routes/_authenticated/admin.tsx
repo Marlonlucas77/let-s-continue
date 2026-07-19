@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminListUsers, adminToggleRole, adminStats, checkIsAdmin } from "@/lib/admin.functions";
-import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck } from "lucide-react";
+import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -62,18 +62,29 @@ function AdminPage() {
       </div>
 
       {stats && (
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-6">
           <StatCard icon={Users} label="Usuários" value={stats.users} />
           <StatCard icon={Trophy} label="Jogos" value={stats.matches} />
           <StatCard icon={ListChecks} label="Previsões" value={stats.predictions} />
           <StatCard icon={Layers} label="Times" value={stats.teams} />
           <StatCard icon={Layers} label="Ligas rastreadas" value={stats.trackedLeagues} />
+          <div className="card-surface p-4 border-primary/40 bg-primary/5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+              <DollarSign className="h-3.5 w-3.5" /> Receita estimada/mês
+            </div>
+            <div className="font-display text-2xl font-bold text-primary">
+              {stats.monthlyRevenueBRL.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </div>
+          </div>
         </div>
       )}
 
       {stats && Object.keys(stats.plans).length > 0 && (
         <div className="card-surface p-4">
-          <h2 className="text-sm font-medium mb-2">Assinaturas ativas por plano</h2>
+          <h2 className="text-sm font-medium mb-1">Assinaturas ativas por plano</h2>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Receita é uma estimativa (assinantes ativos × preço atual em /pricing) — o valor exato cobrado fica no Stripe.
+          </p>
           <div className="flex gap-3 flex-wrap">
             {Object.entries(stats.plans).map(([plan, count]) => (
               <div key={plan} className="rounded-md border border-border bg-input/40 px-3 py-1.5 text-sm">

@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 
-export const FREE_PREDICTION_LIMIT = 5;
+// Mesmo valor do plano grátis em plan-limits.server.ts (dailyPredictions).
+// Se mudar um, mude o outro — mantidos separados porque esse aqui roda no
+// cliente e aquele é server-only.
+export const FREE_PREDICTION_LIMIT = 2;
 
 export function useSubscription() {
   const { data: user } = useQuery({
@@ -31,7 +34,7 @@ export function useSubscription() {
     enabled: !!user?.id,
     queryFn: async () => {
       const start = new Date();
-      start.setDate(1); start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const { count } = await supabase
         .from("predictions")
         .select("id", { count: "exact", head: true })

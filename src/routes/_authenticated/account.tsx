@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
       { title: "Minha conta — Placar Certo" },
-      { name: "description", content: "Plano atual, uso do mês e histórico de acertos." },
+      { name: "description", content: "Plano atual, uso de hoje e histórico de acertos." },
     ],
   }),
 });
@@ -51,7 +51,7 @@ function AccountPage() {
 
   const { email, plan, limits, usage, subscription, stats } = data;
   const pctLeagues = limits.leagues ? Math.min(100, (usage.leagues / limits.leagues) * 100) : 100;
-  const pctAI = limits.monthlyPredictions ? Math.min(100, (usage.aiPredictions / limits.monthlyPredictions) * 100) : 100;
+  const pctAI = limits.dailyPredictions ? Math.min(100, (usage.aiPredictions / limits.dailyPredictions) * 100) : 100;
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -99,11 +99,11 @@ function AccountPage() {
         </div>
       </div>
 
-      {/* Uso do mês */}
+      {/* Uso de hoje */}
       <div className="card-surface p-5 space-y-4">
-        <h2 className="font-display font-semibold">Uso do mês</h2>
+        <h2 className="font-display font-semibold">Uso de hoje</h2>
         <UsageBar label="Ligas monitoradas" value={usage.leagues} limit={limits.leagues} pct={pctLeagues} />
-        <UsageBar label="Previsões IA" value={usage.aiPredictions} limit={limits.monthlyPredictions} pct={pctAI} />
+        <UsageBar label="Previsões IA" value={usage.aiPredictions} limit={limits.dailyPredictions} pct={pctAI} />
       </div>
 
       {/* Estatísticas pessoais */}
