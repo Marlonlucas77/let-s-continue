@@ -1,4 +1,5 @@
 // Server-only shared fixtures importer used by both server functions and cron.
+import { ApiSportsResponse } from "./api-sports.types";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -31,7 +32,7 @@ function ttlFor(path: string): number {
   return 5 * 60 * 1000;
 }
 
-export async function apiSportsFetch(path: string) {
+export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsResponse<T>> {
   const key = process.env.API_SPORTS_KEY;
   if (!key) throw new Error("API_SPORTS_KEY não configurada");
 
