@@ -229,6 +229,23 @@ function UpcomingPage() {
 }
 
 
+function formatMarketOutcome(market: string, outcome: string, homeName: string, awayName: string): string {
+  if (market === "1x2") {
+    if (outcome === "Home") return `Vitória ${homeName}`;
+    if (outcome === "Draw") return "Empate";
+    if (outcome === "Away") return `Vitória ${awayName}`;
+  }
+  if (market === "BTTS") {
+    if (outcome === "Yes") return "Ambas marcam: Sim";
+    if (outcome === "No") return "Ambas marcam: Não";
+  }
+  if (market === "Over/Under") {
+    if (/^Over/i.test(outcome)) return `Mais de ${outcome.replace(/Over\s*/i, "")} gols`;
+    if (/^Under/i.test(outcome)) return `Menos de ${outcome.replace(/Under\s*/i, "")} gols`;
+  }
+  return `${market} · ${outcome}`;
+}
+
 function FixtureCard({ f }: { f: any }) {
   const [open, setOpen] = useState(false);
   const analyzeFn = useServerFn(analyzeFixture);
@@ -541,13 +558,14 @@ function FixtureCard({ f }: { f: any }) {
 
           {odds && odds.markets.length > 0 && (
             <div>
-              <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              <div className="text-xs text-muted-foreground mb-0.5 flex items-center gap-1">
                 <Trophy className="h-3 w-3" /> Melhor odd por mercado ({odds.bookmakerCount} casas)
               </div>
+              <p className="text-[11px] text-muted-foreground/70 mb-2">A maior cotação encontrada entre as casas de apostas pra cada resultado possível.</p>
               <div className="grid gap-1.5 md:grid-cols-2">
                 {odds.markets.map((m: any, i: number) => (
                   <div key={i} className="flex items-center justify-between text-xs rounded-md bg-input/50 px-2 py-1.5 border border-border">
-                    <span className="text-muted-foreground truncate">{m.market} · <span className="text-foreground">{m.outcome}</span></span>
+                    <span className="text-muted-foreground truncate">{formatMarketOutcome(m.market, m.outcome, translateTeam(f.home.name), translateTeam(f.away.name))}</span>
                     <span className="font-mono ml-2 shrink-0"><span className="text-primary">{m.bookmaker}</span> <span className="font-bold">{m.odd.toFixed(2)}</span></span>
                   </div>
                 ))}
