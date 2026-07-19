@@ -84,7 +84,7 @@ function UpcomingPage() {
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
-            Estamos buscando jogos das suas ligas monitoradas. Tente aumentar o período ou verifique se você está seguindo alguma liga ativa.
+            Estamos buscando jogos de todas as ligas. Tente filtrar por outro termo ou recarregar.
           </p>
           <div className="flex justify-center gap-2">
             <button 
@@ -93,12 +93,6 @@ function UpcomingPage() {
             >
               Recarregar página
             </button>
-            <Link 
-              to="/import" 
-              className="text-xs rounded-md border border-border bg-input/50 px-3 py-1.5 text-foreground font-medium hover:bg-input"
-            >
-              Monitorar novas ligas
-            </Link>
           </div>
         </div>
       ) : (
@@ -118,6 +112,7 @@ function UpcomingPage() {
           </List>
         </div>
       )}
+
     </div>
   );
 }

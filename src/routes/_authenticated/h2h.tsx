@@ -187,11 +187,12 @@ function TeamPicker({ label, team, onSelect }: { label: string; team: Team | nul
   const { data: results = [], isFetching } = useQuery({
     queryKey: ["h2h-search", label, term],
     queryFn: async () => (await searchFn({ data: { query: term } })) as Team[],
-    enabled: term.length >= 2 && !team,
+    enabled: term.length >= 2,
     staleTime: 5 * 60 * 1000,
     retry: false,
     refetchOnWindowFocus: false,
   });
+
 
   if (team) {
     return (
