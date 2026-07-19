@@ -1,20 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { apiSportsFetch, getComputedCache, importFixturesFor, setComputedCache } from "@/lib/fixtures-importer.server";
+import { apiSportsFetch, importFixturesFor } from "@/lib/fixtures-importer.server";
+import { ApiSportsFixture, ApiSportsLeague, ApiSportsOdd } from "./api-sports.types";
 
 export const searchLeagues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { query: string }) => z.object({ query: z.string().min(2) }).parse(d))
   .handler(async ({ data }) => {
-    const json = await apiSportsFetch(`/leagues?search=${encodeURIComponent(data.query)}`);
-    return (json.response ?? []).slice(0, 30).map((r: any) => ({
+    const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?search=${encodeURIComponent(data.query)}`);
+    return (json.response ?? []).slice(0, 30).map((r) => ({
       id: r.league.id as number,
       name: r.league.name as string,
       type: r.league.type as string,
       country: r.country.name as string,
       logo: r.league.logo as string,
-      seasons: (r.seasons ?? []).map((s: any) => s.year as number).sort((a: number, b: number) => b - a).slice(0, 8),
+      seasons: (r.seasons ?? []).map((s) => s.year).sort((a, b) => b - a).slice(0, 8),
     }));
   });
 
@@ -108,12 +109,12 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
 
     // Fast path: fetch only user's tracked leagues (small payload, much faster).
     // Fallback: if user has no tracked leagues, fetch by date (global).
-    let responses: any[][];
+    let responses: ApiSportsFixture[][];
     if (trackedList.length > 0) {
       responses = await Promise.all(
         trackedList.map(async (t) => {
           try {
-            const json = await apiSportsFetch(
+            const json = await apiSportsFetch<ApiSportsFixture>(
               `/fixtures?league=${t.league_id}&season=${t.season}&from=${from}&to=${to}&status=NS-TBD`
             );
             return json.response ?? [];
@@ -130,14 +131,24 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
       responses = await Promise.all(
         dates.map(async (date) => {
           try {
-            const json = await apiSportsFetch(`/fixtures?date=${date}`);
+            const json = await apiSportsFetch<ApiSportsFixture>(`/fixtures?date=${date}`);
             return json.response ?? [];
           } catch { return []; }
         })
       );
     }
 
-    const out: any[] = [];
+    const out: {
+      fixtureId: number;
+      date: string;
+      leagueId?: number;
+      league: string;
+      leagueLogo?: string;
+      country?: string;
+      venue?: string;
+      home: { id: string | null; apiId: number; name: string; logo: string };
+      away: { id: string | null; apiId: number; name: string; logo: string };
+    }[] = [];
     const seen = new Set<number>();
     for (const list of responses) {
       for (const f of list) {
@@ -155,8 +166,8 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
           leagueLogo: f.league?.logo as string | undefined,
           country: f.league?.country as string | undefined,
           venue: f.fixture.venue?.name as string | undefined,
-          home: { id: (home as any)?.id ?? null, apiId: f.teams.home.id as number, name: f.teams.home.name as string, logo: (home as any)?.logo_url ?? f.teams.home.logo as string },
-          away: { id: (away as any)?.id ?? null, apiId: f.teams.away.id as number, name: f.teams.away.name as string, logo: (away as any)?.logo_url ?? f.teams.away.logo as string },
+          home: { id: home?.id ?? null, apiId: f.teams.home.id, name: f.teams.home.name, logo: home?.logo_url ?? f.teams.home.logo },
+          away: { id: away?.id ?? null, apiId: f.teams.away.id, name: f.teams.away.name, logo: away?.logo_url ?? f.teams.away.logo },
         });
       }
     }
@@ -168,7 +179,7 @@ export const getFixtureOdds = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { fixtureId: number }) => z.object({ fixtureId: z.number().int() }).parse(d))
   .handler(async ({ data }) => {
-    const json = await apiSportsFetch(`/odds?fixture=${data.fixtureId}`);
+    const json = await apiSportsFetch<ApiSportsOdd>(`/odds?fixture=${data.fixtureId}`);
     const resp = (json.response ?? [])[0];
     if (!resp) return { markets: [], bookmakerCount: 0 };
 
@@ -220,13 +231,13 @@ export const autoCheckPredictions = createServerFn({ method: "POST" })
     let checked = 0, correct = 0;
     for (const p of preds) {
       const predDate = (p.created_at as string).slice(0, 10);
-      const m = all.find((x: any) =>
+      const m = all.find((x) =>
         ((x.home_team_id === p.home_team_id && x.away_team_id === p.away_team_id) ||
          (x.home_team_id === p.away_team_id && x.away_team_id === p.home_team_id)) &&
         x.match_date >= predDate
       );
       if (!m) continue;
-      const d = p.predicted_data as any;
+      const d = p.predicted_data as { homeWinPct?: number; drawPct?: number; awayWinPct?: number };
       const picks = [
         { key: "home", pct: d.homeWinPct ?? 0 },
         { key: "draw", pct: d.drawPct ?? 0 },
@@ -262,13 +273,29 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
     if (cached && (Date.now() - new Date(cached.updated_at as string).getTime()) < 60 * 60 * 1000) {
-      return cached.analysis as any;
+      return cached.analysis as PredictionAnalysis;
+    }
+
+    interface PredictionAnalysis {
+      home: TeamStat;
+      away: TeamStat;
+      h2h: TeamStat;
+      prediction: {
+        homeWinPct: number;
+        drawPct: number;
+        awayWinPct: number;
+        expectedGoals: number;
+        over25Pct: number;
+        bttsPct: number;
+        confidenceScore: number;
+        basis: string;
+      };
     }
 
     const [homeJson, awayJson, h2hJson] = await Promise.all([
-      apiSportsFetch(`/fixtures?team=${data.homeId}&last=6`),
-      apiSportsFetch(`/fixtures?team=${data.awayId}&last=6`),
-      apiSportsFetch(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=6`),
+      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.homeId}&last=6`),
+      apiSportsFetch<ApiSportsFixture>(`/fixtures?team=${data.awayId}&last=6`),
+      apiSportsFetch<ApiSportsFixture>(`/fixtures/headtohead?h2h=${data.homeId}-${data.awayId}&last=6`),
     ]);
 
     type TeamStat = {
@@ -281,12 +308,12 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       recent: { date: string; opponent: string; gf: number; ga: number; result: "W" | "D" | "L"; home: boolean }[];
     };
 
-    const compute = (fixtures: any[], teamId: number): TeamStat => {
+    const compute = (fixtures: ApiSportsFixture[], teamId: number): TeamStat => {
       let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0;
       const form: ("W" | "D" | "L")[] = [];
       const recent: TeamStat["recent"] = [];
       const done = fixtures.filter((f) => f.fixture?.status?.short === "FT");
-      const sorted = [...done].sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date));
+      const sorted = [...done].sort((a, b) => b.fixture.date.localeCompare(a.fixture.date));
       for (const f of sorted) {
         const isHome = f.teams.home.id === teamId;
         const my = (isHome ? f.goals.home : f.goals.away) ?? 0;
@@ -337,7 +364,7 @@ export const analyzeFixture = createServerFn({ method: "POST" })
       ? Math.min(85, 50 + (expectedGoals - 2.5) * 20)
       : Math.max(15, 50 - (2.5 - expectedGoals) * 20);
 
-    const result = {
+    const result: PredictionAnalysis = {
       home, away, h2h,
       prediction: {
         homeWinPct: Math.round((rawHome / sum) * 100),
