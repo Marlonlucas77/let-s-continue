@@ -20,6 +20,8 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
           .from("tracked_leagues")
           .select("*")
           .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
+          .order("priority", { ascending: false })
+          .order("last_run_at", { ascending: true, nullsFirst: true })
           .limit(12);
 
         if (error) {

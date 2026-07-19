@@ -388,6 +388,7 @@ export type Database = {
           last_run_at: string | null
           league_id: number
           league_name: string
+          priority: number
           season: number
           user_id: string
         }
@@ -399,6 +400,7 @@ export type Database = {
           last_run_at?: string | null
           league_id: number
           league_name: string
+          priority?: number
           season: number
           user_id: string
         }
@@ -410,6 +412,7 @@ export type Database = {
           last_run_at?: string | null
           league_id?: number
           league_name?: string
+          priority?: number
           season?: number
           user_id?: string
         }
