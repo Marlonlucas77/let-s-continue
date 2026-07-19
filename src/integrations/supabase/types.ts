@@ -438,6 +438,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_api_sports_slot: {
+        Args: { min_interval_ms: number }
+        Returns: string
+      }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {

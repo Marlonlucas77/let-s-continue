@@ -1,5 +1,6 @@
 // Server-only shared fixtures importer used by both server functions and cron.
 import { ApiSportsResponse } from "./api-sports.types";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -11,26 +12,49 @@ let _rateLimitedUntil = 0;
 
 // Throttle global: garante um espaçamento mínimo entre chamadas reais à
 // API-Sports, prevenindo rajadas em vez de só reagir depois que o limite
-// de requisições por minuto já estourou. Todas as chamadas passam por essa
-// mesma fila, então não importa quantos jogos/telas disparem chamadas ao
-// mesmo tempo — elas são processadas uma de cada vez, espaçadas.
+// de requisições por minuto já estourou.
+//
+// IMPORTANTE: isso usa uma função no banco (claim_api_sports_slot) como
+// relógio COMPARTILHADO entre todas as instâncias do servidor. Uma
+// variável só em memória JS não funciona de verdade aqui — o app roda em
+// múltiplas instâncias (Cloudflare Workers) que não compartilham memória
+// entre si, então cada uma tinha seu próprio contador e podiam disparar
+// chamadas ao mesmo tempo sem saber uma da outra, estourando o limite
+// mesmo com o throttle "ativo". O banco resolve isso porque é compartilhado
+// de verdade entre todas as instâncias.
 //
 // ATENÇÃO: esse valor já foi reduzido antes (de 2000ms pra 350ms) achando
 // que deixaria mais rápido, e isso trouxe de volta os erros de "rajada de
 // requisições" com frequência. Não reduza sem confirmar o limite real de
 // requisições/minuto do seu plano na API-Sports primeiro.
 const MIN_REQUEST_INTERVAL_MS = 2200; // ~27 req/min no máximo — conservador de propósito
+
+// Fallback em memória, só usado se a chamada ao banco falhar por algum
+// motivo — melhor que nenhum throttle, mas não é a proteção principal.
 let _dispatchChain: Promise<void> = Promise.resolve();
 let _lastDispatchAt = 0;
 
-function throttledSlot(): Promise<void> {
-  const slot = _dispatchChain.then(async () => {
-    const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
+async function throttledSlot(): Promise<void> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("claim_api_sports_slot", {
+      min_interval_ms: MIN_REQUEST_INTERVAL_MS,
+    });
+    if (error) throw error;
+    const slotAt = new Date(data as unknown as string).getTime();
+    const wait = Math.max(0, slotAt - Date.now());
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    _lastDispatchAt = Date.now();
-  });
-  _dispatchChain = slot.catch(() => {}); // não deixa uma falha travar a fila
-  return slot;
+    return;
+  } catch {
+    // Fallback: throttle local (não protege entre instâncias, mas é
+    // melhor que disparar sem nenhum espaçamento).
+    const slot = _dispatchChain.then(async () => {
+      const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      _lastDispatchAt = Date.now();
+    });
+    _dispatchChain = slot.catch(() => {});
+    return slot;
+  }
 }
 
 export function getComputedCache(key: string) {
