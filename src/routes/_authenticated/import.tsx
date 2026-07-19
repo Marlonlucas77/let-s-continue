@@ -64,7 +64,7 @@ function ImportPage() {
     <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="font-display text-3xl font-bold">Importar da API-Sports</h1>
-        <p className="text-sm text-muted-foreground">Busque uma liga, importe temporadas ou monitore pra atualizar automaticamente todo dia.</p>
+        <p className="text-sm text-muted-foreground">Busque uma liga, importe temporadas ou monitore para que o sistema busque os jogos e resultados automaticamente via API.</p>
       </div>
 
       {tracked.length > 0 && (

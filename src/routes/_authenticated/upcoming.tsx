@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 });
 
 function UpcomingPage() {
-  // posso colocar minha chave de api?
+  // como assim importar jos jogos?
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");

@@ -91,8 +91,13 @@ export type ImportArgs = {
 export async function importFixturesFor({
   supabase, userId, leagueId, season, leagueName, country, includeStats,
 }: ImportArgs) {
-  const json = await apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=FT`);
-  const fixtures: any[] = json.response ?? [];
+  // Busca tanto jogos finalizados (para estatísticas) quanto agendados (para previsões)
+  const [jsonFT, jsonNS] = await Promise.all([
+    apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=FT`),
+    apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=NS-TBD`)
+  ]);
+
+  const fixtures: any[] = [...(jsonFT.response ?? []), ...(jsonNS.response ?? [])];
   if (fixtures.length === 0) return { imported: 0, teamsCreated: 0, skipped: 0, statsFetched: 0 };
 
   const teamMap = new Map<number, { name: string; logo: string }>();
