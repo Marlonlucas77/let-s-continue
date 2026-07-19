@@ -118,8 +118,13 @@ export function generatePrediction(homeId: string, awayId: string, matches: Matc
   const homeAll = computeTeamStats(homeId, matches, "all");
   const awayAll = computeTeamStats(awayId, matches, "all");
 
-  // Média da liga (fallback)
-  const leagueAvgGoals = 1.35;
+  // Média de gols por time por jogo, calculada a partir do histórico real
+  // disponível — antes era um número fixo (1.35) que ignorava os dados e
+  // distorcia a comparação, sobretudo entre competições com padrões de
+  // gols bem diferentes. 1.35 continua como fallback só quando não há
+  // nenhum jogo no histórico pra calcular a média de verdade.
+  const totalGoalObservations = matches.reduce((sum, m) => sum + (m.home_goals ?? 0) + (m.away_goals ?? 0), 0);
+  const leagueAvgGoals = matches.length > 0 ? totalGoalObservations / (matches.length * 2) : 1.35;
 
   // Força de ataque e defesa ajustada por mando de campo
   const hAttackForce = (homeHome.avgGoalsFor / leagueAvgGoals) * 0.7 + (homeAll.avgGoalsFor / leagueAvgGoals) * 0.3;

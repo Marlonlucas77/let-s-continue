@@ -167,11 +167,14 @@ function PredictionsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              <ProbCard label="Vitória casa" value={prediction.homeWinPct} color="var(--color-primary)" />
-              <ProbCard label="Empate" value={prediction.drawPct} color="var(--color-muted-foreground)" />
-              <ProbCard label="Vitória fora" value={prediction.awayWinPct} color="var(--color-accent)" />
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <ProbCard label="Vitória casa" value={prediction.homeWinPct} color="var(--color-primary)" muted={prediction.confidenceScore < 50} />
+              <ProbCard label="Empate" value={prediction.drawPct} color="var(--color-muted-foreground)" muted={prediction.confidenceScore < 50} />
+              <ProbCard label="Vitória fora" value={prediction.awayWinPct} color="var(--color-accent)" muted={prediction.confidenceScore < 50} />
             </div>
+            {prediction.confidenceScore < 50 && (
+              <p className="text-xs text-amber-400 mb-4">Confiança do modelo baixa ({prediction.confidenceScore}%) — trate esses números como uma estimativa grosseira, não uma previsão forte.</p>
+            )}
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Stat label="Gols esperados" value={prediction.expectedGoals.toString()} />
@@ -214,13 +217,13 @@ function PredictionsPage() {
   );
 }
 
-function ProbCard({ label, value, color }: { label: string; value: number; color: string }) {
+function ProbCard({ label, value, color, muted }: { label: string; value: number; color: string; muted?: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-input p-4 text-center">
+    <div className={`rounded-lg border border-border bg-input p-4 text-center ${muted ? "opacity-60" : ""}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="font-display text-3xl font-bold mt-1" style={{ color }}>{value}%</div>
+      <div className="font-display text-3xl font-bold mt-1" style={{ color: muted ? "var(--color-muted-foreground)" : color }}>{value}%</div>
       <div className="mt-2 h-1.5 bg-background rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: muted ? "var(--color-muted-foreground)" : color }} />
       </div>
     </div>
   );
