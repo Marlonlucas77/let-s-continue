@@ -42,9 +42,9 @@ function UpcomingPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="font-display text-3xl font-bold">Próximos jogos</h1>
+        <h1 className="font-display text-3xl font-bold">isso, continue</h1>
         <p className="text-sm text-muted-foreground">
-          podemos continuar desenvolvendo? quais melhorias voce indica?
+          Selecione um jogo para ver as estatísticas dos dois times e a melhor casa por mercado.
         </p>
       </div>
 
@@ -75,22 +75,22 @@ function UpcomingPage() {
       ) : filtered.length === 0 ? (
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-medium text-foreground mb-1">posso colar?</h3>
+          <h3 className="font-medium text-foreground mb-1">Nenhum jogo encontrado</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
-            abre o formulario para eu colar a chave de api
+            Estamos buscando jogos das suas ligas monitoradas. Tente aumentar o período ou verifique se você está seguindo alguma liga ativa.
           </p>
           <div className="flex justify-center gap-2">
             <button 
               onClick={() => window.location.reload()} 
               className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90"
             >
-              oxi, ta doido?
+              Recarregar página
             </button>
             <Link 
               to="/import" 
               className="text-xs rounded-md border border-border bg-input/50 px-3 py-1.5 text-foreground font-medium hover:bg-input"
             >
-              eu quero colar a porra da chave da api para puxar os resultados ao vivo
+              Monitorar novas ligas
             </Link>
           </div>
         </div>
