@@ -346,6 +346,7 @@ export const analyzeFixture = createServerFn({ method: "POST" })
         expectedGoals: Math.round(expectedGoals * 10) / 10,
         over25Pct: Math.round(over25Pct),
         bttsPct: Math.round(bttsPct),
+        confidenceScore: Math.round(Math.min(100, (home.games + away.games) * 2 + Math.abs(rawHome - rawAway) * 20)),
         basis: `Últimos ${home.games} jogos do mandante e ${away.games} do visitante · ${h2h.games} confrontos diretos.`,
       },
     };
