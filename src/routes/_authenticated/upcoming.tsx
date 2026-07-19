@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 });
 
 function UpcomingPage() {
-  // Olha
+  // deixe o app completo, faça todas as melhorias possiveis
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
