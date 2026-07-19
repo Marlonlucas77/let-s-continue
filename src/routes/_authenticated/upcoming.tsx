@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, Suspense, useMemo } from "react";
@@ -32,7 +32,6 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 });
 
 function UpcomingPage() {
-  // sim
   const listFn = useServerFn(listUpcomingFixtures);
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
@@ -47,6 +46,17 @@ function UpcomingPage() {
     // A API externa já sinaliza erros de configuração/limite de forma clara;
     // tentar de novo automaticamente só desperdiça cota e atrasa o feedback.
     retry: false,
+  });
+
+  // Sem nenhum time importado, a previsão instantânea (com escanteios e
+  // cartões) nunca vai aparecer — vale avisar e apontar pra tela de import.
+  const { data: teamsCount } = useQuery({
+    queryKey: ["teams-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("teams").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const isConfigError = /API_SPORTS_KEY|LOVABLE_API_KEY|não configurad/i.test((error as Error)?.message ?? "");
@@ -94,8 +104,18 @@ function UpcomingPage() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Todos os jogos dos próximos dias com filtros por competição, país e time.
+          Todos os jogos dos próximos dias com filtros por competição, país e time. Clique num jogo para ver a previsão da IA.
         </p>
+        {teamsCount === 0 && (
+          <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-muted-foreground">
+              Você ainda não importou nenhum time. Sem histórico, a previsão fica mais limitada (sem escanteios/cartões).
+            </span>
+            <Link to="/import" className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-primary-foreground font-medium hover:opacity-90">
+              Importar dados
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2">
