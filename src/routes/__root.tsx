@@ -55,6 +55,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#0a0f1a" },
       { name: "twitter:title", content: "Placar Certo — Previsões de futebol" },
       { name: "twitter:description", content: "Analise times, importe jogos automaticamente e gere previsões de gols, escanteios e cartões com base em histórico real. Comece grátis." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/779a0575-fa02-44f8-8ddb-c1a5b9d94c9f/id-preview-3ded4efb--63b71282-596e-4141-bace-22d3c702eecc.lovable.app-1784455845470.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/779a0575-fa02-44f8-8ddb-c1a5b9d94c9f/id-preview-3ded4efb--63b71282-596e-4141-bace-22d3c702eecc.lovable.app-1784455845470.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
