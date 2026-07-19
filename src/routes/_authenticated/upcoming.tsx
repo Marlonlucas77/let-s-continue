@@ -262,6 +262,8 @@ function FixtureCard({ f }: { f: any }) {
     queryKey: ["ai-fixture-prediction", f.fixtureId],
     queryFn: async () => await aiFixtureFn({
       data: {
+        fixtureId: f.fixtureId,
+        homeApiId, awayApiId,
         homeName: f.home.name, awayName: f.away.name,
         homeLeague: `${f.league}${f.country ? ` (${translateCountry(f.country)})` : ""}`,
         awayLeague: `${f.league}${f.country ? ` (${translateCountry(f.country)})` : ""}`,
