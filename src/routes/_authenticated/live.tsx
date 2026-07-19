@@ -1,0 +1,111 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { listLiveFixtures } from "@/lib/api-sports.functions";
+import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
+import { TeamBadge } from "@/components/TeamBadge";
+import { Loader2, Radio } from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/live")({
+  head: () => ({
+    meta: [
+      { title: "Ao vivo — Placar Certo" },
+      { name: "description", content: "Placar em tempo real dos jogos em andamento." },
+    ],
+  }),
+  component: LivePage,
+});
+
+function LivePage() {
+  const liveFn = useServerFn(listLiveFixtures);
+  const { data: fixtures = [], isLoading, isFetching, dataUpdatedAt } = useQuery({
+    queryKey: ["live-fixtures"],
+    queryFn: async () => (await liveFn()) as any[],
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
+  });
+
+  const grouped = fixtures.reduce<Record<string, any[]>>((acc, f) => {
+    const key = `${translateCountry(f.country)} · ${translateLeague(f.league)}`;
+    (acc[key] ||= []).push(f);
+    return acc;
+  }, {});
+
+  return (
+    <div className="max-w-5xl">
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-bold flex items-center gap-2">
+            <span className="relative inline-flex">
+              <Radio className="h-6 w-6 text-red-500" />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+            </span>
+            Ao vivo
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Atualiza a cada 30s · {fixtures.length} jogo(s) em andamento
+          </p>
+        </div>
+        {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Buscando jogos ao vivo...
+        </div>
+      ) : fixtures.length === 0 ? (
+        <div className="card-surface p-6 text-sm text-muted-foreground">
+          Nenhum jogo acontecendo agora.
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(grouped).map(([league, games]) => (
+            <div key={league}>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">{league}</div>
+              <div className="space-y-2">
+                {games.map((f) => <LiveCard key={f.fixtureId} f={f} />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {dataUpdatedAt > 0 && (
+        <p className="mt-6 text-[10px] text-muted-foreground">
+          Última atualização: {new Date(dataUpdatedAt).toLocaleTimeString("pt-BR")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LiveCard({ f }: { f: any }) {
+  const statusLabel =
+    f.status === "HT" ? "Intervalo" :
+    f.status === "FT" ? "Encerrado" :
+    f.status === "1H" || f.status === "2H" || f.status === "ET" ? `${f.elapsed ?? 0}'` :
+    f.status;
+  return (
+    <div className="card-surface p-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <TeamBadge name={f.home.name} logoUrl={f.home.logo} />
+          <span className="font-medium truncate">{translateTeam(f.home.name)}</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="font-mono text-xl font-bold tabular-nums">
+            {f.home.goals} <span className="text-muted-foreground mx-1">-</span> {f.away.goals}
+          </div>
+          <span className="text-[10px] uppercase tracking-wide text-red-500 font-medium">
+            {statusLabel}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 min-w-0 justify-end">
+          <span className="font-medium truncate text-right">{translateTeam(f.away.name)}</span>
+          <TeamBadge name={f.away.name} logoUrl={f.away.logo} />
+        </div>
+      </div>
+    </div>
+  );
+}
