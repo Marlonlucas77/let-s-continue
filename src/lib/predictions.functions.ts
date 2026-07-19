@@ -14,10 +14,11 @@ export const getAdvancedPrediction = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     // Busca histórico dos times para o cálculo
-    const [{ data: homeTeam }, { data: awayTeam }] = await Promise.all([
-      supabase.from("teams").select("id").eq("api_id", data.homeId).eq("user_id", userId).single(),
-      supabase.from("teams").select("id").eq("api_id", data.awayId).eq("user_id", userId).single(),
-    ]);
+    const { data: homeTeams } = await supabase.from("teams").select("id, name").eq("user_id", userId);
+    const { data: awayTeams } = await supabase.from("teams").select("id, name").eq("user_id", userId);
+
+    const homeTeam = homeTeams?.find(t => t.name.toLowerCase().includes(data.homeId.toString()));
+    const awayTeam = awayTeams?.find(t => t.name.toLowerCase().includes(data.awayId.toString()));
 
     if (!homeTeam || !awayTeam) {
       return { error: "Times não encontrados no banco local. Importe a liga primeiro." };
