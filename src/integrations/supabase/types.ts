@@ -113,6 +113,59 @@ export type Database = {
           },
         ]
       }
+      pool_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          pool_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pool_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pool_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pool_members_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pools: {
+        Row: {
+          created_at: string | null
+          id: string
+          invite_code: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invite_code?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invite_code?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           away_team_id: string | null
@@ -183,25 +236,31 @@ export type Database = {
         Row: {
           created_at: string | null
           current_period_end: string | null
+          environment: string | null
           id: string
           plan: string
           status: string
+          stripe_customer_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           current_period_end?: string | null
+          environment?: string | null
           id?: string
           plan: string
           status: string
+          stripe_customer_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           current_period_end?: string | null
+          environment?: string | null
           id?: string
           plan?: string
           status?: string
+          stripe_customer_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -292,6 +351,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          accuracy: number
+          correct: number
+          display_name: string
+          total: number
+          user_id: string
+        }[]
+      }
+      get_pool_leaderboard: {
+        Args: { _pool_id: string }
+        Returns: {
+          accuracy: number
+          correct: number
+          display_name: string
+          total: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
