@@ -74,7 +74,7 @@ function PricingPage() {
       features: [
         "Até 15 ligas monitoradas",
         "25 previsões de IA por dia",
-        "H2H e estatísticas avançadas",
+        "Comparação entre times avançada",
         "Nível de confiança da IA",
         "Previsões de escanteios e cartões",
       ],

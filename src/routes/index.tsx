@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, Target, Trophy, TrendingUp, Zap, Shield, Upload, LineChart, Check } from "lucide-react";
+import { Wand2, Target, Trophy, TrendingUp, Zap, Radio, Globe2, LineChart, Check, ShieldCheck, Sparkles } from "lucide-react";
 import { LogoWithName } from "@/components/Logo";
 import heroDashboard from "@/assets/hero-dashboard.jpg";
 import heroPredictions from "@/assets/hero-predictions.jpg";
@@ -8,15 +8,77 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "Placar Certo — Previsões de futebol" },
-      { name: "description", content: "Analise times, importe jogos automaticamente e gere previsões de gols, escanteios e cartões com base em histórico real. Comece grátis." },
-      { property: "og:title", content: "Placar Certo — Previsões de futebol" },
-      { property: "og:description", content: "Analise times, importe jogos automaticamente e gere previsões de gols, escanteios e cartões com base em histórico real. Comece grátis." },
+      { title: "Placar Certo — Previsões de futebol com IA" },
+      { name: "description", content: "Compare qualquer time do mundo com IA generativa e receba probabilidades de gols, escanteios e cartões na hora. Acompanhe sua taxa de acerto real. Comece grátis." },
+      { property: "og:title", content: "Placar Certo — Previsões de futebol com IA" },
+      { property: "og:description", content: "Compare qualquer time do mundo com IA generativa e receba probabilidades de gols, escanteios e cartões na hora. Comece grátis." },
       { property: "og:url", content: "/" },
     ],
     links: [{ rel: "canonical", href: "/" }],
   }),
 });
+
+const PLANS = [
+  {
+    id: "free",
+    name: "Grátis",
+    price: "R$ 0",
+    period: "pra sempre",
+    features: ["1 liga monitorada", "2 previsões de IA por dia", "Placar ao vivo e painel completo", "Histórico de acertos"],
+    cta: "Criar conta grátis",
+    highlight: false,
+  },
+  {
+    id: "basic",
+    name: "Básico",
+    price: "R$ 14,99",
+    period: "por mês",
+    features: ["3 ligas monitoradas", "8 previsões de IA por dia", "Estatísticas por time e liga", "Alertas de jogos do dia"],
+    cta: "Assinar Básico",
+    highlight: false,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "R$ 29,99",
+    period: "por mês",
+    features: ["15 ligas monitoradas", "25 previsões de IA por dia", "Nível de confiança da IA", "Previsões de escanteios e cartões"],
+    cta: "Assinar Pro",
+    highlight: true,
+  },
+  {
+    id: "elite",
+    name: "Elite",
+    price: "R$ 59,99",
+    period: "por mês",
+    features: ["Ligas e previsões ilimitadas", "Odds ao vivo e valor esperado", "Análises comparativas ilimitadas", "Suporte prioritário 24/7"],
+    cta: "Assinar Elite",
+    highlight: false,
+  },
+];
+
+const FAQS = [
+  {
+    q: "Como a IA gera as previsões?",
+    a: "Nossa IA generativa analisa o conhecimento disponível sobre os dois times — força do elenco, momento na competição, histórico — e estima probabilidades para resultado, gols, escanteios e cartões. Funciona até para times que você ainda não importou: é só digitar o nome.",
+  },
+  {
+    q: "As previsões são garantidas?",
+    a: "Não. Nenhuma ferramenta de previsão esportiva pode garantir resultados — futebol tem imprevisibilidade real. O Placar Certo existe para te dar uma base de dados e probabilidades mais informada, não uma certeza. Use com responsabilidade.",
+  },
+  {
+    q: "Posso cancelar quando quiser?",
+    a: "Sim, a qualquer momento, direto no app — sem fidelidade e sem multa. Você mantém acesso até o fim do período já pago.",
+  },
+  {
+    q: "Preciso importar os times manualmente?",
+    a: "Não. As ligas que você habilitar são atualizadas automaticamente em segundo plano. E mesmo um time fora da sua lista pode ser comparado na hora, digitando o nome.",
+  },
+  {
+    q: "Como funciona a taxa de acerto?",
+    a: "Toda previsão que você salva é conferida automaticamente contra o resultado real assim que o jogo termina. Sua taxa de acerto fica visível no Histórico — sem maquiagem, é o resultado de verdade.",
+  },
+];
 
 function Landing() {
   return (
@@ -28,6 +90,7 @@ function Landing() {
             <a href="#features" className="hover:text-foreground">Recursos</a>
             <a href="#screenshots" className="hover:text-foreground">Preview</a>
             <a href="#pricing" className="hover:text-foreground">Planos</a>
+            <a href="#faq" className="hover:text-foreground">Dúvidas</a>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">Entrar</Link>
@@ -41,14 +104,14 @@ function Landing() {
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.15),_transparent_60%)]" />
           <div className="mx-auto max-w-6xl px-6 pt-20 pb-12 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" /> Análise estatística de futebol
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Previsões geradas por IA — qualquer time, na hora
             </div>
             <h1 className="mt-6 font-display text-5xl font-bold leading-tight tracking-tight md:text-6xl">
-              Preveja jogos com <span className="text-primary">dados reais</span>,
+              Analise qualquer jogo com <span className="text-primary">IA</span>,
               <br className="hidden md:block" /> não com achismo.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-              Importe jogos automaticamente, acompanhe estatísticas detalhadas e gere previsões calculadas de gols, escanteios e cartões — tudo em um só lugar.
+              Digite dois times — de qualquer liga do mundo — e receba na hora as probabilidades de resultado, gols, escanteios e cartões. Sem precisar importar nada antes.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/auth" className="rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90">
@@ -58,14 +121,14 @@ function Landing() {
                 Ver como funciona
               </a>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito • Comece em segundos</p>
+            <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito para começar • Cancele quando quiser</p>
           </div>
 
           <div className="mx-auto max-w-6xl px-6 pb-20">
             <div className="rounded-xl border border-border bg-card/50 p-2 shadow-2xl shadow-primary/5">
               <img
                 src={heroDashboard}
-                alt="Painel do Placar Certo com gráficos de gols e estatísticas por temporada"
+                alt="Painel do Placar Certo com estatísticas e jogos do dia"
                 width={1600}
                 height={1008}
                 className="rounded-lg"
@@ -77,17 +140,17 @@ function Landing() {
         <section id="features" className="border-t border-border bg-card/20 py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="text-center">
-              <h2 className="font-display text-3xl font-bold md:text-4xl">Tudo o que você precisa para analisar futebol</h2>
-              <p className="mt-3 text-muted-foreground">Da coleta de dados à previsão do próximo jogo.</p>
+              <h2 className="font-display text-3xl font-bold md:text-4xl">Tudo pra analisar futebol com dados</h2>
+              <p className="mt-3 text-muted-foreground">Da previsão instantânea ao acompanhamento automático das suas ligas.</p>
             </div>
             <div className="mt-12 grid gap-5 md:grid-cols-3">
               {[
-                { icon: Upload, title: "Importação automática", desc: "Puxe temporadas inteiras da API-Sports com um clique — ou importe via CSV." },
-                { icon: BarChart3, title: "Estatísticas detalhadas", desc: "Médias de gols, escanteios, cartões, BTTS, Over/Under por time e liga." },
-                { icon: Target, title: "Previsões calculadas", desc: "Probabilidades de vitória, gols esperados e escanteios com base no histórico." },
-                { icon: Shield, title: "Confronto direto (H2H)", desc: "Compare dois times: retrospecto, forma recente e previsão do próximo duelo." },
-                { icon: LineChart, title: "Gráficos ao longo do tempo", desc: "Visualize a evolução de gols e escanteios em uma linha do tempo." },
-                { icon: Zap, title: "Verificação de acertos", desc: "O sistema cruza suas previsões com resultados reais automaticamente." },
+                { icon: Wand2, title: "IA generativa pra qualquer time", desc: "Compare dois times de qualquer lugar do mundo, mesmo sem estarem na sua lista — é só digitar o nome." },
+                { icon: Target, title: "Gols, escanteios e cartões", desc: "Probabilidades detalhadas por mercado, com nível de confiança da IA em cada previsão." },
+                { icon: Globe2, title: "Ligas sempre atualizadas", desc: "Habilite as ligas que você acompanha e o sistema atualiza os jogos automaticamente, sem esforço manual." },
+                { icon: Radio, title: "Placar ao vivo", desc: "Acompanhe os jogos em andamento com atualização automática, direto no painel." },
+                { icon: LineChart, title: "Painel completo", desc: "Jogos do dia, times favoritos, resumo de previsões e estatísticas num só lugar." },
+                { icon: ShieldCheck, title: "Taxa de acerto real", desc: "Salve suas previsões e veja sua taxa de acerto de verdade, conferida automaticamente contra o resultado." },
               ].map((f) => (
                 <div key={f.title} className="card-surface p-6">
                   <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -105,34 +168,34 @@ function Landing() {
           <div className="mx-auto max-w-6xl space-y-24 px-6">
             <div className="grid items-center gap-12 md:grid-cols-2">
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Dashboard</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Uma visão completa da temporada</h2>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Painel</span>
+                <h2 className="mt-2 font-display text-3xl font-bold">Uma visão completa, todo dia</h2>
                 <p className="mt-3 text-muted-foreground">
-                  Gols por partida, taxa de acerto das suas previsões, próximos jogos e evolução do desempenho — tudo à sua frente.
+                  Jogos de hoje das suas ligas, times favoritos, resumo das suas previsões salvas e sua taxa de acerto — tudo à sua frente assim que você entra.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
-                  {["Gráfico de gols dos últimos 20 jogos", "Média de gols marcados e sofridos por time", "Taxa global de acurácia das previsões"].map((i) => (
+                  {["Jogos do dia das ligas que você acompanha", "Times favoritos com próximos confrontos", "Sua taxa de acerto real, sem maquiagem"].map((i) => (
                     <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" /> {i}</li>
                   ))}
                 </ul>
               </div>
               <div className="rounded-xl border border-border bg-card/50 p-2">
-                <img src={heroDashboard} alt="Dashboard com KPIs e gráficos" loading="lazy" width={1600} height={1008} className="rounded-lg" />
+                <img src={heroDashboard} alt="Dashboard com jogos do dia e estatísticas" loading="lazy" width={1600} height={1008} className="rounded-lg" />
               </div>
             </div>
 
             <div className="grid items-center gap-12 md:grid-cols-2">
               <div className="rounded-xl border border-border bg-card/50 p-2 md:order-2">
-                <img src={heroPredictions} alt="Tela de previsão de partida com probabilidades" loading="lazy" width={1600} height={1008} className="rounded-lg" />
+                <img src={heroPredictions} alt="Tela de previsão de partida com probabilidades geradas por IA" loading="lazy" width={1600} height={1008} className="rounded-lg" />
               </div>
               <div className="md:order-1">
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Previsões</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Probabilidades transparentes para cada jogo</h2>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Previsão com IA</span>
+                <h2 className="mt-2 font-display text-3xl font-bold">Probabilidades pra qualquer confronto</h2>
                 <p className="mt-3 text-muted-foreground">
-                  Selecione dois times e receba na hora as chances de vitória, empate, gols esperados, escanteios e cartões — com base no histórico real.
+                  Escolha dois times — de qualquer liga do mundo, mesmo fora da sua lista — e receba na hora as chances de vitória, gols esperados, escanteios e cartões, com a análise da IA pra cada time.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
-                  {["Probabilidade de vitória / empate / derrota", "Expected goals (xG) e escanteios previstos", "BTTS e Over/Under 2.5"].map((i) => (
+                  {["Probabilidade de vitória / empate / derrota", "Escanteios e cartões estimados", "Palpites por mercado com nível de confiança"].map((i) => (
                     <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" /> {i}</li>
                   ))}
                 </ul>
@@ -142,46 +205,68 @@ function Landing() {
         </section>
 
         <section id="pricing" className="border-t border-border bg-card/20 py-20">
-          <div className="mx-auto max-w-4xl px-6 text-center">
+          <div className="mx-auto max-w-6xl px-6 text-center">
             <h2 className="font-display text-3xl font-bold md:text-4xl">Comece grátis, evolua quando quiser</h2>
-            <p className="mt-3 text-muted-foreground">Sem cobrança para começar. Faça upgrade quando precisar de mais.</p>
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="card-surface p-6 text-left">
-                <h3 className="font-display text-xl font-semibold">Grátis</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Para começar a testar suas previsões.</p>
-                <p className="mt-4 text-3xl font-bold">R$ 0</p>
-                <ul className="mt-4 space-y-2 text-sm">
-                  {["Cadastro de times e jogos", "Importação manual e CSV", "Previsões básicas", "Histórico de acertos"].map((i) => (
-                    <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 text-primary" /> {i}</li>
-                  ))}
-                </ul>
-                <Link to="/auth" className="mt-6 block rounded-md border border-border px-4 py-2 text-center text-sm font-medium hover:bg-card">
-                  Criar conta
-                </Link>
-              </div>
-              <div className="card-surface relative border-primary/40 p-6 text-left ring-1 ring-primary/30">
-                <span className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">Recomendado</span>
-                <h3 className="font-display text-xl font-semibold">Premium</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Análises completas e importação automática.</p>
-                <p className="mt-4 text-3xl font-bold">R$ 29<span className="text-base font-normal text-muted-foreground">/mês</span></p>
-                <ul className="mt-4 space-y-2 text-sm">
-                  {["Tudo do Grátis", "Importação automática via API", "Estatísticas de escanteios e cartões", "Confronto direto (H2H)", "Gráficos avançados", "Suporte prioritário"].map((i) => (
-                    <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 text-primary" /> {i}</li>
-                  ))}
-                </ul>
-                <Link to="/auth" className="mt-6 block rounded-md bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground hover:opacity-90">
-                  Assinar Premium
-                </Link>
-              </div>
+            <p className="mt-3 text-muted-foreground">Sem cobrança para começar. Sem fidelidade — cancele quando quiser.</p>
+            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+              {PLANS.map((p) => (
+                <div
+                  key={p.id}
+                  className={`card-surface relative p-6 text-left flex flex-col ${p.highlight ? "border-primary/40 ring-1 ring-primary/30" : ""}`}
+                >
+                  {p.highlight && (
+                    <span className="absolute -top-3 right-4 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground">Mais popular</span>
+                  )}
+                  <h3 className="font-display text-xl font-semibold">{p.name}</h3>
+                  <p className="mt-4">
+                    <span className="text-3xl font-bold">{p.price}</span>
+                    <span className="text-sm text-muted-foreground"> {p.period !== "pra sempre" ? `/${p.period.replace("por ", "")}` : ""}</span>
+                  </p>
+                  <ul className="mt-4 space-y-2 text-sm flex-1">
+                    {p.features.map((i) => (
+                      <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" /> {i}</li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/auth"
+                    className={`mt-6 block rounded-md px-4 py-2 text-center text-sm font-semibold ${
+                      p.highlight
+                        ? "bg-primary text-primary-foreground hover:opacity-90"
+                        : "border border-border hover:bg-card"
+                    }`}
+                  >
+                    {p.cta}
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="py-20">
+        <section id="faq" className="py-20">
+          <div className="mx-auto max-w-3xl px-6">
+            <div className="text-center mb-12">
+              <h2 className="font-display text-3xl font-bold md:text-4xl">Perguntas frequentes</h2>
+            </div>
+            <div className="space-y-4">
+              {FAQS.map((f) => (
+                <details key={f.q} className="card-surface p-5 group">
+                  <summary className="flex cursor-pointer items-center justify-between font-medium marker:content-none">
+                    {f.q}
+                    <span className="ml-4 text-muted-foreground transition-transform group-open:rotate-45 text-xl leading-none">+</span>
+                  </summary>
+                  <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-border py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <Trophy className="mx-auto h-10 w-10 text-primary" />
-            <h2 className="mt-4 font-display text-3xl font-bold md:text-4xl">Pronto para prever com dados?</h2>
-            <p className="mt-3 text-muted-foreground">Crie sua conta grátis e importe sua primeira temporada em minutos.</p>
+            <h2 className="mt-4 font-display text-3xl font-bold md:text-4xl">Pronto pra analisar seu próximo jogo?</h2>
+            <p className="mt-3 text-muted-foreground">Crie sua conta grátis e gere sua primeira previsão com IA em segundos.</p>
             <Link to="/auth" className="mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90">
               <TrendingUp className="h-4 w-4" /> Começar grátis
             </Link>
