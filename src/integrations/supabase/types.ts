@@ -121,12 +121,14 @@ export type Database = {
       }
       matches: {
         Row: {
+          api_fixture_id: number | null
           away_corners: number | null
           away_goals: number | null
           away_goals_ht: number | null
           away_red: number | null
           away_team_id: string | null
           away_yellow: number | null
+          country: string | null
           created_at: string | null
           home_corners: number | null
           home_goals: number | null
@@ -135,16 +137,21 @@ export type Database = {
           home_team_id: string | null
           home_yellow: number | null
           id: string
+          kickoff_at: string | null
+          league_name: string | null
           match_date: string
+          status: string | null
           user_id: string
         }
         Insert: {
+          api_fixture_id?: number | null
           away_corners?: number | null
           away_goals?: number | null
           away_goals_ht?: number | null
           away_red?: number | null
           away_team_id?: string | null
           away_yellow?: number | null
+          country?: string | null
           created_at?: string | null
           home_corners?: number | null
           home_goals?: number | null
@@ -153,16 +160,21 @@ export type Database = {
           home_team_id?: string | null
           home_yellow?: number | null
           id?: string
+          kickoff_at?: string | null
+          league_name?: string | null
           match_date: string
+          status?: string | null
           user_id: string
         }
         Update: {
+          api_fixture_id?: number | null
           away_corners?: number | null
           away_goals?: number | null
           away_goals_ht?: number | null
           away_red?: number | null
           away_team_id?: string | null
           away_yellow?: number | null
+          country?: string | null
           created_at?: string | null
           home_corners?: number | null
           home_goals?: number | null
@@ -171,7 +183,10 @@ export type Database = {
           home_team_id?: string | null
           home_yellow?: number | null
           id?: string
+          kickoff_at?: string | null
+          league_name?: string | null
           match_date?: string
+          status?: string | null
           user_id?: string
         }
         Relationships: [
