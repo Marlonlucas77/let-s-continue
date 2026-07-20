@@ -165,9 +165,6 @@ function PredictionsPage() {
               value={home}
               onChange={setHome}
               placeholder="Digite o nome do time..."
-              onQueryChange={setHomeQuery}
-              extraTeams={toCombo(homeApiTeams)}
-              loading={homeSearching}
             />
           </div>
           <div>
@@ -177,9 +174,6 @@ function PredictionsPage() {
               value={away}
               onChange={setAway}
               placeholder="Digite o nome do time..."
-              onQueryChange={setAwayQuery}
-              extraTeams={toCombo(awayApiTeams)}
-              loading={awaySearching}
             />
           </div>
         </div>
