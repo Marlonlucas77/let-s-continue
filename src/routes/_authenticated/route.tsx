@@ -61,7 +61,7 @@ const mobilePrimary: NavItem[] = [
   { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { to: "/upcoming", label: "Jogos", icon: CalendarClock },
   { to: "/predictions", label: "Previsão IA", icon: Sparkles },
-  { to: "/history", label: "Histórico", icon: History },
+  { to: "/live", label: "Ao vivo", icon: Radio },
 ];
 
 function AuthedLayout() {
