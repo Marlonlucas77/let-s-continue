@@ -11,7 +11,7 @@ export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "s
 
   const { data: runLog } = await supabaseAdmin
     .from("cron_runs")
-    .insert({ triggered_by: triggeredBy })
+    .insert({ job: "refresh-fixtures", triggered_by: triggeredBy })
     .select("id")
     .single();
 
@@ -20,8 +20,8 @@ export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "s
     if (runLog) {
       await supabaseAdmin.from("cron_runs").update({
         finished_at: new Date().toISOString(),
-        processed_count: result.processed,
-        live_fixtures_updated: result.liveFixturesUpdated,
+        success: true,
+        details: { processed: result.processed, liveFixturesUpdated: result.liveFixturesUpdated },
       }).eq("id", runLog.id);
     }
     return result;
@@ -29,6 +29,7 @@ export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "s
     if (runLog) {
       await supabaseAdmin.from("cron_runs").update({
         finished_at: new Date().toISOString(),
+        success: false,
         error: e.message,
       }).eq("id", runLog.id);
     }
