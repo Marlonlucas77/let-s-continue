@@ -31,7 +31,7 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
 }
 
 function siteUrl(): string {
-  return process.env.SITE_URL || "https://placarcerto.lovable.app";
+  return process.env.SITE_URL || "https://placarcerto.ia.br";
 }
 
 export function favoritesAlertSubject(count: number): string {
