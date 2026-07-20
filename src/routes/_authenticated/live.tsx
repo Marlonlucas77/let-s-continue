@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { listLiveFixtures } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
 import { TeamBadge } from "@/components/TeamBadge";
@@ -28,6 +29,13 @@ function LivePage() {
     staleTime: 20_000,
     retry: false,
   });
+
+  // A tela mostra uma mensagem simples pro usuário de propósito, mas o
+  // erro técnico real vai pro console — sem isso, não dá pra diagnosticar
+  // à distância quando alguém manda print da tela de erro.
+  useEffect(() => {
+    if (error) console.error("[Ao vivo] Erro real:", (error as Error).message);
+  }, [error]);
 
   const grouped = fixtures.reduce<Record<string, any[]>>((acc, f) => {
     const key = `${translateCountry(f.country)} · ${translateLeague(f.league)}`;

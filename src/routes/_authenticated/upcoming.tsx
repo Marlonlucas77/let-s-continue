@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, Suspense, useMemo } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import { listUpcomingFixtures, getFixtureOdds } from "@/lib/api-sports.functions";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,13 @@ function UpcomingPage() {
     // tentar de novo automaticamente só desperdiça cota e atrasa o feedback.
     retry: false,
   });
+
+  // A tela mostra mensagem simples pro usuário de propósito, mas o erro
+  // técnico real vai pro console — sem isso não dá pra diagnosticar à
+  // distância quando alguém manda print da tela de erro.
+  useEffect(() => {
+    if (error) console.error("[Jogos] Erro real:", (error as Error).message);
+  }, [error]);
 
   // Sem nenhum time importado, a previsão instantânea (com escanteios e
   // cartões) nunca vai aparecer — vale avisar e apontar pra tela de import.
