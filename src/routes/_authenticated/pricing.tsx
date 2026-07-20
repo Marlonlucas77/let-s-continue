@@ -76,7 +76,7 @@ function PricingPage() {
         "25 previsões de IA por dia",
         "H2H e estatísticas avançadas",
         "Nível de confiança da IA",
-        "Bolões privados (até 3)",
+        "Previsões de escanteios e cartões",
       ],
     },
     {
@@ -89,7 +89,7 @@ function PricingPage() {
         "Ligas e previsões ilimitadas",
         "Previsões de escanteios e cartões",
         "Odds ao vivo e valor esperado",
-        "Bolões ilimitados + API export",
+        "Análises comparativas ilimitadas",
         "Suporte prioritário 24/7",
       ],
     },
