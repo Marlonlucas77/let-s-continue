@@ -159,13 +159,13 @@ function UpcomingPage() {
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <h3 className="font-medium text-foreground mb-1">
-            {isConfigError ? "Jogos indisponíveis no momento" : isRateLimitError ? "Muita gente buscando jogos agora" : "Não foi possível carregar os jogos"}
+            {isConfigError ? "Jogos indisponíveis no momento" : isRateLimitError ? "Instabilidade temporária" : "Não foi possível carregar os jogos"}
           </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
             {isConfigError
               ? "Estamos com uma instabilidade temporária. Tenta de novo em alguns instantes."
               : isRateLimitError
-              ? "O sistema está processando muitas buscas ao mesmo tempo. Aguarde um pouco e tente de novo."
+              ? "Não conseguimos buscar os jogos agora. Tenta de novo em alguns instantes."
               : "Não conseguimos carregar os jogos agora. Tenta de novo em alguns instantes."}
           </p>
           <button 
