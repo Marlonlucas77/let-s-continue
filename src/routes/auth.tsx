@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
+import { autoEnableDefaultLeagues } from "@/lib/api-sports.functions";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -10,6 +12,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const autoEnableFn = useServerFn(autoEnableDefaultLeagues);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,13 +33,18 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: `${window.location.origin}/settings?onboarding=1`,
+            emailRedirectTo: `${window.location.origin}/dashboard`,
             data: { display_name: name || email.split("@")[0] },
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Escolha suas ligas para começar.");
-        navigate({ to: "/settings", search: { onboarding: "1" } });
+        // Já habilita as 10 principais ligas do mundo automaticamente —
+        // a pessoa não precisa escolher nada pra começar a ver jogos e
+        // previsões. Se quiser mais ligas, ela habilita depois em
+        // Configurações (sem custo de API a mais aqui, é só 1 chamada).
+        try { await autoEnableFn({}); } catch { /* não bloqueia o cadastro se isso falhar */ }
+        toast.success("Conta criada! Já habilitamos as principais ligas pra você.");
+        navigate({ to: "/dashboard" });
         return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });

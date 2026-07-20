@@ -263,40 +263,71 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "gold cup", country: "world" },
 ];
 
-function matchesTopLeague(name: string, country: string | null): boolean {
+// As 10 ligas mais reconhecidas globalmente — usadas pra habilitar
+// automaticamente pra todo usuário novo (ou quem ainda não tem nenhuma
+// liga), sem precisar escolher nada. Em ordem de prioridade: se o plano
+// da pessoa permite menos de 10, ela recebe as primeiras da lista.
+const DEFAULT_10_LEAGUES: LeagueTarget[] = [
+  { name: "premier league", country: "england" },
+  { name: "la liga", country: "spain" },
+  { name: "serie a", country: "italy" },
+  { name: "serie a", country: "brazil" },
+  { name: "bundesliga", country: "germany" },
+  { name: "ligue 1", country: "france" },
+  { name: "champions league", country: "world" },
+  { name: "libertadores", country: "world" },
+  { name: "mls", country: "usa" },
+  { name: "primeira liga", country: "portugal" },
+];
+
+function matchesLeagueList(list: LeagueTarget[], name: string, country: string | null): boolean {
   const n = name.toLowerCase();
   const c = (country ?? "").toLowerCase();
-  return TOP_LEAGUES.some((t) => n.includes(t.name) && (t.country == null || c.includes(t.country)));
+  return list.some((t) => n.includes(t.name) && (t.country == null || c.includes(t.country)));
+}
+
+async function trackLeagueList(supabase: any, userId: string, list: LeagueTarget[]) {
+  const { getUserPlan } = await import("@/lib/plan-limits.server");
+  const { limits } = await getUserPlan(supabase, userId);
+  const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
+  let matched = (json.response ?? []).filter((r) => matchesLeagueList(list, r.league.name as string, r.country?.name as string));
+  if (limits.leagues !== Infinity) matched = matched.slice(0, limits.leagues);
+  const leagues = matched.map((r) => ({
+    user_id: userId,
+    league_id: r.league.id as number,
+    season: ((r.seasons ?? []).find((s: any) => s.current)?.year
+      ?? (r.seasons ?? [])[0]?.year
+      ?? new Date().getUTCFullYear()) as number,
+    league_name: r.league.name as string,
+    country: (r.country?.name as string) ?? null,
+    include_stats: false,
+  }));
+  if (leagues.length === 0) return { ok: true, count: 0 };
+  const { error } = await supabase
+    .from("tracked_leagues")
+    .upsert(leagues, { onConflict: "user_id,league_id,season" });
+  if (error) throw new Error(error.message);
+  return { ok: true, count: leagues.length };
 }
 
 export const trackTopLeagues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => trackLeagueList(context.supabase, context.userId, TOP_LEAGUES));
+
+// Habilita as 10 ligas padrão automaticamente — chamada logo após o
+// cadastro (auth.tsx) e como reforço em Configurações pra quem já tem
+// conta mas ainda não tem nenhuma liga habilitada. Não exige nenhuma
+// escolha da pessoa; ela só vê o resultado pronto.
+export const autoEnableDefaultLeagues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { getUserPlan } = await import("@/lib/plan-limits.server");
-    const { limits } = await getUserPlan(supabase, userId);
-    const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
-    let matched = (json.response ?? []).filter((r) => matchesTopLeague(r.league.name as string, r.country?.name as string));
-    // Cada plano tem um limite de ligas — quem não é Elite ganha as
-    // primeiras N da lista curada (que já está em ordem de relevância),
-    // em vez de travar a ação inteira como antes.
-    if (limits.leagues !== Infinity) matched = matched.slice(0, limits.leagues);
-    const leagues = matched.map((r) => ({
-      user_id: userId,
-      league_id: r.league.id as number,
-      season: ((r.seasons ?? []).find((s: any) => s.current)?.year
-        ?? (r.seasons ?? [])[0]?.year
-        ?? new Date().getUTCFullYear()) as number,
-      league_name: r.league.name as string,
-      country: (r.country?.name as string) ?? null,
-      include_stats: false,
-    }));
-    if (leagues.length === 0) return { ok: true, count: 0 };
-    const { error } = await supabase
+    const { count } = await context.supabase
       .from("tracked_leagues")
-      .upsert(leagues, { onConflict: "user_id,league_id,season" });
-    if (error) throw new Error(error.message);
-    return { ok: true, count: leagues.length };
+      .select("id", { count: "exact", head: true });
+    // Só age se a pessoa realmente não tiver nenhuma liga ainda — não
+    // sobrescreve escolhas que ela já fez manualmente.
+    if (count && count > 0) return { ok: true, count: 0, skipped: true };
+    return trackLeagueList(context.supabase, context.userId, DEFAULT_10_LEAGUES);
   });
 
 export const untrackLeague = createServerFn({ method: "POST" })

@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
 import {
-  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague,
+  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague, autoEnableDefaultLeagues,
 } from "@/lib/api-sports.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
@@ -37,10 +37,28 @@ function SettingsPage() {
     retry: false,
   });
 
-  const { data: tracked = [] } = useQuery({
+  const { data: tracked = [], isLoading: loadingTracked } = useQuery({
     queryKey: ["tracked-leagues"],
     queryFn: async () => (await listTracked({})) as any[],
   });
+
+  // Reforço pra quem já tem conta (criada antes dessa mudança, ou o
+  // cadastro por algum motivo não conseguiu habilitar sozinho) e chega
+  // aqui sem nenhuma liga — habilita as 10 padrão automaticamente, sem
+  // precisar clicar em nada.
+  const autoEnableFn = useServerFn(autoEnableDefaultLeagues);
+  const autoEnableMut = useMutation({
+    mutationFn: async () => autoEnableFn({}),
+    onSuccess: (r: any) => {
+      if (r.count > 0) qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+    },
+  });
+  useEffect(() => {
+    if (!loadingTracked && tracked.length === 0 && autoEnableMut.isIdle) {
+      autoEnableMut.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingTracked, tracked.length]);
 
   const trackedIds = useMemo(() => new Set(tracked.map((t: any) => Number(t.league_id))), [tracked]);
 
@@ -94,7 +112,7 @@ function SettingsPage() {
     <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="font-display text-3xl font-bold">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Escolha as ligas que você quer acompanhar. Isso filtra os jogos exibidos no app e o que o cron atualiza automaticamente. Você pode voltar aqui a qualquer momento.</p>
+        <p className="text-sm text-muted-foreground">Você já começa com as 10 principais ligas habilitadas automaticamente. Aqui dá pra ver, adicionar mais ou remover a qualquer momento.</p>
       </div>
 
       {onboarding && (
@@ -104,21 +122,11 @@ function SettingsPage() {
             <div className="flex-1">
               <h2 className="font-display font-semibold mb-1">Bem-vindo(a)!</h2>
               <p className="text-sm text-muted-foreground mb-3">
-                Para começar, selecione as ligas que você quer acompanhar — ou habilite as principais do mundo de uma vez. Depois é só ir para o painel.
+                Já habilitamos as 10 principais ligas do mundo pra você — não precisa escolher nada pra começar. Se quiser acompanhar mais ligas, é só habilitar abaixo, a qualquer momento.
               </p>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => trackAllMut.mutate()}
-                  disabled={trackAllMut.isPending}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                >
-                  {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-                  Habilitar principais ligas
-                </button>
-                <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-input">
-                  Ir para o painel
-                </Link>
-              </div>
+              <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+                Ir para o painel
+              </Link>
             </div>
           </div>
         </div>
@@ -148,8 +156,8 @@ function SettingsPage() {
 
       <div className="card-surface p-4 mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-display font-semibold">Habilitar as principais ligas do mundo</h2>
-          <p className="text-xs text-muted-foreground">~100 competições mais relevantes (grandes ligas, copas nacionais, continentais e seleções) — não a lista inteira da API (milhares, incluindo categorias de base e ligas amadoras). Quer algo específico fora dessa lista? Busca abaixo.</p>
+          <h2 className="font-display font-semibold">Quer acompanhar mais ligas?</h2>
+          <p className="text-xs text-muted-foreground">Você já começa com as 10 principais ligas do mundo habilitadas automaticamente. Se quiser mais, esse botão habilita ~100 competições relevantes de uma vez (grandes ligas, copas nacionais, continentais e seleções) — não a lista inteira da API (milhares, incluindo categorias de base e ligas amadoras). Quer algo bem específico fora dessa lista? Busca abaixo.</p>
         </div>
         <button
           onClick={() => trackAllMut.mutate()}
@@ -157,7 +165,7 @@ function SettingsPage() {
           className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 text-primary px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-          {trackAllMut.isPending ? "Habilitando..." : "Habilitar principais"}
+          {trackAllMut.isPending ? "Habilitando..." : "Habilitar principais (~100)"}
         </button>
       </div>
 
