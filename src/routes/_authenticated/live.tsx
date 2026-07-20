@@ -57,9 +57,6 @@ function LivePage() {
             </span>
             Ao vivo
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {fixtures.length} jogo(s) em andamento · atualiza sozinho a cada 30s
-          </p>
         </div>
         <button
           onClick={() => refetch()}
