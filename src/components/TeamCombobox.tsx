@@ -30,9 +30,12 @@ export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChang
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pool = q ? teams.filter((t) => t.name.toLowerCase().includes(q)) : teams;
+    const merged = [...teams];
+    const seen = new Set(teams.map((t) => t.id));
+    for (const t of extraTeams) if (!seen.has(t.id)) { merged.push(t); seen.add(t.id); }
+    const pool = q ? merged.filter((t) => t.name.toLowerCase().includes(q)) : merged;
     return pool.slice(0, 50);
-  }, [teams, query]);
+  }, [teams, extraTeams, query]);
 
   const exactMatch = results.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
   const canUseFreeText = query.trim().length >= 2 && !exactMatch;
