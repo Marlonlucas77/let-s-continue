@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { apiSportsFetch, importFixturesFor, getComputedCache, setComputedCache, recentFixturesForTeam, recentHeadToHead } from "@/lib/fixtures-importer.server";
+import { apiSportsFetch, importFixturesFor, getComputedCache, setComputedCache } from "@/lib/fixtures-importer.server";
 import { ApiSportsFixture, ApiSportsLeague, ApiSportsOdd } from "./api-sports.types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -35,75 +35,6 @@ export const listAllLeagues = createServerFn({ method: "GET" })
         ?? (r.seasons ?? [])[0]?.year
         ?? new Date().getUTCFullYear(),
     }));
-  });
-
-export const searchTeams = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: { query: string }) => z.object({ query: z.string().min(2) }).parse(d))
-  .handler(async ({ data }) => {
-    const json = await apiSportsFetch(`/teams?search=${encodeURIComponent(data.query)}`);
-    return (json.response ?? []).map((r: any) => ({
-      id: r.team.id,
-      name: r.team.name,
-      country: r.team.country,
-      logo: r.team.logo,
-      founded: r.team.founded,
-      venue: r.venue?.name,
-    }));
-  });
-
-export const getTeamAnalysis = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: { teamId: number }) => z.object({ teamId: z.number().int() }).parse(d))
-  .handler(async ({ data }) => {
-    // Antes: se o `recentFixturesForTeam` falhasse (rate limit, temporada
-    // sem dados, etc.) a página inteira mostrava "Não foi possível
-    // carregar as estatísticas". Agora devolve uma resposta vazia
-    // amigável em vez de estourar erro.
-    let fixtures: any[] = [];
-    try {
-      fixtures = await recentFixturesForTeam(data.teamId, 20);
-    } catch (e) {
-      console.error("[getTeamAnalysis] recentFixturesForTeam falhou:", (e as Error).message);
-    }
-    const done = fixtures.filter((f) => f.fixture?.status?.short === "FT");
-
-    let w = 0, dr = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
-    const form: ("W" | "D" | "L")[] = [];
-    const recent: any[] = [];
-
-    for (const f of done) {
-      const isHome = f.teams.home.id === data.teamId;
-      const my = (isHome ? f.goals.home : f.goals.away) ?? 0;
-      const opp = (isHome ? f.goals.away : f.goals.home) ?? 0;
-      gf += my; ga += opp;
-      if (my > 0 && opp > 0) btts++;
-      if (my + opp > 2.5) o25++;
-      if (opp === 0) cs++;
-
-      const res: "W" | "D" | "L" = my > opp ? "W" : my < opp ? "L" : "D";
-      // BUG antigo: as variáveis w/d/l existiam mas nunca eram
-      // incrementadas — o card sempre mostrava 0-0-0.
-      if (res === "W") w++; else if (res === "L") l++; else dr++;
-      if (form.length < 10) form.push(res);
-      recent.push({
-        date: f.fixture.date.slice(0, 10),
-        opponent: isHome ? f.teams.away.name : f.teams.home.name,
-        opponentLogo: isHome ? f.teams.away.logo : f.teams.home.logo,
-        gf: my, ga: opp, result: res, home: isHome
-      });
-    }
-
-    const n = done.length || 1;
-    return {
-      games: done.length, wins: w, draws: dr, losses: l,
-      avgFor: Math.round((gf / n) * 100) / 100,
-      avgAgainst: Math.round((ga / n) * 100) / 100,
-      bttsPct: Math.round((btts / n) * 100),
-      over25Pct: Math.round((o25 / n) * 100),
-      cleanSheetPct: Math.round((cs / n) * 100),
-      form, recent: recent.slice(0, 10)
-    };
   });
 
 

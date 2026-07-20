@@ -217,60 +217,6 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
   return p;
 }
 
-// O parâmetro `last` (ex: /fixtures?team=X&last=10) não é permitido em
-// planos grátis da API-Sports. A alternativa suportada é buscar por
-// `season` e pegar os últimos N jogos nós mesmos. Como o ano da "season"
-// varia por convenção (ligas europeias usam o ano de início, ex: 2025
-// pra temporada 2025/26; ligas como o Brasileirão usam o ano corrente),
-// tenta a temporada mais provável primeiro e só busca a segunda se a
-// primeira não trouxer jogos suficientes — evita disparar 2 chamadas em
-// paralelo por time sempre, o que multiplica rápido quando vários jogos
-// são abertos em sequência (risco de estourar limite de rajada da API).
-export async function recentFixturesForTeam(teamId: number, limit: number): Promise<any[]> {
-  const now = new Date();
-  const month = now.getUTCMonth() + 1;
-  const year = now.getUTCFullYear();
-  const euSeasonGuess = month >= 7 ? year : year - 1; // temporada europeia (ago-mai)
-  const seasons = Array.from(new Set([year, euSeasonGuess]));
-
-  const dedupe = (fixtures: any[]) => {
-    const seen = new Set<number>();
-    return fixtures.filter((f) => {
-      const id = f.fixture?.id;
-      if (id == null || seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
-  };
-  const sortRecent = (fixtures: any[]) =>
-    [...fixtures].sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string));
-
-  const first = await apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${seasons[0]}`);
-  let all = first.response ?? [];
-  const finishedCount = all.filter((f: any) => f.fixture?.status?.short === "FT").length;
-
-  // Só busca a segunda temporada se a primeira não trouxe jogos finalizados
-  // suficientes (ex: início de temporada, ou convenção de ano errada).
-  if (finishedCount < limit && seasons[1] != null) {
-    try {
-      const second = await apiSportsFetch<any>(`/fixtures?team=${teamId}&season=${seasons[1]}`);
-      all = [...all, ...(second.response ?? [])];
-    } catch { /* segue só com a primeira temporada */ }
-  }
-
-  return sortRecent(dedupe(all)).slice(0, limit);
-}
-
-// Mesma limitação vale pro head-to-head: busca o histórico completo entre
-// os dois times (sem `last`) e corta os N mais recentes aqui.
-export async function recentHeadToHead(homeId: number, awayId: number, limit: number): Promise<any[]> {
-  const json = await apiSportsFetch<any>(`/fixtures/headtohead?h2h=${homeId}-${awayId}`);
-  const all = (json.response ?? []) as any[];
-  return [...all]
-    .sort((a, b) => (b.fixture.date as string).localeCompare(a.fixture.date as string))
-    .slice(0, limit);
-}
-
 export type ImportArgs = {
   supabase: any;
   userId: string;

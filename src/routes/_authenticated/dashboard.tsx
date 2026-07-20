@@ -198,11 +198,11 @@ function Dashboard() {
             <h2 className="font-display font-semibold flex items-center gap-2">
               <Star className="h-4 w-4 text-primary" /> Meus favoritos (3 dias)
             </h2>
-            <Link to="/teams" className="text-xs text-primary hover:underline">Gerenciar</Link>
+            <Link to="/account" className="text-xs text-primary hover:underline">Gerenciar</Link>
           </div>
           {(data?.favFixtures ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Favorite times na aba <Link to="/teams" className="text-primary">Times</Link> para acompanhar os próximos jogos aqui.
+              Favorite times em <Link to="/account" className="text-primary">Minha Conta</Link> para acompanhar os próximos jogos aqui.
             </p>
           ) : (
             <ul className="space-y-2">

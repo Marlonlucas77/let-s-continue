@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, CreditCard, Trophy, Target, Sparkles, Crown, ExternalLink, Bell } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, CreditCard, Trophy, Target, Sparkles, Crown, ExternalLink, Bell, Star, Search } from "lucide-react";
 import { toast } from "sonner";
 import { getMyAccount, setEmailAlertsEnabled } from "@/lib/account.functions";
 import { createPortalSession } from "@/lib/payments.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { supabase } from "@/integrations/supabase/client";
+import { listFavorites } from "@/lib/favorites.functions";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/_authenticated/account")({
   component: AccountPage,
@@ -34,6 +38,25 @@ function AccountPage() {
     queryKey: ["my-account"],
     queryFn: async () => await getAccountFn(),
   });
+
+  const listFavFn = useServerFn(listFavorites);
+  const { data: favorites = [] } = useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => (await listFavFn()) as any[],
+    staleTime: 60_000,
+  });
+  const favoriteTeams = favorites.filter((f) => f.kind === "team");
+
+  const { data: localTeams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: async () => (await supabase.from("teams").select("id, name, api_id").order("name")).data ?? [],
+  });
+  const [teamQuery, setTeamQuery] = useState("");
+  const filteredTeams = useMemo(() => {
+    const q = teamQuery.trim().toLowerCase();
+    const pool = (q ? localTeams.filter((t: any) => t.name.toLowerCase().includes(q)) : localTeams).filter((t: any) => t.api_id != null);
+    return pool.slice(0, 30);
+  }, [localTeams, teamQuery]);
 
   const alertsMut = useMutation({
     mutationFn: async (enabled: boolean) => alertsFn({ data: { enabled } }),
@@ -140,8 +163,56 @@ function AccountPage() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          Precisa favoritar pelo menos um time pra receber alertas — faça isso na aba <Link to="/teams" className="text-primary underline">Times</Link>.
+          Precisa favoritar pelo menos um time pra receber alertas — favorite abaixo.
         </p>
+      </div>
+
+      {/* Times favoritos */}
+      <div className="card-surface p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Star className="h-5 w-5 text-primary" />
+          <h2 className="font-display font-semibold">Times favoritos</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Times favoritados aparecem no Painel e disparam o alerta por e-mail quando têm jogo no dia.
+        </p>
+
+        {favoriteTeams.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {favoriteTeams.map((f: any) => (
+              <div key={f.id} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 pl-3 pr-1.5 py-1 text-xs">
+                {f.label ?? `Time #${f.ref_id}`}
+                <FavoriteButton kind="team" refId={f.ref_id} label={f.label} className="!p-1" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={teamQuery}
+            onChange={(e) => setTeamQuery(e.target.value)}
+            placeholder="Buscar time pra favoritar..."
+            className="w-full rounded-md bg-input border border-border pl-9 pr-3 py-2 text-sm"
+          />
+        </div>
+        {teamQuery.trim().length > 0 && (
+          <div className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border divide-y divide-border">
+            {filteredTeams.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-muted-foreground text-center">
+                Nenhum time encontrado — só times já importados aparecem aqui.
+              </p>
+            ) : (
+              filteredTeams.map((t: any) => (
+                <div key={t.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                  <span className="truncate">{t.name}</span>
+                  <FavoriteButton kind="team" refId={t.api_id} label={t.name} />
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Estatísticas pessoais */}

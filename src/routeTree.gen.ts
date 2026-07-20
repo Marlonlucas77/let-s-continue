@@ -21,7 +21,6 @@ import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/l
 import { Route as AuthenticatedPredictionsRouteImport } from './routes/_authenticated/predictions'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUpcomingRouteImport } from './routes/_authenticated/upcoming'
 import { Route as ApiPublicCronEvaluatePredictionsRouteImport } from './routes/api/public/cron/evaluate-predictions'
 import { Route as ApiPublicCronRefreshFixturesRouteImport } from './routes/api/public/cron/refresh-fixtures'
@@ -88,11 +87,6 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTeamsRoute = AuthenticatedTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedUpcomingRoute = AuthenticatedUpcomingRouteImport.update({
   id: '/upcoming',
   path: '/upcoming',
@@ -134,7 +128,6 @@ export interface FileRoutesByFullPath {
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
@@ -153,7 +146,6 @@ export interface FileRoutesByTo {
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
@@ -174,7 +166,6 @@ export interface FileRoutesById {
   '/_authenticated/predictions': typeof AuthenticatedPredictionsRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
@@ -195,7 +186,6 @@ export interface FileRouteTypes {
     | '/predictions'
     | '/pricing'
     | '/settings'
-    | '/teams'
     | '/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
@@ -214,7 +204,6 @@ export interface FileRouteTypes {
     | '/predictions'
     | '/pricing'
     | '/settings'
-    | '/teams'
     | '/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
@@ -234,7 +223,6 @@ export interface FileRouteTypes {
     | '/_authenticated/predictions'
     | '/_authenticated/pricing'
     | '/_authenticated/settings'
-    | '/_authenticated/teams'
     | '/_authenticated/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
@@ -340,13 +328,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/teams': {
-      id: '/_authenticated/teams'
-      path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof AuthenticatedTeamsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/upcoming': {
       id: '/_authenticated/upcoming'
       path: '/upcoming'
@@ -393,7 +374,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPredictionsRoute: typeof AuthenticatedPredictionsRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedTeamsRoute: typeof AuthenticatedTeamsRoute
   AuthenticatedUpcomingRoute: typeof AuthenticatedUpcomingRoute
 }
 
@@ -405,7 +385,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPredictionsRoute: AuthenticatedPredictionsRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedTeamsRoute: AuthenticatedTeamsRoute,
   AuthenticatedUpcomingRoute: AuthenticatedUpcomingRoute,
 }
 
