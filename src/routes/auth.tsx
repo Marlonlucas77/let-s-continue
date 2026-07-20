@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
-import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -18,22 +17,11 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Depois do cadastro, entra nesse modo: pede o código de 6 dígitos
-  // enviado por e-mail antes de liberar o acesso de verdade.
-  const [awaitingCode, setAwaitingCode] = useState(false);
-  const [code, setCode] = useState("");
-  const [resending, setResending] = useState(false);
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard" });
     });
   }, [navigate]);
-
-  const finishLogin = async () => {
-    toast.success("Conta confirmada! Agora escolha as ligas que você quer acompanhar.");
-    navigate({ to: "/settings", search: { onboarding: "1" } });
-  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +37,20 @@ function AuthPage() {
           options: { data: { display_name: name || email.split("@")[0] } },
         });
         if (error) throw error;
-        toast.success("Enviamos um código de confirmação pro seu e-mail.");
-        setAwaitingCode(true);
+        // Confirmação por código desligada temporariamente (pedido do
+        // usuário, pra facilitar testes). Se o projeto no Supabase ainda
+        // exigir confirmação de e-mail (config "Confirm email"), o login
+        // não vem com sessão ativa mesmo assim — nesse caso É NECESSÁRIO
+        // desligar aquela opção lá também (Authentication -> Providers ->
+        // Email -> "Confirm email").
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          toast.success("Conta criada! Agora escolha as ligas que você quer acompanhar.");
+          navigate({ to: "/settings", search: { onboarding: "1" } });
+        } else {
+          toast.success("Conta criada. Se pedir confirmação, faça login normalmente.");
+          setMode("login");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -62,79 +62,6 @@ function AuthPage() {
       setLoading(false);
     }
   };
-
-  const confirmCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "signup" });
-      if (error) throw error;
-      await finishLogin();
-    } catch (err: any) {
-      toast.error(err.message ?? "Código inválido ou expirado.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resendCode = async () => {
-    setResending(true);
-    try {
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      if (error) throw error;
-      toast.success("Reenviamos o código.");
-    } catch (err: any) {
-      toast.error(err.message ?? "Não foi possível reenviar o código.");
-    } finally {
-      setResending(false);
-    }
-  };
-
-  if (awaitingCode) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-3 flex justify-center"><Logo size={48} /></div>
-            <h1 className="font-display text-2xl font-bold">Confirme seu e-mail</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Enviamos um código de 6 dígitos pra <span className="text-foreground font-medium">{email}</span>.
-            </p>
-          </div>
-
-          <form onSubmit={confirmCode} className="card-surface p-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium">Código de confirmação</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoFocus
-                required
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                className="mt-1 w-full rounded-md bg-input border border-border px-3 py-2 text-center text-lg tracking-[0.5em] font-mono"
-              />
-            </div>
-            <button type="submit" disabled={loading || code.length < 6} className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50">
-              {loading ? "Confirmando..." : "Confirmar e entrar"}
-            </button>
-            <button type="button" onClick={resendCode} disabled={resending} className="w-full text-sm text-muted-foreground hover:text-foreground disabled:opacity-50">
-              {resending ? "Reenviando..." : "Não recebeu? Reenviar código"}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAwaitingCode(false); setCode(""); }}
-              className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-3 w-3" /> Voltar
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
