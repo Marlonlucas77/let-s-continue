@@ -29,6 +29,7 @@ export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "s
     if (runLog) {
       await supabaseAdmin.from("cron_runs").update({
         finished_at: new Date().toISOString(),
+        success: false,
         error: e.message,
       }).eq("id", runLog.id);
     }
