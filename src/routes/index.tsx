@@ -80,9 +80,26 @@ const FAQS = [
   },
 ];
 
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Placar Certo",
+  applicationCategory: "SportsApplication",
+  operatingSystem: "Web",
+  description: "Previsões de futebol geradas por IA — compare qualquer time do mundo e receba probabilidades de gols, escanteios e cartões na hora.",
+  offers: {
+    "@type": "AggregateOffer",
+    lowPrice: "0",
+    highPrice: "59.99",
+    priceCurrency: "BRL",
+    offerCount: "4",
+  },
+};
+
 function Landing() {
   return (
     <div className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <LogoWithName />

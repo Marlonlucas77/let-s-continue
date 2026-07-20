@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /auth
+Disallow: /dashboard
+Disallow: /upcoming
+Disallow: /predictions
+Disallow: /live
+Disallow: /teams
+Disallow: /settings
+Disallow: /account
+Disallow: /pricing
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://placarcerto.lovable.app/sitemap.xml

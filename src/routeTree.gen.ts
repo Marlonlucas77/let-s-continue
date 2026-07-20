@@ -23,6 +23,7 @@ import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedUpcomingRouteImport } from './routes/_authenticated/upcoming'
 import { Route as ApiPublicCronEvaluatePredictionsRouteImport } from './routes/api/public/cron/evaluate-predictions'
 import { Route as ApiPublicCronRefreshFixturesRouteImport } from './routes/api/public/cron/refresh-fixtures'
+import { Route as ApiPublicCronSendAlertsRouteImport } from './routes/api/public/cron/send-alerts'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +98,11 @@ const ApiPublicCronRefreshFixturesRoute =
     path: '/api/public/cron/refresh-fixtures',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCronSendAlertsRoute = ApiPublicCronSendAlertsRouteImport.update({
+  id: '/api/public/cron/send-alerts',
+  path: '/api/public/cron/send-alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
+  '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
+  '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
+  '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
+    | '/api/public/cron/send-alerts'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
+    | '/api/public/cron/send-alerts'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upcoming'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
+    | '/api/public/cron/send-alerts'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ApiPublicCronEvaluatePredictionsRoute: typeof ApiPublicCronEvaluatePredictionsRoute
   ApiPublicCronRefreshFixturesRoute: typeof ApiPublicCronRefreshFixturesRoute
+  ApiPublicCronSendAlertsRoute: typeof ApiPublicCronSendAlertsRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -315,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronRefreshFixturesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/send-alerts': {
+      id: '/api/public/cron/send-alerts'
+      path: '/api/public/cron/send-alerts'
+      fullPath: '/api/public/cron/send-alerts'
+      preLoaderRoute: typeof ApiPublicCronSendAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -358,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ApiPublicCronEvaluatePredictionsRoute: ApiPublicCronEvaluatePredictionsRoute,
   ApiPublicCronRefreshFixturesRoute: ApiPublicCronRefreshFixturesRoute,
+  ApiPublicCronSendAlertsRoute: ApiPublicCronSendAlertsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
