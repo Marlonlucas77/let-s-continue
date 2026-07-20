@@ -63,29 +63,7 @@ function PredictionsPage() {
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
-  const searchFn = useServerFn(searchTeams);
-  const [homeQuery, setHomeQuery] = useState("");
-  const [awayQuery, setAwayQuery] = useState("");
-  const [homeDebounced, setHomeDebounced] = useState("");
-  const [awayDebounced, setAwayDebounced] = useState("");
-  useEffect(() => { const t = setTimeout(() => setHomeDebounced(homeQuery.trim()), 300); return () => clearTimeout(t); }, [homeQuery]);
-  useEffect(() => { const t = setTimeout(() => setAwayDebounced(awayQuery.trim()), 300); return () => clearTimeout(t); }, [awayQuery]);
 
-  const { data: homeApiTeams = [], isFetching: homeSearching } = useQuery({
-    queryKey: ["team-search", homeDebounced],
-    queryFn: async () => (await searchFn({ data: { query: homeDebounced } })) as any[],
-    enabled: homeDebounced.length >= 2,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const { data: awayApiTeams = [], isFetching: awaySearching } = useQuery({
-    queryKey: ["team-search", awayDebounced],
-    queryFn: async () => (await searchFn({ data: { query: awayDebounced } })) as any[],
-    enabled: awayDebounced.length >= 2,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const toCombo = (list: any[]): ComboTeam[] => list.map((t) => ({ id: `custom:api-${t.id}`, name: t.name, logo_url: t.logo, country: t.country }));
 
 
   const aiPredictFn = useServerFn(getAiFixturePrediction);
