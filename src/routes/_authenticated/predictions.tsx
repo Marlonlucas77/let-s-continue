@@ -25,10 +25,24 @@ function PredictionsPage() {
     queryFn: async () => (await supabase.from("teams").select("*").order("name")).data ?? [],
   });
 
+  // Só times de ligas ATUALMENTE habilitadas em Configurações podem
+  // aparecer aqui — inclusive pra análise por IA. Sem isso, dava pra
+  // furar o limite de ligas do plano digitando qualquer time livremente.
+  const { data: trackedLeagues = [] } = useQuery({
+    queryKey: ["tracked-leagues"],
+    queryFn: async () => (await supabase.from("tracked_leagues").select("league_name")).data ?? [],
+  });
+  const enabledLeagueNames = useMemo(
+    () => new Set(trackedLeagues.map((l: any) => (l.league_name as string)?.toLowerCase()).filter(Boolean)),
+    [trackedLeagues],
+  );
+  const enabledTeams = useMemo(
+    () => teams.filter((t) => t.league && enabledLeagueNames.has(t.league.toLowerCase())),
+    [teams, enabledLeagueNames],
+  );
+
   // Só usado pra checar se os times já se enfrentaram (aviso) e pra dar
-  // sugestões rápidas — não é mais obrigatório escolher um time da lista.
-  // Você pode digitar qualquer nome; a IA não precisa que o time esteja
-  // cadastrado, só precisa do nome pra gerar a previsão.
+  // sugestões rápidas.
   const { data: matches = [] } = useQuery({
     queryKey: ["matches-raw"],
     queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, match_date, home_goals, away_goals")).data ?? [],
@@ -51,7 +65,7 @@ function PredictionsPage() {
   // país entre parênteses quando faz sentido pra desambiguar.
   const teamsByLeague = useMemo(() => {
     const groups = new Map<string, typeof teams>();
-    for (const t of teams) {
+    for (const t of enabledTeams) {
       const league = t.league || t.country || "Outros";
       const country = t.country || "";
       // Só adiciona país quando o nome da liga é genérico o suficiente
@@ -62,19 +76,19 @@ function PredictionsPage() {
       groups.get(key)!.push(t);
     }
     return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [teams]);
+  }, [enabledTeams]);
 
   const [leagueFilter, setLeagueFilter] = useState("");
   const filteredTeams = useMemo(() => {
-    if (!leagueFilter) return teams;
-    return teams.filter((t) => {
+    if (!leagueFilter) return enabledTeams;
+    return enabledTeams.filter((t) => {
       const league = t.league || t.country || "Outros";
       const country = t.country || "";
       const genericNames = /^(serie [ab]|premier league|primera divis|super league|super lig|liga profesional|championship)$/i;
       const key = country && genericNames.test(league) ? `${league} (${country})` : league;
       return key === leagueFilter;
     });
-  }, [teams, leagueFilter]);
+  }, [enabledTeams, leagueFilter]);
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
@@ -124,7 +138,7 @@ function PredictionsPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold">Previsões</h1>
-          <p className="text-sm text-muted-foreground mt-1">Compare dois times quaisquer com IA — digite qualquer nome, não precisa estar importado.</p>
+          <p className="text-sm text-muted-foreground mt-1">Compare dois times das ligas que você habilitou em Configurações.</p>
         </div>
         {isPremium ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-medium text-primary">
@@ -152,13 +166,18 @@ function PredictionsPage() {
 
 
       <div className="card-surface p-5 mt-6">
-        {teams.length > 0 && (
+        {enabledTeams.length === 0 ? (
+          <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-400">
+            Nenhuma liga habilitada ainda. Vá em <Link to="/settings" className="underline">Configurações</Link> pra escolher quais ligas você quer acompanhar.
+          </div>
+        ) : (
           <div className="mb-4 flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
-            <span>{teams.length} time(s) na sua lista importada — mas pode digitar qualquer time, mesmo fora dela.</span>
+            <span>{enabledTeams.length} time(s) disponível(eis), das ligas que você habilitou.</span>
+            <Link to="/settings" className="text-primary hover:underline">Gerenciar ligas →</Link>
           </div>
         )}
 
-        {teams.length > 0 && (
+        {enabledTeams.length > 0 && (
           <div className="mb-4">
             <label className="text-sm font-medium">Filtrar sugestões por liga</label>
             <select
@@ -179,7 +198,8 @@ function PredictionsPage() {
               teams={filteredTeams}
               value={home}
               onChange={setHome}
-              placeholder="Digite o nome do time..."
+              placeholder="Buscar time..."
+              allowFreeText={false}
             />
           </div>
           <div>
@@ -188,7 +208,8 @@ function PredictionsPage() {
               teams={filteredTeams}
               value={away}
               onChange={setAway}
-              placeholder="Digite o nome do time..."
+              placeholder="Buscar time..."
+              allowFreeText={false}
             />
           </div>
         </div>

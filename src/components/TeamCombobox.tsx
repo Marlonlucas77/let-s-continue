@@ -11,9 +11,9 @@ export function isCustomTeam(team: ComboTeam | null | undefined): boolean {
   return !!team && team.id.startsWith(CUSTOM_TEAM_PREFIX);
 }
 
-export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChange, extraTeams = [], loading = false }: {
+export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChange, extraTeams = [], loading = false, allowFreeText = true }: {
   teams: ComboTeam[]; value: ComboTeam | null; onChange: (team: ComboTeam | null) => void; placeholder?: string;
-  onQueryChange?: (q: string) => void; extraTeams?: ComboTeam[]; loading?: boolean;
+  onQueryChange?: (q: string) => void; extraTeams?: ComboTeam[]; loading?: boolean; allowFreeText?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChang
   }, [teams, extraTeams, query]);
 
   const exactMatch = results.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
-  const canUseFreeText = query.trim().length >= 2 && !exactMatch;
+  const canUseFreeText = allowFreeText && query.trim().length >= 2 && !exactMatch;
 
   const useFreeText = () => {
     const name = query.trim();
@@ -89,7 +89,9 @@ export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChang
             <div className="px-3 py-2 text-xs text-muted-foreground text-center">Buscando times…</div>
           )}
           {!loading && results.length === 0 && !canUseFreeText && (
-            <div className="px-3 py-3 text-xs text-muted-foreground text-center">Digite pelo menos 2 letras.</div>
+            <div className="px-3 py-3 text-xs text-muted-foreground text-center">
+              {allowFreeText ? "Digite pelo menos 2 letras." : "Nenhum time encontrado nas ligas habilitadas."}
+            </div>
           )}
           {results.map((t) => (
             <button
