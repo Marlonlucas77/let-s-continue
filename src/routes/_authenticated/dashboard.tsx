@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
-import { Users, ListOrdered, Target, Trophy } from "lucide-react";
+import { Users, ListOrdered, Target, Trophy, RefreshCw } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { DashboardSkeleton } from "@/components/Skeletons";
 import { Suspense } from "react";
@@ -25,7 +25,7 @@ function Dashboard() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const listFixtures = useServerFn(listUpcomingFixtures);
   const loadFavorites = useServerFn(listFavorites);
-  const { data } = useSuspenseQuery({
+  const { data, refetch, isFetching } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
       // Antes buscava "hoje" e "semana" em duas chamadas separadas — como a
@@ -67,7 +67,11 @@ function Dashboard() {
         aiGeneratedCount: aiGenerated.count ?? 0,
       };
     },
-    staleTime: 5 * 60 * 1000,
+    // Antes ficava 5 minutos em cache — deixava os números (ligas
+    // habilitadas, times no histórico) parecerem "errados"/desatualizados
+    // logo depois de qualquer mudança recente (reset, reimportação). Muito
+    // mais curto agora, e com botão de atualizar manual.
+    staleTime: 30 * 1000,
   });
 
   const teamsCount = data?.teamsCount ?? 0;
@@ -117,8 +121,20 @@ function Dashboard() {
 
   return (
     <div className="max-w-6xl">
-      <h1 className="font-display text-3xl font-bold">Dashboard</h1>
-      <p className="text-sm text-muted-foreground mt-1">Resumo da sua análise</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Resumo da sua análise</p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-input disabled:opacity-50 shrink-0"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          Atualizar
+        </button>
+      </div>
 
       <div className="grid gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
@@ -252,7 +268,7 @@ function Dashboard() {
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                Confira o H2H detalhado antes de apostar
+                Compare times quaisquer em Previsão IA antes de apostar
               </li>
             </ul>
             <Link to="/predictions" className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
