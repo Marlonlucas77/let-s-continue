@@ -28,7 +28,7 @@ let _rateLimitedUntil = 0;
 // bem mais conservadores do que precisava, o que não deveria ter causado
 // os erros de rajada vistos. Com o número real confirmado, usa uma
 // margem de segurança generosa mas sem travar a aplicação à toa.
-const MIN_REQUEST_INTERVAL_MS = 250; // 300rpm real → 240rpm com margem de 20%
+const MIN_REQUEST_INTERVAL_MS = 220; // 300rpm real → ~270rpm com margem de 10%
 const DB_SLOT_TIMEOUT_MS = 4000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
 
 // Fallback em memória, usado se a chamada ao banco falhar ou demorar
