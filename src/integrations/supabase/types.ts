@@ -32,36 +32,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cron_runs: {
-        Row: {
-          error: string | null
-          finished_at: string | null
-          id: string
-          live_fixtures_updated: number | null
-          processed_count: number | null
-          started_at: string
-          triggered_by: string
-        }
-        Insert: {
-          error?: string | null
-          finished_at?: string | null
-          id?: string
-          live_fixtures_updated?: number | null
-          processed_count?: number | null
-          started_at?: string
-          triggered_by?: string
-        }
-        Update: {
-          error?: string | null
-          finished_at?: string | null
-          id?: string
-          live_fixtures_updated?: number | null
-          processed_count?: number | null
-          started_at?: string
-          triggered_by?: string
-        }
-        Relationships: []
-      }
       api_sports_rate_limit: {
         Row: {
           id: number
@@ -74,6 +44,39 @@ export type Database = {
         Update: {
           id?: number
           last_dispatch_at?: string
+        }
+        Relationships: []
+      }
+      cron_runs: {
+        Row: {
+          details: Json | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job: string
+          started_at: string
+          success: boolean | null
+          triggered_by: string | null
+        }
+        Insert: {
+          details?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          started_at?: string
+          success?: boolean | null
+          triggered_by?: string | null
+        }
+        Update: {
+          details?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          started_at?: string
+          success?: boolean | null
+          triggered_by?: string | null
         }
         Relationships: []
       }
