@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CalendarClock, Users, History, LogOut, Crown, Shield, Radio,
+  CalendarClock, Users, LogOut, Crown, Shield, Radio,
   LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
