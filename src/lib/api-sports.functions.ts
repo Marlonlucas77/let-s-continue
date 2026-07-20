@@ -229,42 +229,110 @@ export const trackLeague = createServerFn({ method: "POST" })
 // que gerava uma fila de importação gigante e impossível de acompanhar.
 // Quem quiser algo fora dessa lista ainda pode buscar e habilitar
 // manualmente em Configurações.
-const TOP_LEAGUE_PATTERNS = [
+// Lista curada de ~100 competições — cada entrada exige nome E país
+// batendo juntos, não só o nome. Isso importa porque nomes genéricos
+// como "Premier League" ou "Super League" são usados por dezenas de
+// países ao redor do mundo; sem checar o país junto, um filtro só por
+// nome pegava muito mais do que as ~100 pretendidas (chegou a 387).
+// country=null significa competição internacional/continental (a
+// API-Sports rotula essas como país "World").
+type LeagueTarget = { name: string; country: string | null };
+const TOP_LEAGUES: LeagueTarget[] = [
   // Europa — primeiras divisões
-  "premier league", "la liga", "serie a", "bundesliga", "ligue 1",
-  "primeira liga", "eredivisie", "pro league", "premiership",
-  "süper lig", "super lig", "super league", "superliga", "allsvenskan",
-  "eliteserien", "ekstraklasa", "fortuna liga", "hnl", "super liga",
-  "liga i", "nb i", "ligat ha'al", "premier liga",
+  { name: "premier league", country: "england" },
+  { name: "la liga", country: "spain" },
+  { name: "serie a", country: "italy" },
+  { name: "bundesliga", country: "germany" },
+  { name: "ligue 1", country: "france" },
+  { name: "primeira liga", country: "portugal" },
+  { name: "eredivisie", country: "netherlands" },
+  { name: "pro league", country: "belgium" },
+  { name: "premiership", country: "scotland" },
+  { name: "süper lig", country: "turkey" }, { name: "super lig", country: "turkey" },
+  { name: "premier league", country: "russia" }, { name: "premier liga", country: "russia" },
+  { name: "premier league", country: "ukraine" },
+  { name: "super league", country: "greece" },
+  { name: "super league", country: "switzerland" },
+  { name: "bundesliga", country: "austria" },
+  { name: "superliga", country: "denmark" },
+  { name: "allsvenskan", country: "sweden" },
+  { name: "eliteserien", country: "norway" },
+  { name: "ekstraklasa", country: "poland" },
+  { name: "fortuna liga", country: "czech" }, { name: "first league", country: "czech" },
+  { name: "hnl", country: "croatia" },
+  { name: "super liga", country: "serbia" },
+  { name: "liga i", country: "romania" },
+  { name: "nb i", country: "hungary" },
+  { name: "ligat ha'al", country: "israel" }, { name: "premier league", country: "israel" },
   // Europa — segundas divisões
-  "championship", "segunda división", "segunda divisao", "serie b",
-  "2. bundesliga", "ligue 2", "eerste divisie",
+  { name: "championship", country: "england" },
+  { name: "segunda división", country: "spain" }, { name: "segunda division", country: "spain" }, { name: "laliga2", country: "spain" },
+  { name: "serie b", country: "italy" },
+  { name: "2. bundesliga", country: "germany" },
+  { name: "ligue 2", country: "france" },
+  { name: "eerste divisie", country: "netherlands" },
   // Europa — copas nacionais
-  "fa cup", "copa del rey", "coppa italia", "dfb pokal", "coupe de france",
-  "efl cup", "carabao cup",
+  { name: "fa cup", country: "england" },
+  { name: "copa del rey", country: "spain" },
+  { name: "coppa italia", country: "italy" },
+  { name: "dfb pokal", country: "germany" },
+  { name: "coupe de france", country: "france" },
+  { name: "efl cup", country: "england" }, { name: "carabao cup", country: "england" },
   // América do Sul
-  "brasileirao", "brasileirão", "liga profesional", "primera división",
-  "primera division", "serie a" /* Equador */, "liga 1",
+  { name: "serie a", country: "brazil" }, { name: "serie b", country: "brazil" },
+  { name: "liga profesional", country: "argentina" }, { name: "primera división", country: "argentina" }, { name: "primera division", country: "argentina" },
+  { name: "primera división", country: "uruguay" }, { name: "primera division", country: "uruguay" },
+  { name: "primera división", country: "chile" }, { name: "primera division", country: "chile" },
+  { name: "primera a", country: "colombia" },
+  { name: "liga 1", country: "peru" },
+  { name: "serie a", country: "ecuador" },
+  { name: "primera división", country: "paraguay" }, { name: "primera division", country: "paraguay" },
+  { name: "primera división", country: "bolivia" }, { name: "primera division", country: "bolivia" },
+  { name: "liga futve", country: "venezuela" }, { name: "primera división", country: "venezuela" },
   // América do Norte/Central
-  "mls", "liga mx", "leagues cup",
+  { name: "mls", country: "usa" },
+  { name: "liga mx", country: "mexico" },
+  { name: "leagues cup", country: "world" },
   // Ásia
-  "j1 league", "k league 1", "chinese super league", "saudi pro league",
-  "stars league", "persian gulf", "isl", "a-league", "uae league",
+  { name: "j1 league", country: "japan" },
+  { name: "k league 1", country: "south korea" },
+  { name: "super league", country: "china" },
+  { name: "pro league", country: "saudi arabia" },
+  { name: "stars league", country: "qatar" },
+  { name: "pro league", country: "uae" },
+  { name: "persian gulf", country: "iran" },
+  { name: "isl", country: "india" }, { name: "indian super league", country: "india" },
+  { name: "a-league", country: "australia" },
   // África
-  "egyptian premier league", "premier soccer league", "botola", "npfl",
-  // Copas nacionais (Brasil/América do Sul)
-  "copa do brasil", "copa argentina",
-  // Continentais e seleções
-  "champions league", "europa league", "conference league",
-  "libertadores", "sudamericana", "concacaf champions", "afc champions",
-  "caf champions league", "world cup", "nations league", "euro championship",
-  "copa america", "copa américa", "africa cup of nations", "asian cup",
-  "gold cup",
+  { name: "premier league", country: "egypt" },
+  { name: "premier soccer league", country: "south africa" },
+  { name: "botola", country: "morocco" },
+  { name: "npfl", country: "nigeria" },
+  // Copas nacionais (América do Sul)
+  { name: "copa do brasil", country: "brazil" },
+  { name: "copa argentina", country: "argentina" },
+  // Continentais e seleções (país "World" na API-Sports)
+  { name: "champions league", country: "world" },
+  { name: "europa league", country: "world" },
+  { name: "conference league", country: "world" },
+  { name: "libertadores", country: "world" },
+  { name: "sudamericana", country: "world" },
+  { name: "concacaf champions", country: "world" },
+  { name: "afc champions", country: "world" },
+  { name: "caf champions league", country: "world" },
+  { name: "world cup", country: "world" },
+  { name: "nations league", country: "world" },
+  { name: "euro championship", country: "world" },
+  { name: "copa america", country: "world" }, { name: "copa américa", country: "world" },
+  { name: "africa cup of nations", country: "world" },
+  { name: "asian cup", country: "world" },
+  { name: "gold cup", country: "world" },
 ];
 
-function matchesTopLeague(name: string): boolean {
+function matchesTopLeague(name: string, country: string | null): boolean {
   const n = name.toLowerCase();
-  return TOP_LEAGUE_PATTERNS.some((p) => n.includes(p));
+  const c = (country ?? "").toLowerCase();
+  return TOP_LEAGUES.some((t) => n.includes(t.name) && (t.country == null || c.includes(t.country)));
 }
 
 export const trackTopLeagues = createServerFn({ method: "POST" })
@@ -274,7 +342,7 @@ export const trackTopLeagues = createServerFn({ method: "POST" })
     const { getUserPlan } = await import("@/lib/plan-limits.server");
     const { limits } = await getUserPlan(supabase, userId);
     const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
-    let matched = (json.response ?? []).filter((r) => matchesTopLeague(r.league.name as string));
+    let matched = (json.response ?? []).filter((r) => matchesTopLeague(r.league.name as string, r.country?.name as string));
     // Cada plano tem um limite de ligas — quem não é Elite ganha as
     // primeiras N da lista curada (que já está em ordem de relevância),
     // em vez de travar a ação inteira como antes.
