@@ -43,7 +43,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Comunidade",
     items: [
-      { to: "/history", label: "Histórico", icon: History },
       { to: "/pricing", label: "Planos", icon: Crown },
     ],
   },
