@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { TeamCombobox, isCustomTeam, type ComboTeam } from "@/components/TeamCombobox";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
-import { searchTeams } from "@/lib/api-sports.functions";
 import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
