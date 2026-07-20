@@ -85,7 +85,10 @@ export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChang
       </div>
       {open && (
         <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          {results.length === 0 && !canUseFreeText && (
+          {loading && (
+            <div className="px-3 py-2 text-xs text-muted-foreground text-center">Buscando times…</div>
+          )}
+          {!loading && results.length === 0 && !canUseFreeText && (
             <div className="px-3 py-3 text-xs text-muted-foreground text-center">Digite pelo menos 2 letras.</div>
           )}
           {results.map((t) => (
