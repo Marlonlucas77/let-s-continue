@@ -263,23 +263,6 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "gold cup", country: "world" },
 ];
 
-// As 10 ligas mais reconhecidas globalmente — usadas pra habilitar
-// automaticamente pra todo usuário novo (ou quem ainda não tem nenhuma
-// liga), sem precisar escolher nada. Em ordem de prioridade: se o plano
-// da pessoa permite menos de 10, ela recebe as primeiras da lista.
-const DEFAULT_10_LEAGUES: LeagueTarget[] = [
-  { name: "premier league", country: "england" },
-  { name: "la liga", country: "spain" },
-  { name: "serie a", country: "italy" },
-  { name: "serie a", country: "brazil" },
-  { name: "bundesliga", country: "germany" },
-  { name: "ligue 1", country: "france" },
-  { name: "champions league", country: "world" },
-  { name: "libertadores", country: "world" },
-  { name: "mls", country: "usa" },
-  { name: "primeira liga", country: "portugal" },
-];
-
 function matchesLeagueList(list: LeagueTarget[], name: string, country: string | null): boolean {
   const n = name.toLowerCase();
   const c = (country ?? "").toLowerCase();
@@ -318,18 +301,6 @@ export const trackTopLeagues = createServerFn({ method: "POST" })
 // cadastro (auth.tsx) e como reforço em Configurações pra quem já tem
 // conta mas ainda não tem nenhuma liga habilitada. Não exige nenhuma
 // escolha da pessoa; ela só vê o resultado pronto.
-export const autoEnableDefaultLeagues = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { count } = await context.supabase
-      .from("tracked_leagues")
-      .select("id", { count: "exact", head: true });
-    // Só age se a pessoa realmente não tiver nenhuma liga ainda — não
-    // sobrescreve escolhas que ela já fez manualmente.
-    if (count && count > 0) return { ok: true, count: 0, skipped: true };
-    return trackLeagueList(context.supabase, context.userId, DEFAULT_10_LEAGUES);
-  });
-
 export const untrackLeague = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))

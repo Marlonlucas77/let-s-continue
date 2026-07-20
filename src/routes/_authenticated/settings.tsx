@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
+import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw, Lock } from "lucide-react";
 import {
-  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague, autoEnableDefaultLeagues,
+  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague,
 } from "@/lib/api-sports.functions";
+import { getMyAccount } from "@/lib/account.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
 const searchSchema = z.object({ onboarding: z.union([z.literal("1"), z.literal(1)]).optional() });
@@ -27,8 +28,16 @@ function SettingsPage() {
   const trackFn = useServerFn(trackLeague);
   const trackAllFn = useServerFn(trackTopLeagues);
   const untrackFn = useServerFn(untrackLeague);
+  const accountFn = useServerFn(getMyAccount);
 
   const [query, setQuery] = useState("");
+
+  const { data: account } = useQuery({
+    queryKey: ["my-account"],
+    queryFn: async () => await accountFn(),
+  });
+  // null = ilimitado (plano Elite)
+  const leagueLimit: number | null = account?.limits.leagues ?? null;
 
   const { data: all = [], isLoading: loadingAll, error: allErr } = useQuery({
     queryKey: ["all-leagues"],
@@ -37,28 +46,12 @@ function SettingsPage() {
     retry: false,
   });
 
-  const { data: tracked = [], isLoading: loadingTracked } = useQuery({
+  const { data: tracked = [] } = useQuery({
     queryKey: ["tracked-leagues"],
     queryFn: async () => (await listTracked({})) as any[],
   });
 
-  // Reforço pra quem já tem conta (criada antes dessa mudança, ou o
-  // cadastro por algum motivo não conseguiu habilitar sozinho) e chega
-  // aqui sem nenhuma liga — habilita as 10 padrão automaticamente, sem
-  // precisar clicar em nada.
-  const autoEnableFn = useServerFn(autoEnableDefaultLeagues);
-  const autoEnableMut = useMutation({
-    mutationFn: async () => autoEnableFn({}),
-    onSuccess: (r: any) => {
-      if (r.count > 0) qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
-    },
-  });
-  useEffect(() => {
-    if (!loadingTracked && tracked.length === 0 && autoEnableMut.isIdle) {
-      autoEnableMut.mutate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingTracked, tracked.length]);
+  const atLimit = leagueLimit != null && tracked.length >= leagueLimit;
 
   const trackedIds = useMemo(() => new Set(tracked.map((t: any) => Number(t.league_id))), [tracked]);
 
@@ -75,13 +68,19 @@ function SettingsPage() {
 
   const trackMut = useMutation({
     mutationFn: async (l: League) => trackFn({ data: { leagueId: l.id, season: l.season, leagueName: l.name, country: l.country } }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tracked-leagues"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
   const untrackMut = useMutation({
     mutationFn: async (id: string) => untrackFn({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tracked-leagues"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -90,6 +89,7 @@ function SettingsPage() {
     onSuccess: (r: any) => {
       toast.success(`${r.count} ligas habilitadas.`);
       qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
+      qc.invalidateQueries({ queryKey: ["my-account"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -112,7 +112,9 @@ function SettingsPage() {
     <div className="max-w-4xl">
       <div className="mb-6">
         <h1 className="font-display text-3xl font-bold">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Você já começa com as 10 principais ligas habilitadas automaticamente. Aqui dá pra ver, adicionar mais ou remover a qualquer momento.</p>
+        <p className="text-sm text-muted-foreground">
+          Escolha as ligas que você quer acompanhar{leagueLimit != null ? ` — seu plano permite até ${leagueLimit}` : ""}. Isso define o que aparece em Jogos e Previsão IA.
+        </p>
       </div>
 
       {onboarding && (
@@ -122,10 +124,22 @@ function SettingsPage() {
             <div className="flex-1">
               <h2 className="font-display font-semibold mb-1">Bem-vindo(a)!</h2>
               <p className="text-sm text-muted-foreground mb-3">
-                Já habilitamos as 10 principais ligas do mundo pra você — não precisa escolher nada pra começar. Se quiser acompanhar mais ligas, é só habilitar abaixo, a qualquer momento.
+                {leagueLimit == null
+                  ? "Seu plano permite ligas ilimitadas. Escolha abaixo quais você quer acompanhar."
+                  : `Seu plano permite até ${leagueLimit} liga(s). Escolha abaixo quais você quer acompanhar — dá pra trocar depois quando quiser.`}
               </p>
-              <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
-                Ir para o painel
+              {leagueLimit != null && leagueLimit >= 3 && (
+                <button
+                  onClick={() => trackAllMut.mutate()}
+                  disabled={trackAllMut.isPending}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                  Preencher com as mais populares
+                </button>
+              )}
+              <Link to="/dashboard" className="ml-3 text-xs text-muted-foreground hover:text-foreground">
+                Pular por enquanto
               </Link>
             </div>
           </div>
@@ -136,8 +150,15 @@ function SettingsPage() {
         <div className="card-surface p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Radio className="h-4 w-4 text-primary" />
-            <h2 className="font-display font-semibold">Ligas selecionadas ({tracked.length})</h2>
+            <h2 className="font-display font-semibold">
+              Ligas selecionadas ({tracked.length}{leagueLimit != null ? `/${leagueLimit}` : ""})
+            </h2>
           </div>
+          {atLimit && (
+            <p className="text-xs text-amber-400 mb-3 flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5" /> Limite do seu plano atingido. Remova uma liga pra escolher outra, ou <Link to="/pricing" className="underline">faça upgrade</Link>.
+            </p>
+          )}
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
             {tracked.map((l: any) => (
               <li key={l.id} className="py-2 flex items-center justify-between gap-3">
@@ -156,16 +177,19 @@ function SettingsPage() {
 
       <div className="card-surface p-4 mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-display font-semibold">Quer acompanhar mais ligas?</h2>
-          <p className="text-xs text-muted-foreground">Você já começa com as 10 principais ligas do mundo habilitadas automaticamente. Se quiser mais, esse botão habilita ~100 competições relevantes de uma vez (grandes ligas, copas nacionais, continentais e seleções) — não a lista inteira da API (milhares, incluindo categorias de base e ligas amadoras). Quer algo bem específico fora dessa lista? Busca abaixo.</p>
+          <h2 className="font-display font-semibold">Quer preencher rápido?</h2>
+          <p className="text-xs text-muted-foreground">
+            Esse botão seleciona as ligas mais populares do mundo pra você, até o limite do seu plano
+            {leagueLimit != null ? ` (${leagueLimit})` : ""}. Prefere escolher uma por uma? Busca abaixo.
+          </p>
         </div>
         <button
           onClick={() => trackAllMut.mutate()}
-          disabled={trackAllMut.isPending}
+          disabled={trackAllMut.isPending || atLimit}
           className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 text-primary px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           {trackAllMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-          {trackAllMut.isPending ? "Habilitando..." : "Habilitar principais (~100)"}
+          {trackAllMut.isPending ? "Habilitando..." : atLimit ? "Limite atingido" : "Preencher com populares"}
         </button>
       </div>
 
@@ -229,6 +253,10 @@ function SettingsPage() {
                   </div>
                   {isTracked ? (
                     <span className="inline-flex items-center gap-1 text-xs text-primary"><CheckCircle2 className="h-4 w-4" /> Selecionada</span>
+                  ) : atLimit ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Limite do seu plano atingido">
+                      <Lock className="h-3.5 w-3.5" /> Limite atingido
+                    </span>
                   ) : (
                     <button
                       onClick={() => trackMut.mutate(l)}

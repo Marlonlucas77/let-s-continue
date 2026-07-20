@@ -1,10 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
-import { autoEnableDefaultLeagues } from "@/lib/api-sports.functions";
 import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
@@ -13,7 +11,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const autoEnableFn = useServerFn(autoEnableDefaultLeagues);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,13 +31,8 @@ function AuthPage() {
   }, [navigate]);
 
   const finishLogin = async () => {
-    // Já habilita as 10 principais ligas do mundo automaticamente — a
-    // pessoa não precisa escolher nada pra começar a ver jogos e
-    // previsões. Se quiser mais ligas, ela habilita depois em
-    // Configurações.
-    try { await autoEnableFn({}); } catch { /* não bloqueia o cadastro se isso falhar */ }
-    toast.success("Conta confirmada! Já habilitamos as principais ligas pra você.");
-    navigate({ to: "/dashboard" });
+    toast.success("Conta confirmada! Agora escolha as ligas que você quer acompanhar.");
+    navigate({ to: "/settings", search: { onboarding: "1" } });
   };
 
   const submit = async (e: React.FormEvent) => {
