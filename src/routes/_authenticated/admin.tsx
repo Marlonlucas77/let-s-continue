@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminListUsers, adminToggleRole, adminStats, checkIsAdmin } from "@/lib/admin.functions";
-import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign } from "lucide-react";
+import { adminListUsers, adminToggleRole, adminStats, adminCronStatus, checkIsAdmin } from "@/lib/admin.functions";
+import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -27,6 +27,14 @@ function AdminPage() {
     queryKey: ["admin-stats"],
     queryFn: async () => await statsFn(),
     enabled: isAdmin,
+  });
+
+  const cronFn = useServerFn(adminCronStatus);
+  const { data: cron } = useQuery({
+    queryKey: ["admin-cron"],
+    queryFn: async () => await cronFn(),
+    enabled: isAdmin,
+    refetchInterval: 60_000,
   });
 
   const { data: users = [] } = useQuery({
@@ -92,6 +100,69 @@ function AdminPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {cron && (
+        <div className="card-surface p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="h-4 w-4 text-primary" />
+            <h2 className="font-medium">Saúde do cron</h2>
+          </div>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-4">
+            <div className="rounded-md border border-border bg-input/40 p-3">
+              <div className="text-xs text-muted-foreground mb-1">Última execução</div>
+              <div className="text-sm font-medium">
+                {cron.lastRun ? new Date(cron.lastRun.started_at).toLocaleString("pt-BR") : "Nunca rodou"}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-input/40 p-3">
+              <div className="text-xs text-muted-foreground mb-1">Ligas nunca processadas</div>
+              <div className={`text-sm font-medium ${cron.neverRunLeagues > 0 ? "text-amber-400" : ""}`}>
+                {cron.neverRunLeagues} de {cron.totalLeagues}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-input/40 p-3">
+              <div className="text-xs text-muted-foreground mb-1">Ligas desatualizadas (+12h)</div>
+              <div className={`text-sm font-medium ${cron.staleLeagues > 0 ? "text-amber-400" : ""}`}>
+                {cron.staleLeagues}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-input/40 p-3">
+              <div className="text-xs text-muted-foreground mb-1">Status</div>
+              <div className="text-sm font-medium flex items-center gap-1">
+                {cron.lastRun?.error ? (
+                  <><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Erro na última execução</span></>
+                ) : (
+                  <><CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Saudável</>
+                )}
+              </div>
+            </div>
+          </div>
+          {cron.recentRuns.length > 0 && (
+            <div>
+              <h3 className="text-xs uppercase text-muted-foreground mb-2">Últimas execuções</h3>
+              <div className="space-y-1 max-h-56 overflow-y-auto">
+                {cron.recentRuns.map((r: any) => (
+                  <div key={r.id} className="flex items-center justify-between text-xs rounded-md bg-input/40 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">{new Date(r.started_at).toLocaleString("pt-BR")}</span>
+                      <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${r.triggered_by === "manual" ? "bg-blue-500/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                        {r.triggered_by === "manual" ? "manual" : "agendado"}
+                      </span>
+                    </div>
+                    {r.error ? (
+                      <span className="text-destructive truncate max-w-[50%]">{r.error}</span>
+                    ) : r.finished_at ? (
+                      <span className="text-primary">{r.processed_count ?? 0} liga(s), {r.live_fixtures_updated ?? 0} jogo(s) ao vivo</span>
+                    ) : (
+                      <span className="text-muted-foreground">Em andamento...</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

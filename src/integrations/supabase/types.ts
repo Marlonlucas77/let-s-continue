@@ -32,6 +32,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          live_fixtures_updated: number | null
+          processed_count: number | null
+          started_at: string
+          triggered_by: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          live_fixtures_updated?: number | null
+          processed_count?: number | null
+          started_at?: string
+          triggered_by?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          live_fixtures_updated?: number | null
+          processed_count?: number | null
+          started_at?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       api_sports_rate_limit: {
         Row: {
           id: number

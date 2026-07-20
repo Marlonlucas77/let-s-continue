@@ -106,6 +106,35 @@ export const adminStats = createServerFn({ method: "GET" })
     };
   });
 
+export const adminCronStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: runs }, { count: neverRun }, { count: totalLeagues }] = await Promise.all([
+      supabaseAdmin.from("cron_runs").select("*").order("started_at", { ascending: false }).limit(10),
+      supabaseAdmin.from("tracked_leagues").select("*", { count: "exact", head: true }).is("last_run_at", null),
+      supabaseAdmin.from("tracked_leagues").select("*", { count: "exact", head: true }),
+    ]);
+
+    const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const { count: stale } = await supabaseAdmin
+      .from("tracked_leagues")
+      .select("*", { count: "exact", head: true })
+      .not("last_run_at", "is", null)
+      .lt("last_run_at", cutoff);
+
+    const lastRun = runs?.[0] ?? null;
+    return {
+      lastRun,
+      recentRuns: runs ?? [],
+      neverRunLeagues: neverRun ?? 0,
+      staleLeagues: stale ?? 0,
+      totalLeagues: totalLeagues ?? 0,
+    };
+  });
+
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

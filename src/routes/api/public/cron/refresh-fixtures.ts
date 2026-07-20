@@ -6,8 +6,37 @@ import { fetchAndCacheLiveFixtures } from "@/lib/api-sports.functions";
 // (chamado pelo agendador externo, protegido por CRON_SECRET) quanto pela
 // função autenticada que o botão "Rodar agora" usa (protegida por login
 // normal, sem precisar do segredo).
-export async function runFixturesRefresh() {
+export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "schedule") {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data: runLog } = await supabaseAdmin
+    .from("cron_runs")
+    .insert({ triggered_by: triggeredBy })
+    .select("id")
+    .single();
+
+  try {
+    const result = await runFixturesRefreshInner(supabaseAdmin);
+    if (runLog) {
+      await supabaseAdmin.from("cron_runs").update({
+        finished_at: new Date().toISOString(),
+        processed_count: result.processed,
+        live_fixtures_updated: result.liveFixturesUpdated,
+      }).eq("id", runLog.id);
+    }
+    return result;
+  } catch (e: any) {
+    if (runLog) {
+      await supabaseAdmin.from("cron_runs").update({
+        finished_at: new Date().toISOString(),
+        error: e.message,
+      }).eq("id", runLog.id);
+    }
+    throw e;
+  }
+}
+
+async function runFixturesRefreshInner(supabaseAdmin: any) {
 
   // 0. Atualiza o cache de jogos ao vivo (a tela "Ao vivo" só lê isso,
   // nunca chama a API externa diretamente) — feito primeiro e isolado
@@ -94,7 +123,7 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
           return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
         }
         try {
-          const result = await runFixturesRefresh();
+          const result = await runFixturesRefresh("schedule");
           return new Response(JSON.stringify(result), { headers: { "content-type": "application/json" } });
         } catch (e: any) {
           return new Response(JSON.stringify({ error: e.message }), { status: 500 });

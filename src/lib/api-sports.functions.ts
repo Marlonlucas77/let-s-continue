@@ -318,7 +318,7 @@ export const runFixturesRefreshNow = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!data) throw new Error("Acesso restrito: apenas administradores.");
     const { runFixturesRefresh } = await import("@/routes/api/public/cron/refresh-fixtures");
-    return runFixturesRefresh();
+    return runFixturesRefresh("manual");
   });
 
 export const untrackLeague = createServerFn({ method: "POST" })
