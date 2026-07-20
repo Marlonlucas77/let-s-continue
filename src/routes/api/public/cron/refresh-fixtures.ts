@@ -1,11 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { importFixturesFor } from "@/lib/fixtures-importer.server";
+import { fetchAndCacheLiveFixtures } from "@/lib/api-sports.functions";
 
 export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
   server: {
     handlers: {
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // 0. Atualiza o cache de jogos ao vivo (a tela "Ao vivo" só lê
+        // isso, nunca chama a API externa diretamente) — feito primeiro e
+        // isolado com try/catch pra uma falha aqui não impedir o resto do
+        // cron (importação de ligas) de rodar.
+        let liveUpdated = 0;
+        try {
+          const live = await fetchAndCacheLiveFixtures(supabaseAdmin);
+          liveUpdated = live.length;
+        } catch { /* segue o cron mesmo se isso falhar */ }
 
         // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas
         const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
@@ -62,6 +73,7 @@ export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
 
         return new Response(JSON.stringify({ 
           timestamp: new Date().toISOString(),
+          liveFixturesUpdated: liveUpdated,
           processed: results.length, 
           results 
         }), {

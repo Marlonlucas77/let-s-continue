@@ -19,16 +19,19 @@ export const Route = createFileRoute("/_authenticated/live")({
 
 function LivePage() {
   const liveFn = useServerFn(listLiveFixtures);
-  const { data: fixtures = [], isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
+  // Agora é uma leitura rápida do cache (atualizado em segundo plano pelo
+  // cron), não mais uma chamada direta à API externa na hora do clique —
+  // por isso pode ficar sempre habilitado e atualizar automaticamente,
+  // sem risco de bater limite de requisições.
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["live-fixtures"],
-    queryFn: async () => (await liveFn()) as any[],
-    // Sem atualização automática: um polling a cada 30s consumia cota da
-    // API o tempo todo, mesmo sem ninguém pedindo, e contribuía bastante
-    // pros erros de limite de requisições. Agora só atualiza quando a
-    // pessoa pede.
-    staleTime: 20_000,
+    queryFn: async () => await liveFn(),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
     retry: false,
   });
+  const fixtures = data?.fixtures ?? [];
+  const dataUpdatedAt = data?.updatedAt ? new Date(data.updatedAt).getTime() : 0;
 
   // A tela mostra uma mensagem simples pro usuário de propósito, mas o
   // erro técnico real vai pro console — sem isso, não dá pra diagnosticar
@@ -55,7 +58,7 @@ function LivePage() {
             Ao vivo
           </h1>
           <p className="text-sm text-muted-foreground">
-            {fixtures.length} jogo(s) em andamento · clique em atualizar pra ver o placar mais recente
+            {fixtures.length} jogo(s) em andamento · atualiza sozinho a cada 30s
           </p>
         </div>
         <button

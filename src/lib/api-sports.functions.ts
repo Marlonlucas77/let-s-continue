@@ -519,21 +519,49 @@ export const autoCheckPredictions = createServerFn({ method: "POST" })
     return { checked, correct };
   });
 
+function mapLiveFixtures(response: any[]): any[] {
+  return (response ?? []).map((f: any) => ({
+    fixtureId: f.fixture.id as number,
+    date: f.fixture.date as string,
+    status: f.fixture.status.short as string,
+    elapsed: f.fixture.status.elapsed as number | null,
+    league: f.league.name as string,
+    leagueLogo: f.league.logo as string | undefined,
+    country: f.league.country as string | undefined,
+    home: { name: f.teams.home.name as string, logo: f.teams.home.logo as string, goals: f.goals.home ?? 0 },
+    away: { name: f.teams.away.name as string, logo: f.teams.away.logo as string, goals: f.goals.away ?? 0 },
+  })).sort((a: any, b: any) => a.league.localeCompare(b.league));
+}
+
+// Busca ao vivo de verdade na API-Sports — só o cron chama isso agora
+// (guardando o resultado em live_fixtures_cache), não mais a tela
+// diretamente. Fica exportada pra o endpoint de cron usar.
+export async function fetchAndCacheLiveFixtures(supabaseAdmin: any) {
+  const json = await apiSportsFetch("/fixtures?live=all");
+  const fixtures = mapLiveFixtures(json.response ?? []);
+  await supabaseAdmin
+    .from("live_fixtures_cache")
+    .update({ data: fixtures, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  return fixtures;
+}
+
+// A tela "Ao vivo" lê daqui — consulta rápida ao próprio banco, sem
+// depender da API externa responder na hora em que a pessoa está usando
+// o app. Os dados são atualizados em segundo plano pelo cron.
 export const listLiveFixtures = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const json = await apiSportsFetch("/fixtures?live=all");
-    return (json.response ?? []).map((f: any) => ({
-      fixtureId: f.fixture.id as number,
-      date: f.fixture.date as string,
-      status: f.fixture.status.short as string,
-      elapsed: f.fixture.status.elapsed as number | null,
-      league: f.league.name as string,
-      leagueLogo: f.league.logo as string | undefined,
-      country: f.league.country as string | undefined,
-      home: { name: f.teams.home.name as string, logo: f.teams.home.logo as string, goals: f.goals.home ?? 0 },
-      away: { name: f.teams.away.name as string, logo: f.teams.away.logo as string, goals: f.goals.away ?? 0 },
-    })).sort((a: any, b: any) => a.league.localeCompare(b.league));
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("live_fixtures_cache")
+      .select("data, updated_at")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      fixtures: (data?.data as any[]) ?? [],
+      updatedAt: data?.updated_at ?? null,
+    };
   });
 
 

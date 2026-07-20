@@ -16,15 +16,12 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
-import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
-import { Route as AuthenticatedPoolsRouteImport } from './routes/_authenticated/pools'
 import { Route as AuthenticatedPredictionsRouteImport } from './routes/_authenticated/predictions'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTeamsRouteImport } from './routes/_authenticated/teams'
 import { Route as AuthenticatedUpcomingRouteImport } from './routes/_authenticated/upcoming'
-import { Route as AuthenticatedPoolsPoolIdRouteImport } from './routes/_authenticated/pools.$poolId'
 import { Route as ApiPublicCronEvaluatePredictionsRouteImport } from './routes/api/public/cron/evaluate-predictions'
 import { Route as ApiPublicCronRefreshFixturesRouteImport } from './routes/api/public/cron/refresh-fixtures'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -63,20 +60,9 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLeaderboardRoute =
-  AuthenticatedLeaderboardRouteImport.update({
-    id: '/leaderboard',
-    path: '/leaderboard',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
   id: '/live',
   path: '/live',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPoolsRoute = AuthenticatedPoolsRouteImport.update({
-  id: '/pools',
-  path: '/pools',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPredictionsRoute =
@@ -105,12 +91,6 @@ const AuthenticatedUpcomingRoute = AuthenticatedUpcomingRouteImport.update({
   path: '/upcoming',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPoolsPoolIdRoute =
-  AuthenticatedPoolsPoolIdRouteImport.update({
-    id: '/$poolId',
-    path: '/$poolId',
-    getParentRoute: () => AuthenticatedPoolsRoute,
-  } as any)
 const ApiPublicCronEvaluatePredictionsRoute =
   ApiPublicCronEvaluatePredictionsRouteImport.update({
     id: '/api/public/cron/evaluate-predictions',
@@ -137,15 +117,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
-  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
-  '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -157,15 +134,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/history': typeof AuthenticatedHistoryRoute
-  '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/live': typeof AuthenticatedLiveRoute
-  '/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/predictions': typeof AuthenticatedPredictionsRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/teams': typeof AuthenticatedTeamsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
-  '/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -179,15 +153,12 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
-  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
-  '/_authenticated/pools': typeof AuthenticatedPoolsRouteWithChildren
   '/_authenticated/predictions': typeof AuthenticatedPredictionsRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/teams': typeof AuthenticatedTeamsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
-  '/_authenticated/pools/$poolId': typeof AuthenticatedPoolsPoolIdRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -201,15 +172,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/history'
-    | '/leaderboard'
     | '/live'
-    | '/pools'
     | '/predictions'
     | '/pricing'
     | '/settings'
     | '/teams'
     | '/upcoming'
-    | '/pools/$poolId'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
@@ -221,15 +189,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/history'
-    | '/leaderboard'
     | '/live'
-    | '/pools'
     | '/predictions'
     | '/pricing'
     | '/settings'
     | '/teams'
     | '/upcoming'
-    | '/pools/$poolId'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
@@ -242,15 +207,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/history'
-    | '/_authenticated/leaderboard'
     | '/_authenticated/live'
-    | '/_authenticated/pools'
     | '/_authenticated/predictions'
     | '/_authenticated/pricing'
     | '/_authenticated/settings'
     | '/_authenticated/teams'
     | '/_authenticated/upcoming'
-    | '/_authenticated/pools/$poolId'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/payments/webhook'
@@ -316,25 +278,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/leaderboard': {
-      id: '/_authenticated/leaderboard'
-      path: '/leaderboard'
-      fullPath: '/leaderboard'
-      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/live': {
       id: '/_authenticated/live'
       path: '/live'
       fullPath: '/live'
       preLoaderRoute: typeof AuthenticatedLiveRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/pools': {
-      id: '/_authenticated/pools'
-      path: '/pools'
-      fullPath: '/pools'
-      preLoaderRoute: typeof AuthenticatedPoolsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/predictions': {
@@ -372,13 +320,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpcomingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/pools/$poolId': {
-      id: '/_authenticated/pools/$poolId'
-      path: '/$poolId'
-      fullPath: '/pools/$poolId'
-      preLoaderRoute: typeof AuthenticatedPoolsPoolIdRouteImport
-      parentRoute: typeof AuthenticatedPoolsRoute
-    }
     '/api/public/cron/evaluate-predictions': {
       id: '/api/public/cron/evaluate-predictions'
       path: '/api/public/cron/evaluate-predictions'
@@ -403,25 +344,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedPoolsRouteChildren {
-  AuthenticatedPoolsPoolIdRoute: typeof AuthenticatedPoolsPoolIdRoute
-}
-
-const AuthenticatedPoolsRouteChildren: AuthenticatedPoolsRouteChildren = {
-  AuthenticatedPoolsPoolIdRoute: AuthenticatedPoolsPoolIdRoute,
-}
-
-const AuthenticatedPoolsRouteWithChildren =
-  AuthenticatedPoolsRoute._addFileChildren(AuthenticatedPoolsRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
-  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
-  AuthenticatedPoolsRoute: typeof AuthenticatedPoolsRouteWithChildren
   AuthenticatedPredictionsRoute: typeof AuthenticatedPredictionsRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -434,9 +362,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
-  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
-  AuthenticatedPoolsRoute: AuthenticatedPoolsRouteWithChildren,
   AuthenticatedPredictionsRoute: AuthenticatedPredictionsRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -458,3 +384,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
