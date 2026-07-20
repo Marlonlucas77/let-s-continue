@@ -66,10 +66,10 @@ function LivePage() {
         </div>
       ) : error ? (
         <div className="card-surface p-12 text-center">
-          <Radio className="h-10 w-10 text-destructive/50 mx-auto mb-4" />
-          <h3 className="font-medium text-foreground mb-1">Não foi possível buscar jogos ao vivo</h3>
+          <Radio className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="font-medium text-foreground mb-1">Placar ao vivo indisponível no momento</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
-            {(error as Error).message || "Erro na API de futebol."}
+            Não conseguimos buscar os jogos ao vivo agora. Tenta de novo em alguns instantes.
           </p>
           <button 
             onClick={() => refetch()} 

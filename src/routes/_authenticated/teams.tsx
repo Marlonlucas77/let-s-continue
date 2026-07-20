@@ -62,8 +62,8 @@ function TeamsPage() {
         </div>
       ) : error ? (
         <div className="card-surface p-8 text-center">
-          <p className="text-sm text-destructive font-medium mb-1">Não foi possível buscar times agora</p>
-          <p className="text-xs text-muted-foreground mb-4">{(error as Error).message || "Erro na API de futebol."}</p>
+          <p className="text-sm text-foreground font-medium mb-1">Não foi possível buscar times agora</p>
+          <p className="text-xs text-muted-foreground mb-4">Tenta de novo em alguns instantes.</p>
           <button onClick={() => refetch()} className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90">
             Tentar novamente
           </button>
@@ -121,8 +121,8 @@ function TeamDetail({ team, onBack }: { team: Team; onBack: () => void }) {
 
       {error ? (
         <div className="card-surface p-8 text-center">
-          <p className="text-sm text-destructive font-medium mb-1">Não foi possível carregar as estatísticas</p>
-          <p className="text-xs text-muted-foreground mb-4">{(error as Error).message || "Erro na API de futebol."}</p>
+          <p className="text-sm text-foreground font-medium mb-1">Não foi possível carregar as estatísticas</p>
+          <p className="text-xs text-muted-foreground mb-4">Tenta de novo em alguns instantes.</p>
           <button onClick={() => refetch()} className="text-xs rounded-md bg-primary px-3 py-1.5 text-primary-foreground font-medium hover:opacity-90">
             Tentar novamente
           </button>
