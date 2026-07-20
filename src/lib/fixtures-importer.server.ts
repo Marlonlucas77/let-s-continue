@@ -57,7 +57,7 @@ async function throttledSlot(): Promise<void> {
         min_interval_ms: MIN_REQUEST_INTERVAL_MS,
       });
       if (error) throw error;
-      return data as unknown as string;
+      return { slot: data as unknown as string, supabaseAdmin };
     })();
 
     const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), DB_SLOT_TIMEOUT_MS));
@@ -68,8 +68,27 @@ async function throttledSlot(): Promise<void> {
       await localFallbackSlot();
       return;
     }
-    const slotAt = new Date(result).getTime();
+    const slotAt = new Date(result.slot).getTime();
     const wait = Math.max(0, slotAt - Date.now());
+
+    // Teto de segurança: o relógio compartilhado só anda pra frente (cada
+    // chamada empurra um pouquinho), e numa rajada grande de chamadas
+    // (ex: importando 100 ligas de uma vez) ele pode ficar muitos segundos
+    // ou até minutos à frente do tempo real — travando qualquer chamada
+    // nova (mesmo um clique isolado, tipo abrir 'Ao vivo') por um tempo
+    // enorme. Em vez de esperar o valor calculado, nunca espera mais que
+    // alguns segundos — e se o atraso acumulado for grande demais, reseta
+    // o relógio pra não ficar arrastando esse atraso pra sempre.
+    const MAX_WAIT_MS = 3000;
+    if (wait > MAX_WAIT_MS) {
+      try {
+        await result.supabaseAdmin
+          .from("api_sports_rate_limit")
+          .update({ last_dispatch_at: new Date(Date.now() + MIN_REQUEST_INTERVAL_MS).toISOString() })
+          .eq("id", 1);
+      } catch { /* se o reset falhar, segue mesmo assim — melhor que travar */ }
+      return;
+    }
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   } catch {
     await localFallbackSlot();
