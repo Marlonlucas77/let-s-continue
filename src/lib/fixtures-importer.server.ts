@@ -29,7 +29,8 @@ let _rateLimitedUntil = 0;
 // os erros de rajada vistos. Com o número real confirmado, usa uma
 // margem de segurança generosa mas sem travar a aplicação à toa.
 const MIN_REQUEST_INTERVAL_MS = 220; // 300rpm real → ~270rpm com margem de 10%
-const DB_SLOT_TIMEOUT_MS = 4000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
+const DB_SLOT_TIMEOUT_MS = 2000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
+const MAX_WAIT_MS = 3000; // nunca espera mais que isso por um "relógio" (banco ou memória local)
 
 // Fallback em memória, usado se a chamada ao banco falhar ou demorar
 // demais — não protege entre instâncias diferentes, mas garante que a
@@ -40,7 +41,10 @@ let _lastDispatchAt = 0;
 function localFallbackSlot(): Promise<void> {
   const slot = _dispatchChain.then(async () => {
     const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
-    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    // Mesmo teto de segurança do relógio do banco: numa rajada grande de
+    // chamadas dentro da mesma instância, esse valor também podia crescer
+    // sem limite e travar chamadas novas por muito tempo.
+    if (wait > 0) await new Promise((r) => setTimeout(r, Math.min(wait, MAX_WAIT_MS)));
     _lastDispatchAt = Date.now();
   });
   _dispatchChain = slot.catch(() => {});
@@ -79,7 +83,6 @@ async function throttledSlot(): Promise<void> {
     // enorme. Em vez de esperar o valor calculado, nunca espera mais que
     // alguns segundos — e se o atraso acumulado for grande demais, reseta
     // o relógio pra não ficar arrastando esse atraso pra sempre.
-    const MAX_WAIT_MS = 3000;
     if (wait > MAX_WAIT_MS) {
       try {
         await result.supabaseAdmin
@@ -172,11 +175,11 @@ export async function apiSportsFetch<T = any>(path: string): Promise<ApiSportsRe
     try {
       res = await fetch(`${BASE}${path}`, {
         headers: { "x-apisports-key": key },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(8000),
       });
     } catch (e: any) {
       if (hit) return hit.data;
-      throw new Error(`API-Sports não respondeu em 15s (${e?.name ?? "erro de rede"}).`);
+      throw new Error(`API-Sports não respondeu em 8s (${e?.name ?? "erro de rede"}).`);
     }
     if (res.status === 429) {
       let reason = res.statusText || "";
