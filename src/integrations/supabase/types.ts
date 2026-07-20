@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_runs: {
+        Row: {
+          details: Json | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job: string
+          started_at: string
+          success: boolean | null
+          triggered_by: string | null
+        }
+        Insert: {
+          details?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          started_at?: string
+          success?: boolean | null
+          triggered_by?: string | null
+        }
+        Update: {
+          details?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          started_at?: string
+          success?: boolean | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -323,17 +356,23 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          email_alerts_enabled: boolean
           id: string
+          last_alert_sent_on: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
+          email_alerts_enabled?: boolean
           id: string
+          last_alert_sent_on?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
+          email_alerts_enabled?: boolean
           id?: string
+          last_alert_sent_on?: string | null
         }
         Relationships: []
       }
