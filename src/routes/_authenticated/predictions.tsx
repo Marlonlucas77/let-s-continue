@@ -86,7 +86,7 @@ function PredictionsPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
-  const toCombo = (list: any[]): ComboTeam[] => list.map((t) => ({ id: `api:${t.id}`, name: t.name, logo_url: t.logo, country: t.country }));
+  const toCombo = (list: any[]): ComboTeam[] => list.map((t) => ({ id: `custom:api-${t.id}`, name: t.name, logo_url: t.logo, country: t.country }));
 
 
   const aiPredictFn = useServerFn(getAiFixturePrediction);
