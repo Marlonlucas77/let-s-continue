@@ -56,10 +56,19 @@ export const getTeamAnalysis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { teamId: number }) => z.object({ teamId: z.number().int() }).parse(d))
   .handler(async ({ data }) => {
-    const fixtures = await recentFixturesForTeam(data.teamId, 20);
+    // Antes: se o `recentFixturesForTeam` falhasse (rate limit, temporada
+    // sem dados, etc.) a página inteira mostrava "Não foi possível
+    // carregar as estatísticas". Agora devolve uma resposta vazia
+    // amigável em vez de estourar erro.
+    let fixtures: any[] = [];
+    try {
+      fixtures = await recentFixturesForTeam(data.teamId, 20);
+    } catch (e) {
+      console.error("[getTeamAnalysis] recentFixturesForTeam falhou:", (e as Error).message);
+    }
     const done = fixtures.filter((f) => f.fixture?.status?.short === "FT");
-    
-    let w = 0, d = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
+
+    let w = 0, dr = 0, l = 0, gf = 0, ga = 0, btts = 0, o25 = 0, cs = 0;
     const form: ("W" | "D" | "L")[] = [];
     const recent: any[] = [];
 
@@ -71,8 +80,11 @@ export const getTeamAnalysis = createServerFn({ method: "POST" })
       if (my > 0 && opp > 0) btts++;
       if (my + opp > 2.5) o25++;
       if (opp === 0) cs++;
-      
+
       const res: "W" | "D" | "L" = my > opp ? "W" : my < opp ? "L" : "D";
+      // BUG antigo: as variáveis w/d/l existiam mas nunca eram
+      // incrementadas — o card sempre mostrava 0-0-0.
+      if (res === "W") w++; else if (res === "L") l++; else dr++;
       if (form.length < 10) form.push(res);
       recent.push({
         date: f.fixture.date.slice(0, 10),
@@ -84,7 +96,7 @@ export const getTeamAnalysis = createServerFn({ method: "POST" })
 
     const n = done.length || 1;
     return {
-      games: done.length, wins: w, draws: d, losses: l,
+      games: done.length, wins: w, draws: dr, losses: l,
       avgFor: Math.round((gf / n) * 100) / 100,
       avgAgainst: Math.round((ga / n) * 100) / 100,
       bttsPct: Math.round((btts / n) * 100),
@@ -93,6 +105,7 @@ export const getTeamAnalysis = createServerFn({ method: "POST" })
       form, recent: recent.slice(0, 10)
     };
   });
+
 
 export const importFixtures = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
