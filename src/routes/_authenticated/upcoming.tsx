@@ -61,9 +61,6 @@ function UpcomingPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isConfigError = /API_SPORTS_KEY|LOVABLE_API_KEY|não configurad/i.test((error as Error)?.message ?? "");
-  const isRateLimitError = /limite|rate|429/i.test((error as Error)?.message ?? "");
-
   const filtered = useMemo(() => {
     return fixtures.filter((f: any) => {
       if (leagueSearch.trim()) {
@@ -106,7 +103,7 @@ function UpcomingPage() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Todos os jogos dos próximos dias com filtros por competição, país e time. Clique num jogo para ver a previsão da IA.
+          Jogos das ligas habilitadas em Configurações, com filtros por competição, país e time. Clique num jogo para ver a previsão da IA.
         </p>
         {teamsCount === 0 && (
           <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
@@ -165,15 +162,9 @@ function UpcomingPage() {
       {error ? (
         <div className="card-surface p-8 text-center">
           <CalendarClock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <h3 className="font-medium text-foreground mb-1">
-            {isConfigError ? "Jogos indisponíveis no momento" : isRateLimitError ? "Instabilidade temporária" : "Não foi possível carregar os jogos"}
-          </h3>
+          <h3 className="font-medium text-foreground mb-1">Não foi possível carregar os jogos</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-            {isConfigError
-              ? "Estamos com uma instabilidade temporária. Tenta de novo em alguns instantes."
-              : isRateLimitError
-              ? "Não conseguimos buscar os jogos agora. Tenta de novo em alguns instantes."
-              : "Não conseguimos carregar os jogos agora. Tenta de novo em alguns instantes."}
+            Tenta de novo em alguns instantes.
           </p>
           <button 
             onClick={() => refetch()} 
@@ -195,7 +186,7 @@ function UpcomingPage() {
           <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-8">
             {fixtures.length > 0
               ? "Não encontramos resultados para sua busca. Tente ajustar os filtros de liga, país ou time."
-              : "A busca global não retornou partidas para este período. Isso pode acontecer em dias de pouca atividade ou erro na API."}
+              : "Nenhum jogo das suas ligas habilitadas nesse período. Habilite mais ligas em Configurações ou aguarde a próxima atualização automática."}
           </p>
           <div className="flex justify-center gap-4">
             {(leagueSearch || search) && (

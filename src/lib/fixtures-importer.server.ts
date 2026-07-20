@@ -388,11 +388,10 @@ export async function importFixturesFor({
 
   const { data: existing } = await supabase
     .from("matches")
-    .select("home_team_id, away_team_id, match_date")
-    .eq("user_id", userId);
-  const seen = new Set(
-    (existing ?? []).map((m: any) => `${m.home_team_id}|${m.away_team_id}|${m.match_date}`)
-  );
+    .select("api_fixture_id")
+    .eq("user_id", userId)
+    .not("api_fixture_id", "is", null);
+  const seenIds = new Set((existing ?? []).map((m: any) => m.api_fixture_id as number));
 
   const rows: any[] = [];
   const fixtureRefs: { fixtureId: number; idx: number; homeName: string; awayName: string }[] = [];
@@ -401,16 +400,20 @@ export async function importFixturesFor({
     const hid = byName.get(f.teams.home.name.toLowerCase());
     const aid = byName.get(f.teams.away.name.toLowerCase());
     if (!hid || !aid) { skipped++; continue; }
+    if (seenIds.has(f.fixture.id)) { skipped++; continue; }
+    seenIds.add(f.fixture.id);
     const date = (f.fixture.date as string).slice(0, 10);
-    const key = `${hid}|${aid}|${date}`;
-    if (seen.has(key)) { skipped++; continue; }
-    seen.add(key);
     fixtureRefs.push({ fixtureId: f.fixture.id, idx: rows.length, homeName: f.teams.home.name, awayName: f.teams.away.name });
     rows.push({
       user_id: userId,
       home_team_id: hid,
       away_team_id: aid,
       match_date: date,
+      kickoff_at: f.fixture.date as string,
+      status: f.fixture.status?.short as string ?? null,
+      api_fixture_id: f.fixture.id as number,
+      league_name: (f.league?.name as string) ?? leagueName ?? null,
+      country: (f.league?.country as string) ?? country ?? null,
       home_goals: f.goals.home ?? 0,
       away_goals: f.goals.away ?? 0,
       home_goals_ht: f.score?.halftime?.home ?? 0,

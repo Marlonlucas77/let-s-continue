@@ -349,6 +349,11 @@ export const listTrackedLeagues = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// Lê os próximos jogos direto do banco local (populado em segundo plano
+// pelo cron, via importFixturesFor) em vez de chamar a API-Sports na hora
+// em que a pessoa abre a tela. Só mostra jogos das ligas monitoradas —
+// se uma liga não estiver habilitada em Configurações, os jogos dela não
+// aparecem aqui (isso é esperado: habilite a liga pra vê-la).
 export const listUpcomingFixtures = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { days?: number } | undefined) =>
@@ -356,86 +361,38 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const days = data.days ?? 14; // Default to 14 days if not provided
+    const days = data.days ?? 14;
 
-    const [teamsRes] = await Promise.all([
-      supabase.from("teams").select("id, name, logo_url, api_id").eq("user_id", userId),
-    ]);
-    const teams = teamsRes.data ?? [];
-    const byName = new Map(teams.map((t: any) => [t.name.toLowerCase(), t]));
-    const byApiId = new Map(teams.map((t: any) => [t.api_id, t]));
+    const from = new Date();
+    from.setUTCHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setUTCDate(from.getUTCDate() + days);
 
-    const today = new Date();
-    // Use UTC for date boundaries to ensure consistency
-    const from = today.toISOString().slice(0, 10);
-    const toDate = new Date(today);
-    toDate.setUTCDate(today.getUTCDate() + days);
-    const to = toDate.toISOString().slice(0, 10);
+    const { data: rows, error } = await supabase
+      .from("matches")
+      .select(`
+        id, api_fixture_id, kickoff_at, status, league_name, country,
+        home_team:home_team_id ( id, name, logo_url, api_id ),
+        away_team:away_team_id ( id, name, logo_url, api_id )
+      `)
+      .eq("user_id", userId)
+      .in("status", ["NS", "TBD"])
+      .gte("kickoff_at", from.toISOString())
+      .lte("kickoff_at", to.toISOString())
+      .order("kickoff_at", { ascending: true })
+      .limit(500);
+    if (error) throw new Error(error.message);
 
-    console.log(`[listUpcomingFixtures] Fetching fixtures from ${from} to ${to} (${days} days)`);
-
-    const dates: string[] = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date(today);
-      d.setUTCDate(today.getUTCDate() + i);
-      dates.push(d.toISOString().slice(0, 10));
-    }
-
-    const settled = await Promise.allSettled(
-      dates.map(async (date) => {
-        const json = await apiSportsFetch<ApiSportsFixture>(
-          `/fixtures?date=${date}&timezone=America%2FSao_Paulo`
-        );
-        return json.response ?? [];
-      })
-    );
-
-    const responses = settled
-      .filter((result): result is PromiseFulfilledResult<ApiSportsFixture[]> => result.status === "fulfilled")
-      .map((result) => result.value);
-
-    if (responses.length === 0 && settled.length > 0) {
-      const firstError = settled.find((result) => result.status === "rejected") as PromiseRejectedResult | undefined;
-      throw new Error(firstError?.reason?.message || "Não foi possível carregar jogos da API agora.");
-    }
-
-    const out: {
-      fixtureId: number;
-      date: string;
-      leagueId?: number;
-      league: string;
-      leagueLogo?: string;
-      country?: string;
-      venue?: string;
-      home: { id: string | null; apiId: number; name: string; logo: string };
-      away: { id: string | null; apiId: number; name: string; logo: string };
-    }[] = [];
-    const seen = new Set<number>();
-    for (const list of responses) {
-      for (const f of list) {
-        const status = f.fixture?.status?.short;
-        if (status && status !== "NS" && status !== "TBD") continue;
-        if (seen.has(f.fixture.id)) continue;
-        seen.add(f.fixture.id);
-        const home = byApiId.get(f.teams.home.id) || byName.get(f.teams.home.name.toLowerCase());
-        const away = byApiId.get(f.teams.away.id) || byName.get(f.teams.away.name.toLowerCase());
-        out.push({
-          fixtureId: f.fixture.id as number,
-          date: f.fixture.date as string,
-          leagueId: f.league?.id as number | undefined,
-          league: (f.league?.name ?? "") as string,
-          leagueLogo: f.league?.logo as string | undefined,
-          country: f.league?.country as string | undefined,
-          venue: f.fixture.venue?.name as string | undefined,
-          home: { id: home?.id ?? null, apiId: f.teams.home.id, name: f.teams.home.name, logo: home?.logo_url ?? f.teams.home.logo },
-          away: { id: away?.id ?? null, apiId: f.teams.away.id, name: f.teams.away.name, logo: away?.logo_url ?? f.teams.away.logo },
-        });
-      }
-    }
-    // Removendo duplicatas e garantindo que jogos importantes não sejam filtrados por engano
-    out.sort((a, b) => a.date.localeCompare(b.date));
-    console.log(`[listUpcomingFixtures] Returning ${out.length} unique fixtures`);
-    return out;
+    return (rows ?? [])
+      .filter((r: any) => r.home_team && r.away_team && r.api_fixture_id)
+      .map((r: any) => ({
+        fixtureId: r.api_fixture_id as number,
+        date: r.kickoff_at as string,
+        league: (r.league_name ?? "") as string,
+        country: r.country as string | undefined,
+        home: { id: r.home_team.id, apiId: r.home_team.api_id, name: r.home_team.name, logo: r.home_team.logo_url },
+        away: { id: r.away_team.id, apiId: r.away_team.api_id, name: r.away_team.name, logo: r.away_team.logo_url },
+      }));
   });
 
 export const getFixtureOdds = createServerFn({ method: "POST" })
