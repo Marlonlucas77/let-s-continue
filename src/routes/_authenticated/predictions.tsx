@@ -45,10 +45,19 @@ function PredictionsPage() {
   const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
   const neverPlayed = !!home && !!away && h2h.length === 0;
 
+  // Antes: agrupava só pelo nome da liga, então tanto "Serie A" (Itália)
+  // quanto "Brasileirão Série A" apareciam como opções separadas — e
+  // "Serie A" sem contexto confundia com o Brasileirão. Agora anexa o
+  // país entre parênteses quando faz sentido pra desambiguar.
   const teamsByLeague = useMemo(() => {
     const groups = new Map<string, typeof teams>();
     for (const t of teams) {
-      const key = t.league || t.country || "Outros";
+      const league = t.league || t.country || "Outros";
+      const country = t.country || "";
+      // Só adiciona país quando o nome da liga é genérico o suficiente
+      // pra colidir entre países (Serie A, Premier League, etc.).
+      const genericNames = /^(serie [ab]|premier league|primera divis|super league|super lig|liga profesional|championship)$/i;
+      const key = country && genericNames.test(league) ? `${league} (${country})` : league;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(t);
     }
@@ -58,7 +67,13 @@ function PredictionsPage() {
   const [leagueFilter, setLeagueFilter] = useState("");
   const filteredTeams = useMemo(() => {
     if (!leagueFilter) return teams;
-    return teams.filter((t) => (t.league || t.country || "Outros") === leagueFilter);
+    return teams.filter((t) => {
+      const league = t.league || t.country || "Outros";
+      const country = t.country || "";
+      const genericNames = /^(serie [ab]|premier league|primera divis|super league|super lig|liga profesional|championship)$/i;
+      const key = country && genericNames.test(league) ? `${league} (${country})` : league;
+      return key === leagueFilter;
+    });
   }, [teams, leagueFilter]);
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
