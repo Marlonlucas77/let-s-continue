@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { TeamBadge } from "@/components/TeamBadge";
 import { TeamCombobox, isCustomTeam, type ComboTeam } from "@/components/TeamCombobox";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
-import { searchTeams } from "@/lib/api-sports.functions";
 import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
@@ -64,29 +63,7 @@ function PredictionsPage() {
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
-  const searchFn = useServerFn(searchTeams);
-  const [homeQuery, setHomeQuery] = useState("");
-  const [awayQuery, setAwayQuery] = useState("");
-  const [homeDebounced, setHomeDebounced] = useState("");
-  const [awayDebounced, setAwayDebounced] = useState("");
-  useEffect(() => { const t = setTimeout(() => setHomeDebounced(homeQuery.trim()), 300); return () => clearTimeout(t); }, [homeQuery]);
-  useEffect(() => { const t = setTimeout(() => setAwayDebounced(awayQuery.trim()), 300); return () => clearTimeout(t); }, [awayQuery]);
 
-  const { data: homeApiTeams = [], isFetching: homeSearching } = useQuery({
-    queryKey: ["team-search", homeDebounced],
-    queryFn: async () => (await searchFn({ data: { query: homeDebounced } })) as any[],
-    enabled: homeDebounced.length >= 2,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const { data: awayApiTeams = [], isFetching: awaySearching } = useQuery({
-    queryKey: ["team-search", awayDebounced],
-    queryFn: async () => (await searchFn({ data: { query: awayDebounced } })) as any[],
-    enabled: awayDebounced.length >= 2,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const toCombo = (list: any[]): ComboTeam[] => list.map((t) => ({ id: `custom:api-${t.id}`, name: t.name, logo_url: t.logo, country: t.country }));
 
 
   const aiPredictFn = useServerFn(getAiFixturePrediction);
@@ -188,9 +165,6 @@ function PredictionsPage() {
               value={home}
               onChange={setHome}
               placeholder="Digite o nome do time..."
-              onQueryChange={setHomeQuery}
-              extraTeams={toCombo(homeApiTeams)}
-              loading={homeSearching}
             />
           </div>
           <div>
@@ -200,9 +174,6 @@ function PredictionsPage() {
               value={away}
               onChange={setAway}
               placeholder="Digite o nome do time..."
-              onQueryChange={setAwayQuery}
-              extraTeams={toCombo(awayApiTeams)}
-              loading={awaySearching}
             />
           </div>
         </div>
