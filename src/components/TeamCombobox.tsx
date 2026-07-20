@@ -11,11 +11,13 @@ export function isCustomTeam(team: ComboTeam | null | undefined): boolean {
   return !!team && team.id.startsWith(CUSTOM_TEAM_PREFIX);
 }
 
-export function TeamCombobox({ teams, value, onChange, placeholder }: {
+export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChange, extraTeams = [], loading = false }: {
   teams: ComboTeam[]; value: ComboTeam | null; onChange: (team: ComboTeam | null) => void; placeholder?: string;
+  onQueryChange?: (q: string) => void; extraTeams?: ComboTeam[]; loading?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  useEffect(() => { onQueryChange?.(query); }, [query, onQueryChange]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
