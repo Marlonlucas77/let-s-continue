@@ -301,6 +301,26 @@ export const trackTopLeagues = createServerFn({ method: "POST" })
 // cadastro (auth.tsx) e como reforço em Configurações pra quem já tem
 // conta mas ainda não tem nenhuma liga habilitada. Não exige nenhuma
 // escolha da pessoa; ela só vê o resultado pronto.
+// "Rodar agora" (Configurações, só admin) — dispara o mesmo refresh do
+// cron, mas via login normal em vez do endpoint público. Só admin porque
+// isso afeta os dados de TODOS os usuários (roda o lote de ligas
+// pendentes do app inteiro, não só as da pessoa que clicou) e consome a
+// cota compartilhada da API — não é algo que um usuário comum deveria
+// conseguir disparar à vontade.
+export const runFixturesRefreshNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!data) throw new Error("Acesso restrito: apenas administradores.");
+    const { runFixturesRefresh } = await import("@/routes/api/public/cron/refresh-fixtures");
+    return runFixturesRefresh();
+  });
+
 export const untrackLeague = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))

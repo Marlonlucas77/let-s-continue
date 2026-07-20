@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw, Lock } from "lucide-react";
 import {
-  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague,
+  listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague, runFixturesRefreshNow,
 } from "@/lib/api-sports.functions";
+import { checkIsAdmin } from "@/lib/admin.functions";
 import { getMyAccount } from "@/lib/account.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
 
@@ -94,14 +95,18 @@ function SettingsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const checkAdminFn = useServerFn(checkIsAdmin);
+  const { data: adminCheck } = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async () => await checkAdminFn({}),
+    staleTime: 5 * 60 * 1000,
+  });
+  const isAdmin = !!adminCheck?.isAdmin;
+
+  const cronFn = useServerFn(runFixturesRefreshNow);
   const cronMut = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/public/cron/refresh-fixtures", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Erro ${res.status}`);
-      return json as { processed: number; results: any[] };
-    },
-    onSuccess: (r) => {
+    mutationFn: async () => await cronFn({}),
+    onSuccess: (r: any) => {
       toast.success(`${r.processed} liga(s) processada(s) agora.`);
       qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
     },
@@ -193,11 +198,12 @@ function SettingsPage() {
         </button>
       </div>
 
+      {isAdmin && (
       <div className="card-surface p-4 mb-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
           <div>
-            <h2 className="font-display font-semibold">Forçar importação agora</h2>
-            <p className="text-xs text-muted-foreground">O cron roda sozinho de tempos em tempos — clique aqui pra rodar na hora, sem esperar, e ver o resultado de cada liga processada.</p>
+            <h2 className="font-display font-semibold">Forçar importação agora (admin)</h2>
+            <p className="text-xs text-muted-foreground">O cron roda sozinho de tempos em tempos — clique aqui pra rodar na hora, sem esperar. Isso afeta as ligas de todos os usuários, por isso é restrito a administradores.</p>
           </div>
           <button
             onClick={() => cronMut.mutate()}
@@ -226,6 +232,7 @@ function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
       <div className="card-surface p-4">
         <div className="flex items-center gap-2 mb-3">
