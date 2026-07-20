@@ -11,11 +11,13 @@ export function isCustomTeam(team: ComboTeam | null | undefined): boolean {
   return !!team && team.id.startsWith(CUSTOM_TEAM_PREFIX);
 }
 
-export function TeamCombobox({ teams, value, onChange, placeholder }: {
+export function TeamCombobox({ teams, value, onChange, placeholder, onQueryChange, extraTeams = [], loading = false }: {
   teams: ComboTeam[]; value: ComboTeam | null; onChange: (team: ComboTeam | null) => void; placeholder?: string;
+  onQueryChange?: (q: string) => void; extraTeams?: ComboTeam[]; loading?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  useEffect(() => { onQueryChange?.(query); }, [query, onQueryChange]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,9 +30,12 @@ export function TeamCombobox({ teams, value, onChange, placeholder }: {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pool = q ? teams.filter((t) => t.name.toLowerCase().includes(q)) : teams;
+    const merged = [...teams];
+    const seen = new Set(teams.map((t) => t.id));
+    for (const t of extraTeams) if (!seen.has(t.id)) { merged.push(t); seen.add(t.id); }
+    const pool = q ? merged.filter((t) => t.name.toLowerCase().includes(q)) : merged;
     return pool.slice(0, 50);
-  }, [teams, query]);
+  }, [teams, extraTeams, query]);
 
   const exactMatch = results.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
   const canUseFreeText = query.trim().length >= 2 && !exactMatch;
@@ -80,7 +85,10 @@ export function TeamCombobox({ teams, value, onChange, placeholder }: {
       </div>
       {open && (
         <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          {results.length === 0 && !canUseFreeText && (
+          {loading && (
+            <div className="px-3 py-2 text-xs text-muted-foreground text-center">Buscando times…</div>
+          )}
+          {!loading && results.length === 0 && !canUseFreeText && (
             <div className="px-3 py-3 text-xs text-muted-foreground text-center">Digite pelo menos 2 letras.</div>
           )}
           {results.map((t) => (
