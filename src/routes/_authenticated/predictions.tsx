@@ -188,6 +188,9 @@ function PredictionsPage() {
               value={home}
               onChange={setHome}
               placeholder="Digite o nome do time..."
+              onQueryChange={setHomeQuery}
+              extraTeams={toCombo(homeApiTeams)}
+              loading={homeSearching}
             />
           </div>
           <div>
@@ -197,10 +200,14 @@ function PredictionsPage() {
               value={away}
               onChange={setAway}
               placeholder="Digite o nome do time..."
+              onQueryChange={setAwayQuery}
+              extraTeams={toCombo(awayApiTeams)}
+              loading={awaySearching}
             />
           </div>
         </div>
       </div>
+
 
       {home && away && home.id !== away.id && !wantsAnalysis && (
         <div className="card-surface p-6 mt-6 flex items-center justify-between gap-4 flex-wrap">
