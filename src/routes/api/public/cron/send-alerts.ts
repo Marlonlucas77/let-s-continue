@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { sendEmail, favoritesAlertHtml } from "@/lib/email.server";
+import { sendEmail, favoritesAlertHtml, favoritesAlertSubject } from "@/lib/email.server";
 
 function checkCronSecret(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -96,7 +96,7 @@ export const Route = createFileRoute("/api/public/cron/send-alerts")({
 
             await sendEmail({
               to: profile.email,
-              subject: `${gameList.length} jogo(s) do seu time hoje ⚽`,
+              subject: favoritesAlertSubject(gameList.length),
               html: favoritesAlertHtml(gameList),
             });
             await supabaseAdmin.from("profiles").update({ last_alert_sent_on: todayStr }).eq("id", profile.id);
