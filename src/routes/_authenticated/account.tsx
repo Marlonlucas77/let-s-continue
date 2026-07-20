@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, CreditCard, Trophy, Target, Sparkles, Crown, ExternalLink } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, CreditCard, Trophy, Target, Sparkles, Crown, ExternalLink, Bell } from "lucide-react";
 import { toast } from "sonner";
-import { getMyAccount } from "@/lib/account.functions";
+import { getMyAccount, setEmailAlertsEnabled } from "@/lib/account.functions";
 import { createPortalSession } from "@/lib/payments.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 
@@ -25,12 +25,23 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 function AccountPage() {
+  const qc = useQueryClient();
   const getAccountFn = useServerFn(getMyAccount);
   const portalFn = useServerFn(createPortalSession);
+  const alertsFn = useServerFn(setEmailAlertsEnabled);
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-account"],
     queryFn: async () => await getAccountFn(),
+  });
+
+  const alertsMut = useMutation({
+    mutationFn: async (enabled: boolean) => alertsFn({ data: { enabled } }),
+    onSuccess: (_r, enabled) => {
+      toast.success(enabled ? "Alertas por e-mail ativados." : "Alertas por e-mail desativados.");
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const portalMut = useMutation({
@@ -104,6 +115,33 @@ function AccountPage() {
         <h2 className="font-display font-semibold">Uso de hoje</h2>
         <UsageBar label="Ligas monitoradas" value={usage.leagues} limit={limits.leagues} pct={pctLeagues} />
         <UsageBar label="Previsões IA" value={usage.aiPredictions} limit={limits.dailyPredictions} pct={pctAI} />
+      </div>
+
+      {/* Alertas por e-mail */}
+      <div className="card-surface p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Bell className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h2 className="font-display font-semibold">Alertas por e-mail</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Receba um e-mail nos dias em que algum time favorito seu jogar.
+              </p>
+            </div>
+          </div>
+          <button
+            role="switch"
+            aria-checked={data.emailAlertsEnabled}
+            onClick={() => alertsMut.mutate(!data.emailAlertsEnabled)}
+            disabled={alertsMut.isPending}
+            className={`relative shrink-0 h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${data.emailAlertsEnabled ? "bg-primary" : "bg-input border border-border"}`}
+          >
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${data.emailAlertsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Precisa favoritar pelo menos um time pra receber alertas — faça isso na aba <Link to="/teams" className="text-primary underline">Times</Link>.
+        </p>
       </div>
 
       {/* Estatísticas pessoais */}

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getUserPlan } from "@/lib/plan-limits.server";
 
@@ -39,9 +40,16 @@ export const getMyAccount = createServerFn({ method: "GET" })
     const { data: stats } = await supabase.rpc("get_my_prediction_stats", { _user: userId });
     const s = (stats as any[])?.[0] ?? { total: 0, correct: 0, accuracy: 0, last_30_correct: 0, last_30_total: 0 };
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email_alerts_enabled")
+      .eq("id", userId)
+      .maybeSingle();
+
     return {
       email,
       plan,
+      emailAlertsEnabled: profile?.email_alerts_enabled ?? false,
       limits: {
         leagues: limits.leagues === Infinity ? null : limits.leagues,
         dailyPredictions: limits.dailyPredictions === Infinity ? null : limits.dailyPredictions,
@@ -67,4 +75,16 @@ export const getMyAccount = createServerFn({ method: "GET" })
         last30Total: Number(s.last_30_total ?? 0),
       },
     };
+  });
+
+export const setEmailAlertsEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { enabled: boolean }) => z.object({ enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ email_alerts_enabled: data.enabled })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

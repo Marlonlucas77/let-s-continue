@@ -353,17 +353,23 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          email_alerts_enabled: boolean
           id: string
+          last_alert_sent_on: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
+          email_alerts_enabled?: boolean
           id: string
+          last_alert_sent_on?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
+          email_alerts_enabled?: boolean
           id?: string
+          last_alert_sent_on?: string | null
         }
         Relationships: []
       }
