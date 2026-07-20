@@ -35,7 +35,13 @@ function Dashboard() {
       // a semana uma vez e filtra "hoje" a partir dela.
       const [teams, trackedLeagues, allMatches, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
         supabase.from("teams").select("id", { count: "exact", head: true }),
-        supabase.from("tracked_leagues").select("id", { count: "exact", head: true }),
+        // Antes usava count exact que somava todas as linhas — como cada
+        // liga é gravada por (user_id, league_id, season), quem tem várias
+        // temporadas habilitadas via ligas ativas + histórico, o cartão
+        // "Ligas habilitadas" mostrava um número inflado (ex: 387). Agora
+        // conta ligas distintas pela id da API, que é o que o usuário
+        // pensa quando lê "ligas habilitadas".
+        supabase.from("tracked_leagues").select("league_id"),
         supabase
           .from("matches")
           .select("match_date, home_goals, away_goals, home_corners, away_corners, home_team:home_team_id(name), away_team:away_team_id(name)")
@@ -57,9 +63,10 @@ function Dashboard() {
       const favFixtures = (weekFixtures ?? []).filter(
         (m: any) => favTeamIds.has(m.home.id) || favTeamIds.has(m.away.id),
       );
+      const distinctLeagues = new Set((trackedLeagues.data ?? []).map((r: any) => r.league_id)).size;
       return {
         teamsCount: teams.count ?? 0,
-        trackedLeaguesCount: trackedLeagues.count ?? 0,
+        trackedLeaguesCount: distinctLeagues,
         todayFixtures: todayFixtures as any[],
         favFixtures: favFixtures as any[],
         allMatches: allMatches.data ?? [],

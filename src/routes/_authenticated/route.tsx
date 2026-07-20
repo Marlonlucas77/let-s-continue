@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CalendarClock, Users, History, LogOut, Crown, Shield, Radio,
+  CalendarClock, Users, LogOut, Crown, Shield, Radio,
   LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
@@ -43,7 +43,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Comunidade",
     items: [
-      { to: "/history", label: "Histórico", icon: History },
       { to: "/pricing", label: "Planos", icon: Crown },
     ],
   },
@@ -62,7 +61,7 @@ const mobilePrimary: NavItem[] = [
   { to: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { to: "/upcoming", label: "Jogos", icon: CalendarClock },
   { to: "/predictions", label: "Previsão IA", icon: Sparkles },
-  { to: "/history", label: "Histórico", icon: History },
+  { to: "/live", label: "Ao vivo", icon: Radio },
 ];
 
 function AuthedLayout() {
