@@ -19,9 +19,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
 // atualize aqui também.
 export const PLAN_PRICES_BRL: Record<PlanId, number> = {
   free: 0,
-  basic: 14.99,
-  pro: 29.99,
-  elite: 59.99,
+  basic: 19.99,
+  pro: 34.99,
+  elite: 64.99,
 };
 
 function priceIdToPlan(priceId: string | null | undefined): PlanId {
