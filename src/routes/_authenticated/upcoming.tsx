@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, Suspense, useMemo, useEffect } from "react";
-import { listUpcomingFixtures, getFixtureOdds } from "@/lib/api-sports.functions";
+import { listUpcomingFixtures, getFixtureOdds, syncMyLeaguesNow } from "@/lib/api-sports.functions";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
