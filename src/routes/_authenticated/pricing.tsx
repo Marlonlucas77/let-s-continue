@@ -141,7 +141,7 @@ function PricingPage() {
                         data: {
                           priceId: p.priceId,
                           environment: getStripeEnvironment(),
-                          returnUrl: `${window.location.origin}/pricing`,
+                          returnUrl: `${window.location.origin}/checkout/plan-return?session_id={CHECKOUT_SESSION_ID}`,
                         },
                       });
                       if ("error" in result) throw new Error(result.error);

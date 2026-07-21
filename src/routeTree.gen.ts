@@ -14,6 +14,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CheckoutPlanReturnRouteImport } from './routes/checkout.plan-return'
 import { Route as CheckoutLeagueReturnRouteImport } from './routes/checkout.league-return'
 import { Route as AuthenticatedUpcomingRouteImport } from './routes/_authenticated/upcoming'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -52,6 +53,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutPlanReturnRoute = CheckoutPlanReturnRouteImport.update({
+  id: '/checkout/plan-return',
+  path: '/checkout/plan-return',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutLeagueReturnRoute = CheckoutLeagueReturnRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/checkout/league-return': typeof CheckoutLeagueReturnRoute
+  '/checkout/plan-return': typeof CheckoutPlanReturnRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/upcoming': typeof AuthenticatedUpcomingRoute
   '/checkout/league-return': typeof CheckoutLeagueReturnRoute
+  '/checkout/plan-return': typeof CheckoutPlanReturnRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/upcoming': typeof AuthenticatedUpcomingRoute
   '/checkout/league-return': typeof CheckoutLeagueReturnRoute
+  '/checkout/plan-return': typeof CheckoutPlanReturnRoute
   '/api/public/cron/evaluate-predictions': typeof ApiPublicCronEvaluatePredictionsRoute
   '/api/public/cron/refresh-fixtures': typeof ApiPublicCronRefreshFixturesRoute
   '/api/public/cron/send-alerts': typeof ApiPublicCronSendAlertsRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/upcoming'
     | '/checkout/league-return'
+    | '/checkout/plan-return'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/cron/send-alerts'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/upcoming'
     | '/checkout/league-return'
+    | '/checkout/plan-return'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/cron/send-alerts'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/upcoming'
     | '/checkout/league-return'
+    | '/checkout/plan-return'
     | '/api/public/cron/evaluate-predictions'
     | '/api/public/cron/refresh-fixtures'
     | '/api/public/cron/send-alerts'
@@ -273,6 +285,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   CheckoutLeagueReturnRoute: typeof CheckoutLeagueReturnRoute
+  CheckoutPlanReturnRoute: typeof CheckoutPlanReturnRoute
   ApiPublicCronEvaluatePredictionsRoute: typeof ApiPublicCronEvaluatePredictionsRoute
   ApiPublicCronRefreshFixturesRoute: typeof ApiPublicCronRefreshFixturesRoute
   ApiPublicCronSendAlertsRoute: typeof ApiPublicCronSendAlertsRoute
@@ -316,6 +329,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/plan-return': {
+      id: '/checkout/plan-return'
+      path: '/checkout/plan-return'
+      fullPath: '/checkout/plan-return'
+      preLoaderRoute: typeof CheckoutPlanReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout/league-return': {
@@ -458,6 +478,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   CheckoutLeagueReturnRoute: CheckoutLeagueReturnRoute,
+  CheckoutPlanReturnRoute: CheckoutPlanReturnRoute,
   ApiPublicCronEvaluatePredictionsRoute: ApiPublicCronEvaluatePredictionsRoute,
   ApiPublicCronRefreshFixturesRoute: ApiPublicCronRefreshFixturesRoute,
   ApiPublicCronSendAlertsRoute: ApiPublicCronSendAlertsRoute,
