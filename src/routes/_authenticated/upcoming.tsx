@@ -557,7 +557,7 @@ const FixtureCard = memo(function FixtureCard({ f }: { f: any }) {
       )}
     </div>
   );
-}
+});
 
 function StatChip({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
