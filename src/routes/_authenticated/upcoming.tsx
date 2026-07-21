@@ -80,12 +80,28 @@ function UpcomingPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Lista única de "Liga (País)" pra escolher no dropdown — evita casos
+  // como "Premier League" da Inglaterra colidir com a da Rússia num
+  // filtro por substring livre.
+  const leagueOptions = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; league: string; country: string }>();
+    for (const f of fixtures as any[]) {
+      const league = f.league ?? "";
+      const country = f.country ?? "";
+      const key = `${league}||${country}`;
+      if (!map.has(key)) {
+        const label = country ? `${translateLeague(league)} (${translateCountry(country)})` : translateLeague(league);
+        map.set(key, { key, label, league, country });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [fixtures]);
+
   const filtered = useMemo(() => {
     return fixtures.filter((f: any) => {
-      if (leagueSearch.trim()) {
-        const q = leagueSearch.toLowerCase();
-        const label = `${f.country ?? ""} ${translateCountry(f.country)} ${f.league} ${translateLeague(f.league)}`.toLowerCase();
-        if (!label.includes(q)) return false;
+      if (leagueSearch) {
+        const [league, country] = leagueSearch.split("||");
+        if ((f.league ?? "") !== league || (f.country ?? "") !== country) return false;
       }
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -99,6 +115,7 @@ function UpcomingPage() {
       return true;
     });
   }, [fixtures, leagueSearch, search]);
+
 
   return (
     <div className="max-w-5xl">
