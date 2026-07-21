@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
