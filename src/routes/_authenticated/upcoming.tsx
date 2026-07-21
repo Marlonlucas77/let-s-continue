@@ -325,7 +325,7 @@ function formatMarketOutcome(market: string, outcome: string, homeName: string, 
   return `${market} · ${outcome}`;
 }
 
-function FixtureCard({ f }: { f: any }) {
+const FixtureCard = memo(function FixtureCard({ f }: { f: any }) {
   const [open, setOpen] = useState(false);
   const oddsFn = useServerFn(getFixtureOdds);
   const aiFixtureFn = useServerFn(getAiFixturePrediction);
