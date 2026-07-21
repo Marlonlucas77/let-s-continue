@@ -150,6 +150,9 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground">
           Escolha as ligas que você quer acompanhar{leagueLimit != null ? ` — seu plano permite até ${leagueLimit}` : ""}. Isso define o que aparece em Jogos e Previsão IA.
         </p>
+        <p className="text-xs text-amber-400 mt-2 flex items-center gap-1.5">
+          <Lock className="h-3.5 w-3.5" /> Uma vez escolhida, a liga fica travada. Ligas extras (além do limite do plano) custam <strong className="mx-1">R$5</strong> cada.
+        </p>
       </div>
 
       {onboarding && (
@@ -161,7 +164,7 @@ function SettingsPage() {
               <p className="text-sm text-muted-foreground mb-3">
                 {leagueLimit == null
                   ? "Seu plano permite ligas ilimitadas. Escolha abaixo quais você quer acompanhar."
-                  : `Seu plano permite até ${leagueLimit} liga(s). Escolha abaixo quais você quer acompanhar — dá pra trocar depois quando quiser.`}
+                  : `Seu plano permite até ${leagueLimit} liga(s). Escolha com calma — cada escolha fica travada, e liga extra custa R$5.`}
               </p>
               {leagueLimit != null && leagueLimit >= 3 && (
                 <button
@@ -191,38 +194,46 @@ function SettingsPage() {
           </div>
           {atLimit && (
             <p className="text-xs text-amber-400 mb-3 flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" /> Limite do seu plano atingido. Remova uma liga pra escolher outra, ou <Link to="/pricing" className="underline">faça upgrade</Link>.
+              <Lock className="h-3.5 w-3.5" /> Limite do plano atingido. Ligas adicionais custam R$5 cada — busque abaixo e clique em "Adicionar por R$5".
+              <Link to="/pricing" className="underline ml-1">ver planos</Link>
             </p>
           )}
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
             {tracked.map((l: any) => {
               const isPending = l.__optimistic || typeof l.id !== "string" || !/^[0-9a-f-]{36}$/i.test(l.id);
+              const isLocked = l.is_locked !== false;
               return (
                 <li key={l.id} className="py-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span></div>
+                    <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                      {translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span>
+                      {l.is_paid_extra && <span className="text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Extra</span>}
+                    </div>
                     <div className="text-xs text-muted-foreground">{translateCountry(l.country) || "—"}</div>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (isPending) {
-                        toast.info("Aguarde a liga terminar de salvar antes de remover.");
-                        return;
-                      }
-                      untrackMut.mutate(l.id);
-                    }}
-                    disabled={untrackMut.isPending || isPending}
-                    className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive disabled:opacity-50"
-                    title={isPending ? "Salvando..." : "Remover"}
-                  >
-                    {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  </button>
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : isLocked ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Liga travada — não pode ser removida">
+                      <Lock className="h-3.5 w-3.5" /> Travada
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => untrackMut.mutate(l.id)}
+                      disabled={untrackMut.isPending}
+                      className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive disabled:opacity-50"
+                      title="Remover"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </li>
               );
             })}
           </ul>
         </div>
       )}
+
 
       <div className="card-surface p-4 mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
