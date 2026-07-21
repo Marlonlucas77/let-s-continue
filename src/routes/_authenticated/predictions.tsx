@@ -64,7 +64,7 @@ function PredictionsPage() {
   const [home, setHome] = useState<ComboTeam | null>(null);
   const [away, setAway] = useState<ComboTeam | null>(null);
 
-  const { data: teams = [] } = useQuery({
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ["teams"],
     queryFn: fetchAllTeams,
   });
@@ -72,7 +72,7 @@ function PredictionsPage() {
   // Só times de ligas ATUALMENTE habilitadas em Configurações podem
   // aparecer aqui — inclusive pra análise por IA. Sem isso, dava pra
   // furar o limite de ligas do plano digitando qualquer time livremente.
-  const { data: trackedLeagues = [] } = useQuery({
+  const { data: trackedLeagues = [], isLoading: leaguesLoading } = useQuery({
     queryKey: ["tracked-leagues"],
     queryFn: async () => (await supabase.from("tracked_leagues").select("league_name, country")).data ?? [],
   });
@@ -90,10 +90,12 @@ function PredictionsPage() {
     [trackedLeagues],
   );
 
-  const { data: matchTeamRefs = [] } = useQuery({
+  const { data: matchTeamRefs = [], isLoading: refsLoading } = useQuery({
     queryKey: ["match-team-refs"],
     queryFn: fetchAllMatchTeamRefs,
   });
+  const isLoadingData = teamsLoading || leaguesLoading || refsLoading;
+
   // Deriva a "liga real" (name+country das ligas rastreadas) de cada time
   // a partir dos jogos. Assim o agrupamento/filtro do combobox bate com o
   // filtro de ligas habilitadas pra TODAS as ligas, não só as genéricas.
