@@ -23,37 +23,12 @@ let _rateLimitedUntil = 0;
 // de verdade entre todas as instâncias.
 //
 // Confirmado pelo usuário: plano Pro da API-Sports = 300 requisições por
-// minuto. Os valores anteriores (350ms, depois 2200ms, depois 4000ms)
-// eram todos chutes às cegas tentando adivinhar esse número — e estavam
-// bem mais conservadores do que precisava, o que não deveria ter causado
-// os erros de rajada vistos. Com o número real confirmado, usa uma
-// margem de segurança generosa mas sem travar a aplicação à toa.
-const MIN_REQUEST_INTERVAL_MS = 250; // 300rpm real → 240rpm efetivo, ~20% de folga
-const DB_SLOT_TIMEOUT_MS = 2000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
-// Teto de espera pelo relógio compartilhado. Precisa ser generoso o
-// suficiente pra segurar rajadas grandes (cron importando 200 ligas)
-// sem que chamadas "furem" a fila e disparem 429 na API-Sports. 30s
-// aguenta ~120 chamadas em espera; acima disso a fila reseta.
-const MAX_WAIT_MS = 30000;
-
-// Fallback em memória, usado se a chamada ao banco falhar ou demorar
-// demais — não protege entre instâncias diferentes, mas garante que a
-// aplicação nunca trava esperando o banco pra sempre.
-let _dispatchChain: Promise<void> = Promise.resolve();
-let _lastDispatchAt = 0;
-
-function localFallbackSlot(): Promise<void> {
-  const slot = _dispatchChain.then(async () => {
-    const wait = Math.max(0, _lastDispatchAt + MIN_REQUEST_INTERVAL_MS - Date.now());
-    // Mesmo teto de segurança do relógio do banco: numa rajada grande de
-    // chamadas dentro da mesma instância, esse valor também podia crescer
-    // sem limite e travar chamadas novas por muito tempo.
-    if (wait > 0) await new Promise((r) => setTimeout(r, Math.min(wait, MAX_WAIT_MS)));
-    _lastDispatchAt = Date.now();
-  });
-  _dispatchChain = slot.catch(() => {});
-  return slot;
-}
+// minuto. Usamos ~171 rpm efetivo para deixar folga para cliques do usuário,
+// cron, odds e eventuais retries da própria rede. O ponto crítico aqui é:
+// nunca mais "furar fila". Se o relógio compartilhado ficar grande demais,
+// a chamada deve esperar ou falhar com fila cheia, não disparar fora do slot.
+const MIN_REQUEST_INTERVAL_MS = 350;
+const MAX_WAIT_MS = 5 * 60 * 1000;
 
 async function throttledSlot(): Promise<void> {
   try {
@@ -68,37 +43,21 @@ async function throttledSlot(): Promise<void> {
       return { slot: data as unknown as string, supabaseAdmin };
     })();
 
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), DB_SLOT_TIMEOUT_MS));
-    const result = await Promise.race([dbCall, timeout]);
-
-    if (result === null) {
-      // Banco não respondeu a tempo — não trava a aplicação esperando.
-      await localFallbackSlot();
-      return;
-    }
+    const result = await dbCall;
     const slotAt = new Date(result.slot).getTime();
     const wait = Math.max(0, slotAt - Date.now());
 
-    // Teto de segurança: o relógio compartilhado só anda pra frente (cada
-    // chamada empurra um pouquinho), e numa rajada grande de chamadas
-    // (ex: importando 100 ligas de uma vez) ele pode ficar muitos segundos
-    // ou até minutos à frente do tempo real — travando qualquer chamada
-    // nova (mesmo um clique isolado, tipo abrir 'Ao vivo') por um tempo
-    // enorme. Em vez de esperar o valor calculado, nunca espera mais que
-    // alguns segundos — e se o atraso acumulado for grande demais, reseta
-    // o relógio pra não ficar arrastando esse atraso pra sempre.
+    // Antes existia um "reset" quando a fila passava de 30s. Isso resolvia
+    // a espera visualmente, mas era exatamente o que causava rajada real:
+    // várias chamadas desistiam da fila e saíam juntas. Agora a proteção é
+    // fail-closed: se a fila estiver grande demais para caber no runtime,
+    // aborta a sincronização em vez de bater na API-Sports fora do limite.
     if (wait > MAX_WAIT_MS) {
-      try {
-        await result.supabaseAdmin
-          .from("api_sports_rate_limit")
-          .update({ last_dispatch_at: new Date(Date.now() + MIN_REQUEST_INTERVAL_MS).toISOString() })
-          .eq("id", 1);
-      } catch { /* se o reset falhar, segue mesmo assim — melhor que travar */ }
-      return;
+      throw new Error("Fila da API-Sports cheia. A sincronização foi pausada para não estourar o limite por minuto.");
     }
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  } catch {
-    await localFallbackSlot();
+  } catch (e: any) {
+    throw new Error(e?.message || "Não foi possível reservar a fila da API-Sports com segurança.");
   }
 }
 
@@ -251,10 +210,8 @@ export async function importFixturesFor({
   supabase, userId, leagueId, season, leagueName, country, includeStats,
 }: ImportArgs) {
   // Busca tanto jogos finalizados (para estatísticas) quanto agendados (para previsões)
-  const [jsonFT, jsonNS] = await Promise.all([
-    apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=FT`),
-    apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=NS-TBD`)
-  ]);
+  const jsonFT = await apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=FT`);
+  const jsonNS = await apiSportsFetch(`/fixtures?league=${leagueId}&season=${season}&status=NS-TBD`);
 
   const fixtures: any[] = [...(jsonFT.response ?? []), ...(jsonNS.response ?? [])];
   if (fixtures.length === 0) return { imported: 0, teamsCreated: 0, skipped: 0, statsFetched: 0 };
@@ -376,11 +333,11 @@ export async function importFixturesFor({
 
   let statsFetched = 0;
   if (includeStats && fixtureRefs.length > 0) {
-    const cap = Math.min(fixtureRefs.length, 40);
+    const cap = Math.min(fixtureRefs.length, 20);
     const toFetch = fixtureRefs.slice(0, cap);
-    // 5 em paralelo: ~5x mais rápido que sequencial, mantendo folga pro
-    // circuit breaker de rate limit do apiSportsFetch agir se precisar.
-    await mapWithConcurrency(toFetch, 5, async (ref) => {
+    // Paralelismo baixo: estatísticas jogo-a-jogo são chamadas caras e não
+    // podem competir com o import principal das partidas.
+    await mapWithConcurrency(toFetch, 2, async (ref) => {
       try {
         const sj = await apiSportsFetch(`/fixtures/statistics?fixture=${ref.fixtureId}`);
         const teamsStats: any[] = sj.response ?? [];
