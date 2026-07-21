@@ -113,7 +113,7 @@ export function setComputedCache(key: string, data: any, ttl: number) {
 }
 
 function ttlFor(path: string): number {
-  if (path.includes("live=")) return 20 * 1000;
+  if (path.includes("live=")) return 60 * 1000;
   if (path.startsWith("/fixtures?date=")) return 10 * 60 * 1000;
   if (path.startsWith("/fixtures?team=")) return 30 * 60 * 1000;
   if (path.startsWith("/fixtures/headtohead")) return 30 * 60 * 1000;
