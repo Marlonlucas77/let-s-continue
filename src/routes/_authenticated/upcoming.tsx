@@ -28,8 +28,12 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 
 function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
+  const syncFn = useServerFn(syncMyLeaguesNow);
+  const queryClient = useQueryClient();
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
   // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
   // valor inicial menor evita estourar o limite de requisições logo na entrada.
   const [days, setDays] = useState(3);
@@ -42,6 +46,21 @@ function UpcomingPage() {
     // tentar de novo automaticamente só desperdiça cota e atrasa o feedback.
     retry: false,
   });
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const r = await syncFn({ data: undefined as any });
+      setSyncMsg(`Sincronizadas ${r.processed} liga(s). Atualizando lista...`);
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-fixtures"] });
+    } catch (e: any) {
+      setSyncMsg(`Erro: ${e.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
 
   // A tela mostra mensagem simples pro usuário de propósito, mas o erro
   // técnico real vai pro console — sem isso não dá pra diagnosticar à
