@@ -84,7 +84,7 @@ function Dashboard() {
         (m: any) => favTeamIds.has(m.home.apiId) || favTeamIds.has(m.away.apiId),
       );
       return {
-        teamsCount: teamsFiltered.length,
+        teamsCount: teamIdSet.size,
         trackedLeaguesCount: distinctLeagues,
         todayFixtures: todayFixtures as any[],
         favFixtures: favFixtures as any[],
