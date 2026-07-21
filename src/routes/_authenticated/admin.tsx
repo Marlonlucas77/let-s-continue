@@ -44,7 +44,8 @@ function AdminPage() {
     queryKey: ["admin-real-revenue", revEnv],
     queryFn: async () => await revenueFn({ data: { environment: revEnv } }),
     enabled: isAdmin,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 
   const { data: users = [] } = useQuery({
