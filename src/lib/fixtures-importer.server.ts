@@ -28,9 +28,13 @@ let _rateLimitedUntil = 0;
 // bem mais conservadores do que precisava, o que não deveria ter causado
 // os erros de rajada vistos. Com o número real confirmado, usa uma
 // margem de segurança generosa mas sem travar a aplicação à toa.
-const MIN_REQUEST_INTERVAL_MS = 220; // 300rpm real → ~270rpm com margem de 10%
+const MIN_REQUEST_INTERVAL_MS = 250; // 300rpm real → 240rpm efetivo, ~20% de folga
 const DB_SLOT_TIMEOUT_MS = 2000; // se o banco não responder rápido, cai no fallback em vez de travar tudo
-const MAX_WAIT_MS = 3000; // nunca espera mais que isso por um "relógio" (banco ou memória local)
+// Teto de espera pelo relógio compartilhado. Precisa ser generoso o
+// suficiente pra segurar rajadas grandes (cron importando 200 ligas)
+// sem que chamadas "furem" a fila e disparem 429 na API-Sports. 30s
+// aguenta ~120 chamadas em espera; acima disso a fila reseta.
+const MAX_WAIT_MS = 30000;
 
 // Fallback em memória, usado se a chamada ao banco falhar ou demorar
 // demais — não protege entre instâncias diferentes, mas garante que a
@@ -109,7 +113,7 @@ export function setComputedCache(key: string, data: any, ttl: number) {
 }
 
 function ttlFor(path: string): number {
-  if (path.includes("live=")) return 20 * 1000;
+  if (path.includes("live=")) return 60 * 1000;
   if (path.startsWith("/fixtures?date=")) return 10 * 60 * 1000;
   if (path.startsWith("/fixtures?team=")) return 30 * 60 * 1000;
   if (path.startsWith("/fixtures/headtohead")) return 30 * 60 * 1000;
