@@ -125,26 +125,8 @@ function SettingsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Compra de liga extra: redireciona pro Stripe Checkout. Ao voltar em
-  // /checkout/league-return, a session_id é validada e a liga é inserida.
-  const extraMut = useMutation({
-    mutationFn: async (l: League) => {
-      const result = (await extraCheckoutFn({
-        data: {
-          leagueId: l.id,
-          season: l.season,
-          leagueName: l.name,
-          country: l.country ?? null,
-          returnUrl: `${window.location.origin}/checkout/league-return`,
-          environment: getStripeEnvironment(),
-        },
-      })) as { url?: string; error?: string };
-      if (result.error) throw new Error(result.error);
-      if (!result.url) throw new Error("Stripe não retornou a URL do checkout.");
-      window.location.href = result.url;
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Não consegui abrir o checkout."),
-  });
+
+
 
   const checkAdminFn = useServerFn(checkIsAdmin);
   const { data: adminCheck } = useQuery({
