@@ -1,8 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wand2, Target, Trophy, TrendingUp, Radio, Globe2, LineChart, Check, ShieldCheck, Sparkles, Search, BarChart3, Star } from "lucide-react";
 import { LogoWithName } from "@/components/Logo";
-import heroDashboard from "@/assets/hero-dashboard.jpg";
-import heroPredictions from "@/assets/hero-predictions.jpg";
 
 export const Route = createFileRoute("/")({
   component: Landing,
