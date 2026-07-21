@@ -199,10 +199,11 @@ function SettingsPage() {
           </div>
           {atLimit && (
             <p className="text-xs text-amber-400 mb-3 flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" /> Limite do plano atingido. Ligas adicionais custam <strong className="mx-1">R$5/mês</strong> cada — busque abaixo e clique em "Adicionar por R$5/mês".
-              <Link to="/pricing" className="underline ml-1">ver planos</Link>
+              <Lock className="h-3.5 w-3.5" /> Limite do plano atingido.
+              <Link to="/pricing" className="underline ml-1">Fazer upgrade</Link>
             </p>
           )}
+
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
             {tracked.map((l: any) => {
               const isPending = l.__optimistic || typeof l.id !== "string" || !/^[0-9a-f-]{36}$/i.test(l.id);
