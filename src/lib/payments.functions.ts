@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 
-type CheckoutResult = { clientSecret: string } | { error: string };
+type CheckoutResult = { url: string } | { error: string };
 type PortalResult = { url: string } | { error: string };
 
 async function resolveOrCreateCustomer(
@@ -52,13 +52,13 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         mode: "subscription",
-        ui_mode: "embedded_page",
-        return_url: data.returnUrl,
+        success_url: data.returnUrl,
+        cancel_url: data.returnUrl,
         customer: customerId,
         metadata: { userId: context.userId },
         subscription_data: { metadata: { userId: context.userId } },
       });
-      return { clientSecret: session.client_secret ?? "" };
+      return { url: session.url ?? "" };
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
