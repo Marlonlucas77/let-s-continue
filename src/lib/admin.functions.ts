@@ -1,6 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createStripeClient, type StripeEnv } from "@/lib/stripe.server";
+
+const ZERO_DECIMAL = new Set(["bif","clp","djf","gnf","jpy","kmf","krw","mga","pyg","rwf","ugx","vnd","vuv","xaf","xof","xpf"]);
+const THREE_DECIMAL = new Set(["bhd","jod","kwd","omr","tnd"]);
+function toMajor(amount: number, currency: string): number {
+  const c = (currency ?? "").toLowerCase();
+  if (ZERO_DECIMAL.has(c)) return amount;
+  if (THREE_DECIMAL.has(c)) return amount / 1000;
+  return amount / 100;
+}
+
 
 async function requireAdmin(context: any) {
   const { data } = await context.supabase
