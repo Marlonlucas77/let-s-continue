@@ -172,8 +172,8 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground">
           Escolha as ligas que você quer acompanhar{leagueLimit != null ? ` — seu plano permite até ${leagueLimit}` : ""}. Isso define o que aparece em Jogos e Previsão IA.
         </p>
-        <p className="text-xs text-amber-400 mt-2 flex items-center gap-1.5">
-          <Lock className="h-3.5 w-3.5" /> Uma vez escolhida, a liga fica travada. Ligas extras (além do limite do plano) custam <strong className="mx-1">R$5</strong> cada.
+        <p className="text-xs text-muted-foreground mt-2">
+          Adicione ou remova as ligas quando quiser. Ligas além do limite do plano custam <strong>R$5/mês</strong> cada — pagas por assinatura recorrente no Stripe (cartão ou Pix).
         </p>
       </div>
 
@@ -186,7 +186,7 @@ function SettingsPage() {
               <p className="text-sm text-muted-foreground mb-3">
                 {leagueLimit == null
                   ? "Seu plano permite ligas ilimitadas. Escolha abaixo quais você quer acompanhar."
-                  : `Seu plano permite até ${leagueLimit} liga(s). Escolha com calma — cada escolha fica travada, e liga extra custa R$5.`}
+                  : `Seu plano permite até ${leagueLimit} liga(s). Ligas extras custam R$5/mês cada — você pode adicionar mais quando precisar.`}
               </p>
               {leagueLimit != null && leagueLimit >= 3 && (
                 <button
@@ -216,29 +216,33 @@ function SettingsPage() {
           </div>
           {atLimit && (
             <p className="text-xs text-amber-400 mb-3 flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" /> Limite do plano atingido. Ligas adicionais custam R$5 cada — busque abaixo e clique em "Adicionar por R$5".
+              <Lock className="h-3.5 w-3.5" /> Limite do plano atingido. Ligas adicionais custam <strong className="mx-1">R$5/mês</strong> cada — busque abaixo e clique em "Adicionar por R$5/mês".
               <Link to="/pricing" className="underline ml-1">ver planos</Link>
             </p>
           )}
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
             {tracked.map((l: any) => {
               const isPending = l.__optimistic || typeof l.id !== "string" || !/^[0-9a-f-]{36}$/i.test(l.id);
-              const isLocked = l.is_locked !== false;
+              const isPaidExtra = !!l.is_paid_extra;
               return (
                 <li key={l.id} className="py-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate flex items-center gap-1.5">
                       {translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span>
-                      {l.is_paid_extra && <span className="text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Extra</span>}
+                      {isPaidExtra && <span className="text-[10px] uppercase tracking-wide bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded">Extra R$5/mês</span>}
                     </div>
                     <div className="text-xs text-muted-foreground">{translateCountry(l.country) || "—"}</div>
                   </div>
                   {isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  ) : isLocked ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Liga travada — não pode ser removida">
-                      <Lock className="h-3.5 w-3.5" /> Travada
-                    </span>
+                  ) : isPaidExtra ? (
+                    <Link
+                      to="/pricing"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                      title="Cancele em Planos → Gerenciar assinatura. Você mantém acesso até o fim do período pago."
+                    >
+                      <Lock className="h-3.5 w-3.5" /> Gerenciar
+                    </Link>
                   ) : (
                     <button
                       onClick={() => untrackMut.mutate(l.id)}
@@ -342,10 +346,10 @@ function SettingsPage() {
                       onClick={() => extraMut.mutate(l)}
                       disabled={extraMut.isPending}
                       className="text-xs rounded-md bg-amber-500/10 border border-amber-500/40 text-amber-300 px-3 py-1.5 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-                      title="Liga extra além do limite do plano"
+                      title="Liga extra — assinatura recorrente de R$5/mês"
                     >
                       {extraMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-                      Adicionar por R$5
+                      Adicionar por R$5/mês
                     </button>
                   ) : (
                     <button

@@ -18,7 +18,39 @@ function planFromPrice(priceLookupKey: string | null | undefined): string {
   return "free";
 }
 
+// Liga extra: mantém a linha em tracked_leagues sincronizada com o
+// ciclo de vida da assinatura Stripe correspondente.
+async function handleExtraLeagueUpsert(subscription: any) {
+  const userId = subscription.metadata?.userId;
+  const leagueId = Number(subscription.metadata?.leagueId);
+  const season = Number(subscription.metadata?.season);
+  if (!userId || !leagueId || !season) return;
+  const item = subscription.items?.data?.[0];
+  const periodEnd = item?.current_period_end ?? subscription.current_period_end;
+  await (getSupabase().from("tracked_leagues") as any)
+    .update({
+      extra_stripe_subscription_id: subscription.id,
+      extra_current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      extra_status: subscription.status,
+    })
+    .eq("user_id", userId)
+    .eq("league_id", leagueId)
+    .eq("season", season);
+}
+
+async function handleExtraLeagueDeleted(subscription: any) {
+  // Fires no fim real do período (mesmo com cancel_at_period_end=true),
+  // então podemos remover a liga com segurança.
+  await (getSupabase().from("tracked_leagues") as any)
+    .delete()
+    .eq("extra_stripe_subscription_id", subscription.id);
+}
+
 async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
+  if (subscription.metadata?.kind === "extra_league") {
+    await handleExtraLeagueUpsert(subscription);
+    return;
+  }
   const userId = subscription.metadata?.userId;
   if (!userId) {
     console.error("No userId in subscription metadata");
@@ -51,6 +83,10 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
+  if (subscription.metadata?.kind === "extra_league") {
+    await handleExtraLeagueDeleted(subscription);
+    return;
+  }
   await (getSupabase().from("subscriptions") as any)
     .update({ status: "canceled", plan: "free", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", subscription.id)

@@ -3,9 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 
-// Preço fixo (em centavos) de uma liga adicional além do limite do plano.
-const EXTRA_LEAGUE_PRICE_CENTS = 500; // R$5,00
-const EXTRA_LEAGUE_CURRENCY = "brl";
+// Preço da liga adicional (assinatura recorrente mensal) — R$5,00/mês.
+const EXTRA_LEAGUE_LOOKUP_KEY = "extra_league_monthly";
 
 type CheckoutResult = { url: string } | { error: string };
 type PortalResult = { url: string } | { error: string };
@@ -96,13 +95,13 @@ export const createPortalSession = createServerFn({ method: "POST" })
   });
 
 // -----------------------------------------------------------------
-// Liga adicional (R$5) — pagamento avulso
+// Liga adicional — assinatura recorrente R$5/mês por liga
 // -----------------------------------------------------------------
-// Usuário atingiu o limite do plano e quer adicionar mais 1 liga.
-// Abrimos um Checkout Stripe one-time (BRL 5,00, cartão/Pix). No retorno,
-// a página /checkout/league-return chama confirmExtraLeaguePurchase, que
-// valida a Session no Stripe (payment_status = paid) e insere a liga com
-// is_locked=true e is_paid_extra=true — só uma vez por session_id.
+// O usuário atingiu o limite do plano e quer +1 liga. Abrimos um Checkout
+// Stripe em modo "subscription" (cartão/Pix) usando o preço recorrente
+// `extra_league_monthly`. A metadata da subscription carrega os dados da
+// liga para que o webhook consiga liberar / atualizar / remover ela ao
+// longo do ciclo de vida da assinatura.
 
 const extraLeagueSchema = z.object({
   leagueId: z.number().int(),
@@ -119,37 +118,33 @@ export const createExtraLeagueCheckout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<CheckoutResult> => {
     try {
       const stripe = createStripeClient(data.environment);
+      const prices = await stripe.prices.list({ lookup_keys: [EXTRA_LEAGUE_LOOKUP_KEY] });
+      if (!prices.data.length) throw new Error("Preço da liga extra não encontrado");
+      const stripePrice = prices.data[0];
+
       const { data: { user } } = await context.supabase.auth.getUser();
       const customerId = await resolveOrCreateCustomer(stripe, {
         email: user?.email ?? undefined,
         userId: context.userId,
       });
+      const extraLeagueMetadata = {
+        userId: context.userId,
+        kind: "extra_league",
+        leagueId: String(data.leagueId),
+        season: String(data.season),
+        leagueName: data.leagueName,
+        country: data.country ?? "",
+      };
       const session = await stripe.checkout.sessions.create({
-        mode: "payment",
+        mode: "subscription",
         customer: customerId,
-        line_items: [{
-          price_data: {
-            currency: EXTRA_LEAGUE_CURRENCY,
-            product_data: {
-              name: `Liga extra: ${data.leagueName}${data.country ? ` (${data.country})` : ""}`,
-              description: "Adiciona 1 liga além do limite do seu plano — trava permanente.",
-            },
-            unit_amount: EXTRA_LEAGUE_PRICE_CENTS,
-          },
-          quantity: 1,
-        }],
-        payment_intent_data: {
-          description: `Liga extra: ${data.leagueName}`,
-        },
+        line_items: [{ price: stripePrice.id, quantity: 1 }],
         success_url: `${data.returnUrl}${data.returnUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: data.returnUrl,
-        metadata: {
-          userId: context.userId,
-          kind: "extra_league",
-          leagueId: String(data.leagueId),
-          season: String(data.season),
-          leagueName: data.leagueName,
-          country: data.country ?? "",
+        metadata: extraLeagueMetadata,
+        subscription_data: {
+          description: `Liga adicional: ${data.leagueName}`,
+          metadata: extraLeagueMetadata,
         },
       });
       return { url: session.url ?? "" };
@@ -165,23 +160,29 @@ export const confirmExtraLeaguePurchase = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // Idempotência: se já processamos essa session, retorna sem cobrar/inserir de novo.
+    // Idempotência: se já processamos essa session, retorna sem inserir de novo.
     const { data: already } = await supabase
       .from("tracked_leagues")
-      .select("id")
+      .select("id, league_name")
       .eq("user_id", userId)
       .eq("stripe_session_id", data.sessionId)
       .maybeSingle();
-    if (already) return { ok: true, alreadyProcessed: true };
+    if (already) {
+      return { ok: true, alreadyProcessed: true, league: { leagueName: already.league_name } };
+    }
 
     let session;
     try {
       const stripe = createStripeClient(data.environment);
-      session = await stripe.checkout.sessions.retrieve(data.sessionId);
+      session = await stripe.checkout.sessions.retrieve(data.sessionId, {
+        expand: ["subscription"],
+      });
     } catch (error) {
       return { ok: false, error: getStripeErrorMessage(error) };
     }
-    if (session.payment_status !== "paid") {
+    // Pix pode ficar "processing" por alguns minutos; consideramos ok também.
+    const okStatuses = new Set(["paid", "no_payment_required"]);
+    if (!okStatuses.has(session.payment_status ?? "")) {
       return { ok: false, error: `Pagamento ainda não confirmado (status: ${session.payment_status}).` };
     }
     const m = session.metadata ?? {};
@@ -191,6 +192,12 @@ export const confirmExtraLeaguePurchase = createServerFn({ method: "POST" })
     const season = Number(m.season);
     if (!leagueId || !season || !m.leagueName) return { ok: false, error: "Dados da liga faltando no checkout." };
 
+    const subscription: any = session.subscription;
+    const subscriptionId = typeof subscription === "string" ? subscription : subscription?.id ?? null;
+    const item = subscription?.items?.data?.[0];
+    const periodEndSeconds = item?.current_period_end ?? subscription?.current_period_end ?? null;
+    const currentPeriodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000).toISOString() : null;
+
     const { error } = await supabase.from("tracked_leagues").upsert({
       user_id: userId,
       league_id: leagueId,
@@ -198,11 +205,13 @@ export const confirmExtraLeaguePurchase = createServerFn({ method: "POST" })
       league_name: m.leagueName,
       country: m.country || null,
       include_stats: false,
-      is_locked: true,
+      is_locked: false,
       is_paid_extra: true,
       stripe_session_id: data.sessionId,
+      extra_stripe_subscription_id: subscriptionId,
+      extra_current_period_end: currentPeriodEnd,
+      extra_status: subscription?.status ?? "active",
     }, { onConflict: "user_id,league_id,season" });
     if (error) return { ok: false, error: error.message };
     return { ok: true, league: { leagueId, season, leagueName: m.leagueName, country: m.country || null } };
   });
-
