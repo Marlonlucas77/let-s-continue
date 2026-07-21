@@ -283,10 +283,14 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     // ELE MESMO habilitou, não pelas que ele pessoalmente importou.
     const { data: tracked } = await supabase
       .from("tracked_leagues")
-      .select("league_name")
+      .select("league_name, country")
       .eq("user_id", userId);
-    const myLeagues = (tracked ?? []).map((t: any) => t.league_name).filter(Boolean);
-    if (myLeagues.length === 0) return [];
+    const trackedList = (tracked ?? []).filter((t: any) => t.league_name);
+    if (trackedList.length === 0) return [];
+    const myLeagueNames = Array.from(new Set(trackedList.map((t: any) => t.league_name as string)));
+    const allowedKeys = new Set(
+      trackedList.map((t: any) => `${(t.league_name as string).toLowerCase()}|${(t.country ?? "").toLowerCase()}`),
+    );
 
     const { data: rows, error } = await supabase
       .from("matches")
@@ -295,16 +299,18 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         home_team:home_team_id ( id, name, logo_url, api_id ),
         away_team:away_team_id ( id, name, logo_url, api_id )
       `)
-      .in("league_name", myLeagues)
+      .in("league_name", myLeagueNames)
       .in("status", ["NS", "TBD"])
       .gte("kickoff_at", from.toISOString())
       .lte("kickoff_at", to.toISOString())
       .order("kickoff_at", { ascending: true })
-      .limit(500);
+      .limit(1000);
+
     if (error) throw new Error(error.message);
 
     return (rows ?? [])
       .filter((r: any) => r.home_team && r.away_team && r.api_fixture_id)
+      .filter((r: any) => allowedKeys.has(`${String(r.league_name ?? "").toLowerCase()}|${String(r.country ?? "").toLowerCase()}`))
       .map((r: any) => ({
         fixtureId: r.api_fixture_id as number,
         date: r.kickoff_at as string,
@@ -313,6 +319,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         home: { id: r.home_team.id, apiId: r.home_team.api_id, name: r.home_team.name, logo: r.home_team.logo_url },
         away: { id: r.away_team.id, apiId: r.away_team.api_id, name: r.away_team.name, logo: r.away_team.logo_url },
       }));
+
   });
 
 export const getFixtureOdds = createServerFn({ method: "POST" })
@@ -486,15 +493,18 @@ export const listLiveFixtures = createServerFn({ method: "GET" })
     // "Próximos jogos".
     const { data: tracked } = await supabase
       .from("tracked_leagues")
-      .select("league_name")
+      .select("league_name, country")
       .eq("user_id", userId);
     const mine = new Set(
-      (tracked ?? []).map((t: any) => (t.league_name as string)?.toLowerCase()).filter(Boolean),
+      (tracked ?? [])
+        .filter((t: any) => t.league_name)
+        .map((t: any) => `${String(t.league_name).toLowerCase()}|${String(t.country ?? "").toLowerCase()}`),
     );
     const all = (data?.data as any[]) ?? [];
     const fixtures = mine.size === 0
       ? []
-      : all.filter((f: any) => mine.has(String(f.league ?? "").toLowerCase()));
+      : all.filter((f: any) => mine.has(`${String(f.league ?? "").toLowerCase()}|${String(f.country ?? "").toLowerCase()}`));
+
 
     return {
       fixtures,
