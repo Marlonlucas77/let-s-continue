@@ -294,9 +294,10 @@ function Landing() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground md:flex-row">
           <LogoWithName size={24} />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/terms" className="hover:text-foreground">Termos de Uso</Link>
             <Link to="/privacy" className="hover:text-foreground">Privacidade</Link>
+            <a href="mailto:suporte@placarcerto.ia.br" className="hover:text-foreground">Suporte</a>
           </div>
           <p>© {new Date().getFullYear()} Placar Certo. Todos os direitos reservados.</p>
         </div>
