@@ -57,10 +57,11 @@ function AuthPage() {
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.length !== 6) {
-      toast.error("Digite os 6 dígitos do código.");
+    if (otp.length < 6) {
+      toast.error("Digite o código completo enviado ao seu e-mail.");
       return;
     }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
