@@ -493,15 +493,18 @@ export const listLiveFixtures = createServerFn({ method: "GET" })
     // "Próximos jogos".
     const { data: tracked } = await supabase
       .from("tracked_leagues")
-      .select("league_name")
+      .select("league_name, country")
       .eq("user_id", userId);
     const mine = new Set(
-      (tracked ?? []).map((t: any) => (t.league_name as string)?.toLowerCase()).filter(Boolean),
+      (tracked ?? [])
+        .filter((t: any) => t.league_name)
+        .map((t: any) => `${String(t.league_name).toLowerCase()}|${String(t.country ?? "").toLowerCase()}`),
     );
     const all = (data?.data as any[]) ?? [];
     const fixtures = mine.size === 0
       ? []
-      : all.filter((f: any) => mine.has(String(f.league ?? "").toLowerCase()));
+      : all.filter((f: any) => mine.has(`${String(f.league ?? "").toLowerCase()}|${String(f.country ?? "").toLowerCase()}`));
+
 
     return {
       fixtures,
