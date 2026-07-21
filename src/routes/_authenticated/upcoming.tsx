@@ -119,24 +119,39 @@ function UpcomingPage() {
   }, [fixtures, trackedLeagues]);
 
 
-  const filtered = useMemo(() => {
-    return fixtures.filter((f: any) => {
-      if (leagueSearch) {
-        const [league, country] = leagueSearch.split("||");
-        if ((f.league ?? "") !== league || (f.country ?? "") !== country) return false;
-      }
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        if (
-          !f.home.name.toLowerCase().includes(q) && 
-          !f.away.name.toLowerCase().includes(q) &&
-          !translateTeam(f.home.name).toLowerCase().includes(q) &&
-          !translateTeam(f.away.name).toLowerCase().includes(q)
-        ) return false;
-      }
-      return true;
+  // Pré-computa strings em minúsculas dos times UMA vez por lista de jogos,
+  // em vez de recomputar em toda tecla no filtro. Reduz o custo do filtro de
+  // O(n·k) por keystroke pra O(n) sobre valores já normalizados.
+  const indexedFixtures = useMemo(() => {
+    return (fixtures as any[]).map((f) => {
+      const homeName = f.home?.name ?? "";
+      const awayName = f.away?.name ?? "";
+      return {
+        f,
+        _leagueKey: `${f.league ?? ""}||${f.country ?? ""}`,
+        _search: [
+          homeName,
+          awayName,
+          translateTeam(homeName),
+          translateTeam(awayName),
+        ].join("\u0001").toLowerCase(),
+      };
     });
-  }, [fixtures, leagueSearch, search]);
+  }, [fixtures]);
+
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const hasLeague = !!leagueSearch;
+    const hasQuery = q.length > 0;
+    if (!hasLeague && !hasQuery) return indexedFixtures.map((x) => x.f);
+    const out: any[] = [];
+    for (const x of indexedFixtures) {
+      if (hasLeague && x._leagueKey !== leagueSearch) continue;
+      if (hasQuery && !x._search.includes(q)) continue;
+      out.push(x.f);
+    }
+    return out;
+  }, [indexedFixtures, leagueSearch, debouncedSearch]);
 
 
   return (
