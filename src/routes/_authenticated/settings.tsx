@@ -316,9 +316,15 @@ function SettingsPage() {
                   {isTracked ? (
                     <span className="inline-flex items-center gap-1 text-xs text-primary"><CheckCircle2 className="h-4 w-4" /> Selecionada</span>
                   ) : atLimit ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Limite do seu plano atingido">
-                      <Lock className="h-3.5 w-3.5" /> Limite atingido
-                    </span>
+                    <button
+                      onClick={() => extraMut.mutate(l)}
+                      disabled={extraMut.isPending}
+                      className="text-xs rounded-md bg-amber-500/10 border border-amber-500/40 text-amber-300 px-3 py-1.5 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+                      title="Liga extra além do limite do plano"
+                    >
+                      {extraMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+                      Adicionar por R$5
+                    </button>
                   ) : (
                     <button
                       onClick={() => trackMut.mutate(l)}
