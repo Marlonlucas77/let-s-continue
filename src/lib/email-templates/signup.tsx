@@ -26,7 +26,7 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Seu código de confirmação {siteName}: {token}</Preview>
+    <Preview>{`Seu código de confirmação ${siteName}: ${token ?? ''}`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Confirme seu e-mail</Heading>
