@@ -9,11 +9,53 @@ import { fetchAndCacheLiveFixtures } from "@/lib/api-sports.functions";
 export async function runFixturesRefresh(triggeredBy: "schedule" | "manual" = "schedule") {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+  // Limpa execuções antigas que ficaram abertas por timeout/interrupção do
+  // runtime. Elas não podem bloquear o próximo cron para sempre.
+  await supabaseAdmin
+    .from("cron_runs")
+    .update({
+      finished_at: new Date().toISOString(),
+      success: false,
+      error: "Execução anterior interrompida antes de finalizar.",
+    })
+    .eq("job", "refresh-fixtures")
+    .is("finished_at", null)
+    .lt("started_at", new Date(Date.now() - 20 * 60 * 1000).toISOString());
+
   const { data: runLog } = await supabaseAdmin
     .from("cron_runs")
     .insert({ job: "refresh-fixtures", triggered_by: triggeredBy })
     .select("id")
     .single();
+
+  // Evita sobreposição: duas execuções simultâneas eram o cenário que mais
+  // facilmente criava rajada na API-Sports. Se já existe uma recente em
+  // andamento, esta execução encerra sem importar nada.
+  if (runLog) {
+    const { data: activeRun } = await supabaseAdmin
+      .from("cron_runs")
+      .select("id")
+      .eq("job", "refresh-fixtures")
+      .is("finished_at", null)
+      .neq("id", runLog.id)
+      .gte("started_at", new Date(Date.now() - 20 * 60 * 1000).toISOString())
+      .maybeSingle();
+
+    if (activeRun) {
+      const skipped = {
+        timestamp: new Date().toISOString(),
+        liveFixturesUpdated: 0,
+        processed: 0,
+        results: [{ skipped: true, reason: "Já existe uma sincronização em andamento." }],
+      };
+      await supabaseAdmin.from("cron_runs").update({
+        finished_at: new Date().toISOString(),
+        success: true,
+        details: skipped,
+      }).eq("id", runLog.id);
+      return skipped;
+    }
+  }
 
   try {
     const result = await runFixturesRefreshInner(supabaseAdmin);
@@ -50,10 +92,10 @@ async function runFixturesRefreshInner(supabaseAdmin: any) {
   } catch { /* segue o cron mesmo se isso falhar */ }
 
   // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas.
-  // Plano API-Sports confirmado em 300 rpm. Cada liga faz ~2 chamadas
-  // (fixtures FT + NS), então 200 ligas cabem tranquilamente em ~1-2 min
-  // respeitando o throttle compartilhado. Cooldown reduzido pra 3h pra
-  // que ligas habilitadas apareçam quase de imediato pro usuário final.
+  // Importante: tracked_leagues tem uma linha por usuário. Se 100 usuários
+  // seguem Brasileirão, isso continua sendo UMA liga para importar — não
+  // 100 chamadas duplicadas. Agrupamos por league_id/season antes de bater
+  // na API-Sports e depois atualizamos todas as assinaturas dessa liga.
   const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const { data: leagues, error } = await supabaseAdmin
     .from("tracked_leagues")
@@ -61,24 +103,31 @@ async function runFixturesRefreshInner(supabaseAdmin: any) {
     .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
     .order("last_run_at", { ascending: true, nullsFirst: true })
     .order("priority", { ascending: false })
-    .limit(200);
+    .limit(1000);
 
   if (error) throw new Error(error.message);
 
-  // Com muitas ligas empatadas em prioridade 100, a ordenação não é
-  // suficiente pra garantir que uma liga específica entre no lote de 30.
-  // Garante explicitamente que o Brasileirão Série A (id 71 na
-  // API-Sports) sempre seja tentado em toda execução.
+  const byLeague = new Map<string, any & { include_stats: boolean }>();
+  for (const l of (leagues ?? [])) {
+    const key = `${l.league_id}:${l.season}`;
+    const existing = byLeague.get(key);
+    if (!existing) byLeague.set(key, { ...l, include_stats: !!l.include_stats });
+    else if (l.include_stats) existing.include_stats = true;
+  }
+
+  // Garante explicitamente que o Brasileirão Série A (id 71 na API-Sports)
+  // sempre seja tentado quando alguém acompanha essa liga.
   const MUST_RUN_LEAGUE_IDS = [71];
-  const batch = [...(leagues ?? [])];
-  const batchIds = new Set(batch.map((l) => l.id));
   const { data: mustRun } = await supabaseAdmin
     .from("tracked_leagues")
     .select("*")
     .in("league_id", MUST_RUN_LEAGUE_IDS);
   for (const l of (mustRun ?? [])) {
-    if (!batchIds.has(l.id)) batch.push(l);
+    const key = `${l.league_id}:${l.season}`;
+    if (!byLeague.has(key)) byLeague.set(key, { ...l, include_stats: !!l.include_stats });
   }
+
+  const batch = Array.from(byLeague.values()).slice(0, 60);
 
   const results: any[] = [];
   for (const l of batch) {
@@ -92,10 +141,14 @@ async function runFixturesRefreshInner(supabaseAdmin: any) {
         country: l.country ?? undefined,
         includeStats: l.include_stats ?? false,
       });
-      await supabaseAdmin.from("tracked_leagues").update({ last_run_at: new Date().toISOString() }).eq("id", l.id);
-      results.push({ id: l.id, type: "fixtures", league: l.league_name, ...r });
+      await supabaseAdmin
+        .from("tracked_leagues")
+        .update({ last_run_at: new Date().toISOString() })
+        .eq("league_id", l.league_id)
+        .eq("season", l.season);
+      results.push({ leagueId: l.league_id, type: "fixtures", league: l.league_name, ...r });
     } catch (e: any) {
-      results.push({ id: l.id, type: "fixtures", league: l.league_name, error: e.message });
+      results.push({ leagueId: l.league_id, type: "fixtures", league: l.league_name, error: e.message });
     }
   }
 
