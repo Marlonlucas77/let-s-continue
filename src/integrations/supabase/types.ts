@@ -174,7 +174,6 @@ export type Database = {
           league_name: string | null
           match_date: string
           status: string | null
-          user_id: string
         }
         Insert: {
           api_fixture_id?: number | null
@@ -197,7 +196,6 @@ export type Database = {
           league_name?: string | null
           match_date: string
           status?: string | null
-          user_id: string
         }
         Update: {
           api_fixture_id?: number | null
@@ -220,7 +218,6 @@ export type Database = {
           league_name?: string | null
           match_date?: string
           status?: string | null
-          user_id?: string
         }
         Relationships: [
           {
@@ -440,7 +437,6 @@ export type Database = {
           league: string | null
           logo_url: string | null
           name: string
-          user_id: string
         }
         Insert: {
           api_id?: number | null
@@ -451,7 +447,6 @@ export type Database = {
           league?: string | null
           logo_url?: string | null
           name: string
-          user_id: string
         }
         Update: {
           api_id?: number | null
@@ -462,7 +457,6 @@ export type Database = {
           league?: string | null
           logo_url?: string | null
           name?: string
-          user_id?: string
         }
         Relationships: []
       }
