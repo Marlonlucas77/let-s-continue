@@ -102,8 +102,10 @@ function AuthedLayout() {
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-60 border-r border-border flex-col p-4 gap-1 overflow-y-auto">
         <Link to="/dashboard" className="flex items-center gap-2 px-2 py-3 mb-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold">P</div>
-          <span className="font-display text-lg font-bold">Placar Certo</span>
+          <Logo size={32} />
+          <span className="font-display text-lg font-bold tracking-tight">
+            Placar<span className="text-primary"> Certo</span>
+          </span>
         </Link>
         {groups.map((group, gi) => (
           <div key={gi} className={group.label ? "mt-3" : ""}>
