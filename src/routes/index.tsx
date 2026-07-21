@@ -1,8 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wand2, Target, Trophy, TrendingUp, Radio, Globe2, LineChart, Check, ShieldCheck, Sparkles, Search, BarChart3, Star } from "lucide-react";
 import { LogoWithName } from "@/components/Logo";
-import heroDashboard from "@/assets/hero-dashboard.jpg";
-import heroPredictions from "@/assets/hero-predictions.jpg";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -141,18 +139,6 @@ function Landing() {
             <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito para começar • Cancele quando quiser</p>
           </div>
 
-          <div className="mx-auto max-w-6xl px-6 pb-12">
-            <div className="relative rounded-2xl border border-border bg-card/50 p-2 shadow-2xl shadow-primary/10">
-              <div className="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-b from-primary/30 via-transparent to-transparent blur-2xl" />
-              <img
-                src={heroDashboard}
-                alt="Painel do Placar Certo com estatísticas e jogos do dia"
-                width={1600}
-                height={1008}
-                className="rounded-xl"
-              />
-            </div>
-          </div>
 
           <div className="mx-auto max-w-6xl px-6 pb-20">
             <div className="grid grid-cols-2 gap-6 border-y border-border py-8 md:grid-cols-4">
@@ -225,12 +211,12 @@ function Landing() {
         </section>
 
         <section id="screenshots" className="py-20">
-          <div className="mx-auto max-w-6xl space-y-24 px-6">
-            <div className="grid items-center gap-12 md:grid-cols-2">
-              <div>
+          <div className="mx-auto max-w-6xl space-y-16 px-6">
+            <div className="grid gap-8 md:grid-cols-2">
+              <div className="card-surface p-8">
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">Painel</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Uma visão completa, todo dia</h2>
-                <p className="mt-3 text-muted-foreground">
+                <h2 className="mt-2 font-display text-2xl font-bold">Uma visão completa, todo dia</h2>
+                <p className="mt-3 text-sm text-muted-foreground">
                   Jogos de hoje das suas ligas, times favoritos, resumo das suas previsões salvas e sua taxa de acerto — tudo à sua frente assim que você entra.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
@@ -239,19 +225,11 @@ function Landing() {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl border border-border bg-card/50 p-2">
-                <img src={heroDashboard} alt="Dashboard com jogos do dia e estatísticas" loading="lazy" width={1600} height={1008} className="rounded-lg" />
-              </div>
-            </div>
 
-            <div className="grid items-center gap-12 md:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card/50 p-2 md:order-2">
-                <img src={heroPredictions} alt="Tela de previsão de partida com probabilidades geradas por IA" loading="lazy" width={1600} height={1008} className="rounded-lg" />
-              </div>
-              <div className="md:order-1">
+              <div className="card-surface p-8">
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">Previsão com IA</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Probabilidades pra qualquer confronto</h2>
-                <p className="mt-3 text-muted-foreground">
+                <h2 className="mt-2 font-display text-2xl font-bold">Probabilidades pra qualquer confronto</h2>
+                <p className="mt-3 text-sm text-muted-foreground">
                   Escolha dois times — de qualquer liga do mundo, mesmo fora da sua lista — e receba na hora as chances de vitória, gols esperados, escanteios e cartões, com a análise da IA pra cada time.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
