@@ -58,7 +58,6 @@ export const Route = createFileRoute("/api/public/cron/send-alerts")({
             const { data: favTeams } = await supabaseAdmin
               .from("teams")
               .select("id")
-              .eq("user_id", profile.id)
               .in("api_id", favApiIds);
             const localTeamIds = (favTeams ?? []).map((t: any) => t.id as string);
             if (localTeamIds.length === 0) {
@@ -73,7 +72,6 @@ export const Route = createFileRoute("/api/public/cron/send-alerts")({
                 home_team:home_team_id ( name ),
                 away_team:away_team_id ( name )
               `)
-              .eq("user_id", profile.id)
               .in("status", ["NS", "TBD"])
               .gte("kickoff_at", dayStart.toISOString())
               .lt("kickoff_at", dayEnd.toISOString())
