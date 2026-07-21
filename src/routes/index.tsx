@@ -141,18 +141,6 @@ function Landing() {
             <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito para começar • Cancele quando quiser</p>
           </div>
 
-          <div className="mx-auto max-w-6xl px-6 pb-12">
-            <div className="relative rounded-2xl border border-border bg-card/50 p-2 shadow-2xl shadow-primary/10">
-              <div className="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-b from-primary/30 via-transparent to-transparent blur-2xl" />
-              <img
-                src={heroDashboard}
-                alt="Painel do Placar Certo com estatísticas e jogos do dia"
-                width={1600}
-                height={1008}
-                className="rounded-xl"
-              />
-            </div>
-          </div>
 
           <div className="mx-auto max-w-6xl px-6 pb-20">
             <div className="grid grid-cols-2 gap-6 border-y border-border py-8 md:grid-cols-4">
