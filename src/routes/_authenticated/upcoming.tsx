@@ -367,16 +367,27 @@ const FixtureCard = memo(function FixtureCard({ f }: { f: any }) {
 
   const p = aiFixturePred?.prediction;
 
-  const dt = new Date(f.date);
-  const dateStr = dt.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  // Data formatada memoizada — evita recriar Date+Intl a cada render do card.
+  const dateStr = useMemo(
+    () => new Date(f.date).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    [f.date]
+  );
 
-  const bestPick = p ? [
-    { label: "Vitória mandante", pct: p.homeWinPct, market: "1x2", outcome: "Home" },
-    { label: "Empate", pct: p.drawPct, market: "1x2", outcome: "Draw" },
-    { label: "Vitória visitante", pct: p.awayWinPct, market: "1x2", outcome: "Away" },
-    { label: "Over 2.5 gols", pct: p.over25Pct, market: "Over/Under", outcome: "Over 2.5" },
-    { label: "Ambas marcam", pct: p.bttsPct, market: "BTTS", outcome: "Yes" },
-  ].sort((a, b) => b.pct - a.pct)[0] : null;
+  // O(n) em vez de sort()+[0]: a lista tem 5 itens, mas o reduce evita
+  // alocar array intermediário e sort a cada render quando `p` muda.
+  const bestPick = useMemo(() => {
+    if (!p) return null;
+    const picks = [
+      { label: "Vitória mandante", pct: p.homeWinPct, market: "1x2", outcome: "Home" },
+      { label: "Empate", pct: p.drawPct, market: "1x2", outcome: "Draw" },
+      { label: "Vitória visitante", pct: p.awayWinPct, market: "1x2", outcome: "Away" },
+      { label: "Over 2.5 gols", pct: p.over25Pct, market: "Over/Under", outcome: "Over 2.5" },
+      { label: "Ambas marcam", pct: p.bttsPct, market: "BTTS", outcome: "Yes" },
+    ];
+    let best = picks[0];
+    for (let i = 1; i < picks.length; i++) if (picks[i].pct > best.pct) best = picks[i];
+    return best;
+  }, [p]);
 
   const bestOddForPick = odds?.markets.find((m: any) => m.market === bestPick?.market && m.outcome === bestPick?.outcome);
   const ev = bestPick && bestOddForPick ? (bestPick.pct / 100) * bestOddForPick.odd : null;
