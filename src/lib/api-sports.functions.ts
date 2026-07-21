@@ -310,6 +310,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
 
     return (rows ?? [])
       .filter((r: any) => r.home_team && r.away_team && r.api_fixture_id)
+      .filter((r: any) => allowedKeys.has(`${String(r.league_name ?? "").toLowerCase()}|${String(r.country ?? "").toLowerCase()}`))
       .map((r: any) => ({
         fixtureId: r.api_fixture_id as number,
         date: r.kickoff_at as string,
@@ -318,6 +319,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         home: { id: r.home_team.id, apiId: r.home_team.api_id, name: r.home_team.name, logo: r.home_team.logo_url },
         away: { id: r.away_team.id, apiId: r.away_team.api_id, name: r.away_team.name, logo: r.away_team.logo_url },
       }));
+
   });
 
 export const getFixtureOdds = createServerFn({ method: "POST" })
