@@ -64,7 +64,7 @@ function PredictionsPage() {
   const [home, setHome] = useState<ComboTeam | null>(null);
   const [away, setAway] = useState<ComboTeam | null>(null);
 
-  const { data: teams = [] } = useQuery({
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ["teams"],
     queryFn: fetchAllTeams,
   });
@@ -72,7 +72,7 @@ function PredictionsPage() {
   // Só times de ligas ATUALMENTE habilitadas em Configurações podem
   // aparecer aqui — inclusive pra análise por IA. Sem isso, dava pra
   // furar o limite de ligas do plano digitando qualquer time livremente.
-  const { data: trackedLeagues = [] } = useQuery({
+  const { data: trackedLeagues = [], isLoading: leaguesLoading } = useQuery({
     queryKey: ["tracked-leagues"],
     queryFn: async () => (await supabase.from("tracked_leagues").select("league_name, country")).data ?? [],
   });
@@ -90,10 +90,12 @@ function PredictionsPage() {
     [trackedLeagues],
   );
 
-  const { data: matchTeamRefs = [] } = useQuery({
+  const { data: matchTeamRefs = [], isLoading: refsLoading } = useQuery({
     queryKey: ["match-team-refs"],
     queryFn: fetchAllMatchTeamRefs,
   });
+  const isLoadingData = teamsLoading || leaguesLoading || refsLoading;
+
   // Deriva a "liga real" (name+country das ligas rastreadas) de cada time
   // a partir dos jogos. Assim o agrupamento/filtro do combobox bate com o
   // filtro de ligas habilitadas pra TODAS as ligas, não só as genéricas.
@@ -241,7 +243,11 @@ function PredictionsPage() {
 
 
       <div className="card-surface p-5 mt-6">
-        {enabledTeams.length === 0 ? (
+        {isLoadingData ? (
+          <div className="mb-4 rounded-md border border-border bg-input/40 p-3 text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando ligas e times...
+          </div>
+        ) : enabledTeams.length === 0 ? (
           <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-400">
             Nenhuma liga habilitada ainda. Vá em <Link to="/settings" className="underline">Configurações</Link> pra escolher quais ligas você quer acompanhar.
           </div>
@@ -251,6 +257,7 @@ function PredictionsPage() {
             <Link to="/settings" className="text-primary hover:underline">Gerenciar ligas →</Link>
           </div>
         )}
+
 
         {enabledTeams.length > 0 && (
           <div className="mb-4">
