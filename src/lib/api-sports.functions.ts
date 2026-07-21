@@ -290,6 +290,17 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     const to = new Date(from);
     to.setUTCDate(from.getUTCDate() + days);
 
+    // Jogos/times são dado público (vêm da API de futebol) — compartilhados
+    // entre todos os usuários, importados uma vez por quem quer que tenha
+    // habilitado a liga primeiro. Cada usuário só filtra pelas ligas que
+    // ELE MESMO habilitou, não pelas que ele pessoalmente importou.
+    const { data: tracked } = await supabase
+      .from("tracked_leagues")
+      .select("league_name")
+      .eq("user_id", userId);
+    const myLeagues = (tracked ?? []).map((t: any) => t.league_name).filter(Boolean);
+    if (myLeagues.length === 0) return [];
+
     const { data: rows, error } = await supabase
       .from("matches")
       .select(`
@@ -297,7 +308,7 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         home_team:home_team_id ( id, name, logo_url, api_id ),
         away_team:away_team_id ( id, name, logo_url, api_id )
       `)
-      .eq("user_id", userId)
+      .in("league_name", myLeagues)
       .in("status", ["NS", "TBD"])
       .gte("kickoff_at", from.toISOString())
       .lte("kickoff_at", to.toISOString())
@@ -373,7 +384,7 @@ export const autoCheckPredictions = createServerFn({ method: "POST" })
       .eq("result_checked", false);
     if (!preds || preds.length === 0) return { checked: 0, correct: 0 };
 
-    const { data: matches } = await supabase.from("matches").select("*").eq("user_id", userId);
+    const { data: matches } = await supabase.from("matches").select("*");
     const all = matches ?? [];
 
     let checked = 0, correct = 0;

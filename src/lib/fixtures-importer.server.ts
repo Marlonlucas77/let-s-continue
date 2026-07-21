@@ -268,7 +268,11 @@ export async function importFixturesFor({
     teamMap.set(f.teams.away.id, { name: f.teams.away.name, logo: f.teams.away.logo, leagueName: fixtureLeague, country: fixtureCountry });
   }
 
-  const { data: existingTeams } = await supabase.from("teams").select("id, name, api_id, league, country").eq("user_id", userId);
+  // Times/jogos são dado público compartilhado — busca times já
+  // existentes de QUALQUER usuário (não só quem disparou essa
+  // importação), pra não criar um "Palmeiras" novo toda vez que uma
+  // conta diferente importa o Brasileirão pela primeira vez.
+  const { data: existingTeams } = await supabase.from("teams").select("id, name, api_id, league, country");
   const byName = new Map<string, string>((existingTeams ?? []).map((t: any) => [t.name.toLowerCase() as string, t.id as string]));
   const byApiId = new Map<number, string>((existingTeams ?? []).filter((t: any) => t.api_id != null).map((t: any) => [t.api_id as number, t.id as string]));
   const existingLeagueByName = new Map<string, { league: string | null; country: string | null }>(
@@ -335,7 +339,6 @@ export async function importFixturesFor({
   const { data: existing } = await supabase
     .from("matches")
     .select("api_fixture_id")
-    .eq("user_id", userId)
     .not("api_fixture_id", "is", null);
   const seenIds = new Set((existing ?? []).map((m: any) => m.api_fixture_id as number));
 
