@@ -526,6 +526,7 @@ export type Database = {
         Args: { min_interval_ms: number }
         Returns: string
       }
+      get_cron_secret: { Args: never; Returns: string }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {
