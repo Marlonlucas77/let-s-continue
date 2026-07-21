@@ -132,33 +132,36 @@ function PricingPage() {
                   ))}
                 </ul>
                 <button
-                  disabled={!!isCurrent || !p.priceId || !paymentsConfigured()}
-                  onClick={() => p.priceId && setCheckoutPrice(p.priceId)}
+                  disabled={!!isCurrent || !p.priceId || !paymentsConfigured() || loadingPrice === p.priceId}
+                  onClick={async () => {
+                    if (!p.priceId) return;
+                    setLoadingPrice(p.priceId);
+                    try {
+                      const result = await createCheckoutSession({
+                        data: {
+                          priceId: p.priceId,
+                          environment: getStripeEnvironment(),
+                          returnUrl: `${window.location.origin}/pricing`,
+                        },
+                      });
+                      if ("error" in result) throw new Error(result.error);
+                      window.location.href = result.url;
+                    } catch (e: any) {
+                      alert(e.message);
+                      setLoadingPrice(null);
+                    }
+                  }}
                   className={`mt-6 w-full rounded-md px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     p.highlight ? "bg-primary text-primary-foreground" : "border border-border"
                   }`}
                 >
-                  {isCurrent ? "Plano atual" : !p.priceId ? "Grátis" : "Assinar"}
+                  {isCurrent ? "Plano atual" : !p.priceId ? "Grátis" : loadingPrice === p.priceId ? "Redirecionando..." : "Assinar"}
                 </button>
               </div>
             );
           })}
         </div>
       </div>
-
-      {checkoutPrice && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-2xl">
-            <button
-              onClick={() => setCheckoutPrice(null)}
-              className="absolute -top-10 right-0 text-white/80 hover:text-white flex items-center gap-1 text-sm"
-            >
-              <X className="h-4 w-4" /> Fechar
-            </button>
-            <StripeEmbeddedCheckout priceId={checkoutPrice} />
-          </div>
-        </div>
-      )}
     </>
   );
 }
