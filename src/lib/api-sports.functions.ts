@@ -252,6 +252,47 @@ export const runFixturesRefreshNow = createServerFn({ method: "POST" })
     return runFixturesRefresh("manual");
   });
 
+// Sincroniza somente as ligas monitoradas pelo próprio usuário logado.
+// Sem restrição de admin: cada usuário pode disparar a importação das
+// SUAS ligas quando quiser ver os jogos aparecerem imediatamente, sem
+// esperar o cron. O throttle compartilhado da API-Sports evita abuso.
+export const syncMyLeaguesNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: leagues, error } = await supabase
+      .from("tracked_leagues")
+      .select("*")
+      .eq("user_id", userId)
+      .limit(200);
+    if (error) throw new Error(error.message);
+    if (!leagues || leagues.length === 0) {
+      return { processed: 0, results: [] as any[] };
+    }
+    const { importFixturesFor } = await import("@/lib/fixtures-importer.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const results: any[] = [];
+    for (const l of leagues) {
+      try {
+        const r = await importFixturesFor({
+          supabase: supabaseAdmin,
+          userId: l.user_id,
+          leagueId: l.league_id,
+          season: l.season,
+          leagueName: l.league_name,
+          country: l.country ?? undefined,
+          includeStats: l.include_stats ?? false,
+        });
+        await supabaseAdmin.from("tracked_leagues").update({ last_run_at: new Date().toISOString() }).eq("id", l.id);
+        results.push({ league: l.league_name, ...r });
+      } catch (e: any) {
+        results.push({ league: l.league_name, error: e.message });
+      }
+    }
+    return { processed: results.length, results };
+  });
+
+
 export const untrackLeague = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
