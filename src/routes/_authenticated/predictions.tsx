@@ -10,6 +10,50 @@ import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { Save, Crown, Lock, AlertTriangle, Wand2, Loader2, Target } from "lucide-react";
 import { useSubscription, FREE_PREDICTION_LIMIT } from "@/hooks/useSubscription";
 
+type MatchTeamRef = {
+  home_team_id: string | null;
+  away_team_id: string | null;
+  league_name: string | null;
+  country: string | null;
+};
+
+async function fetchAllTeams(): Promise<ComboTeam[]> {
+  const pageSize = 1000;
+  const rows: ComboTeam[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("teams")
+      .select("id, name, logo_url, league, country")
+      .order("name")
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    rows.push(...((data ?? []) as ComboTeam[]));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return rows;
+}
+
+async function fetchAllMatchTeamRefs(): Promise<MatchTeamRef[]> {
+  const pageSize = 1000;
+  const rows: MatchTeamRef[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("matches")
+      .select("home_team_id, away_team_id, league_name, country")
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    rows.push(...((data ?? []) as MatchTeamRef[]));
+    if (!data || data.length < pageSize) break;
+  }
+
+  return rows;
+}
+
 export const Route = createFileRoute("/_authenticated/predictions")({
   component: PredictionsPage,
 });
@@ -22,7 +66,7 @@ function PredictionsPage() {
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
-    queryFn: async () => (await supabase.from("teams").select("*").order("name")).data ?? [],
+    queryFn: fetchAllTeams,
   });
 
   // Só times de ligas ATUALMENTE habilitadas em Configurações podem
@@ -48,7 +92,7 @@ function PredictionsPage() {
 
   const { data: matchTeamRefs = [] } = useQuery({
     queryKey: ["match-team-refs"],
-    queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, league_name, country")).data ?? [],
+    queryFn: fetchAllMatchTeamRefs,
   });
   // Deriva a "liga real" (name+country das ligas rastreadas) de cada time
   // a partir dos jogos. Assim o agrupamento/filtro do combobox bate com o
@@ -66,8 +110,13 @@ function PredictionsPage() {
   }, [matchTeamRefs, enabledLeagueKeys]);
   const enabledTeamIds = useMemo(() => new Set(teamLeagueMap.keys()), [teamLeagueMap]);
   const enabledTeams = useMemo(
-    () => teams.filter((t) => enabledTeamIds.has(t.id)),
-    [teams, enabledTeamIds],
+    () => teams
+      .filter((t) => enabledTeamIds.has(t.id))
+      .map((t) => {
+        const info = teamLeagueMap.get(t.id);
+        return info ? { ...t, league: info.league, country: info.country } : t;
+      }),
+    [teams, enabledTeamIds, teamLeagueMap],
   );
 
   // Só usado pra checar se os times já se enfrentaram (aviso) e pra dar
