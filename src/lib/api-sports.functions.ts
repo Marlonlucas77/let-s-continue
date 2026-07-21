@@ -88,103 +88,86 @@ export const trackLeague = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Lista curada das 50 competições mais relevantes do mundo — em vez de
-// habilitar literalmente tudo que a API-Sports tem (milhares de
-// competições, incluindo categorias de base e ligas amadoras obscuras),
-// que gerava uma fila de importação gigante e impossível de acompanhar.
-// Quem quiser algo fora dessa lista ainda pode buscar e habilitar
-// manualmente em Configurações.
-// Cada entrada exige nome E país batendo juntos, não só o nome. Isso
-// importa porque nomes genéricos como "Premier League" ou "Super League"
-// são usados por dezenas de países ao redor do mundo; sem checar o país
-// junto, um filtro só por nome pega muito mais do que as 50 pretendidas.
-// country=null significa competição internacional/continental (a
-// API-Sports rotula essas como país "World").
-type LeagueTarget = { name: string; country: string | null };
-const TOP_LEAGUES: LeagueTarget[] = [
-  // Europa — primeiras divisões (top 5 + relevantes)
-  { name: "premier league", country: "england" },
-  { name: "la liga", country: "spain" },
-  { name: "serie a", country: "italy" },
-  { name: "bundesliga", country: "germany" },
-  { name: "ligue 1", country: "france" },
-  { name: "primeira liga", country: "portugal" },
-  { name: "eredivisie", country: "netherlands" },
-  { name: "pro league", country: "belgium" },
-  { name: "premiership", country: "scotland" },
-  { name: "süper lig", country: "turkey" }, { name: "super lig", country: "turkey" },
-  { name: "super league", country: "greece" },
-  { name: "bundesliga", country: "austria" },
-  { name: "super league", country: "switzerland" },
-  // Europa — segundas divisões principais
-  { name: "championship", country: "england" },
-  { name: "segunda división", country: "spain" }, { name: "segunda division", country: "spain" }, { name: "laliga2", country: "spain" },
-  { name: "serie b", country: "italy" },
-  { name: "2. bundesliga", country: "germany" },
-  { name: "ligue 2", country: "france" },
-  // Europa — copas nacionais principais
-  { name: "fa cup", country: "england" },
-  { name: "copa del rey", country: "spain" },
-  { name: "coppa italia", country: "italy" },
-  { name: "dfb pokal", country: "germany" },
-  { name: "coupe de france", country: "france" },
-  { name: "efl cup", country: "england" }, { name: "carabao cup", country: "england" },
-  // América do Sul
-  { name: "serie a", country: "brazil" }, { name: "serie b", country: "brazil" },
-  { name: "copa do brasil", country: "brazil" },
-  { name: "liga profesional", country: "argentina" }, { name: "primera división", country: "argentina" }, { name: "primera division", country: "argentina" },
-  { name: "copa argentina", country: "argentina" },
-  { name: "primera división", country: "uruguay" }, { name: "primera division", country: "uruguay" },
-  { name: "primera división", country: "chile" }, { name: "primera division", country: "chile" },
-  { name: "primera a", country: "colombia" },
-  { name: "liga 1", country: "peru" },
-  { name: "serie a", country: "ecuador" },
-  { name: "primera división", country: "paraguay" }, { name: "primera division", country: "paraguay" },
-  // América do Norte
-  { name: "mls", country: "usa" },
-  { name: "liga mx", country: "mexico" },
-  { name: "leagues cup", country: "world" },
-  // Ásia
-  { name: "j1 league", country: "japan" },
-  { name: "k league 1", country: "south korea" },
-  { name: "super league", country: "china" },
-  { name: "pro league", country: "saudi arabia" },
-  { name: "a-league", country: "australia" },
-  // Continentais e seleções (país "World" na API-Sports)
-  { name: "champions league", country: "world" },
-  { name: "europa league", country: "world" },
-  { name: "conference league", country: "world" },
-  { name: "libertadores", country: "world" },
-  { name: "sudamericana", country: "world" },
-  { name: "concacaf champions", country: "world" },
-  { name: "afc champions", country: "world" },
-  { name: "world cup", country: "world" },
-  { name: "nations league", country: "world" },
-  { name: "euro championship", country: "world" },
-  { name: "copa america", country: "world" }, { name: "copa américa", country: "world" },
+// Catálogo local das 50 competições principais. A tela de Configurações
+// não deve chamar /leagues?current=true a cada usuário, porque isso consome
+// a mesma cota por minuto usada para importar jogos. Busca manual continua
+// possível via searchLeagues, mas a experiência padrão fica 100% local.
+type CuratedLeague = { id: number; name: string; country: string; seasonMode?: "calendar" | "europe" };
+const TOP_LEAGUES: CuratedLeague[] = [
+  { id: 39, name: "Premier League", country: "England", seasonMode: "europe" },
+  { id: 140, name: "La Liga", country: "Spain", seasonMode: "europe" },
+  { id: 135, name: "Serie A", country: "Italy", seasonMode: "europe" },
+  { id: 78, name: "Bundesliga", country: "Germany", seasonMode: "europe" },
+  { id: 61, name: "Ligue 1", country: "France", seasonMode: "europe" },
+  { id: 94, name: "Primeira Liga", country: "Portugal", seasonMode: "europe" },
+  { id: 88, name: "Eredivisie", country: "Netherlands", seasonMode: "europe" },
+  { id: 144, name: "Jupiler Pro League", country: "Belgium", seasonMode: "europe" },
+  { id: 179, name: "Premiership", country: "Scotland", seasonMode: "europe" },
+  { id: 203, name: "Süper Lig", country: "Turkey", seasonMode: "europe" },
+  { id: 197, name: "Super League 1", country: "Greece", seasonMode: "europe" },
+  { id: 218, name: "Bundesliga", country: "Austria", seasonMode: "europe" },
+  { id: 207, name: "Super League", country: "Switzerland", seasonMode: "europe" },
+  { id: 40, name: "Championship", country: "England", seasonMode: "europe" },
+  { id: 141, name: "Segunda División", country: "Spain", seasonMode: "europe" },
+  { id: 136, name: "Serie B", country: "Italy", seasonMode: "europe" },
+  { id: 79, name: "2. Bundesliga", country: "Germany", seasonMode: "europe" },
+  { id: 62, name: "Ligue 2", country: "France", seasonMode: "europe" },
+  { id: 45, name: "FA Cup", country: "England", seasonMode: "europe" },
+  { id: 143, name: "Copa del Rey", country: "Spain", seasonMode: "europe" },
+  { id: 137, name: "Coppa Italia", country: "Italy", seasonMode: "europe" },
+  { id: 81, name: "DFB Pokal", country: "Germany", seasonMode: "europe" },
+  { id: 66, name: "Coupe de France", country: "France", seasonMode: "europe" },
+  { id: 48, name: "League Cup", country: "England", seasonMode: "europe" },
+  { id: 71, name: "Serie A", country: "Brazil", seasonMode: "calendar" },
+  { id: 72, name: "Serie B", country: "Brazil", seasonMode: "calendar" },
+  { id: 73, name: "Copa Do Brasil", country: "Brazil", seasonMode: "calendar" },
+  { id: 128, name: "Liga Profesional Argentina", country: "Argentina", seasonMode: "calendar" },
+  { id: 130, name: "Copa Argentina", country: "Argentina", seasonMode: "calendar" },
+  { id: 268, name: "Primera División", country: "Uruguay", seasonMode: "calendar" },
+  { id: 265, name: "Primera División", country: "Chile", seasonMode: "calendar" },
+  { id: 239, name: "Primera A", country: "Colombia", seasonMode: "calendar" },
+  { id: 281, name: "Primera División", country: "Peru", seasonMode: "calendar" },
+  { id: 242, name: "Liga Pro", country: "Ecuador", seasonMode: "calendar" },
+  { id: 250, name: "Primera División", country: "Paraguay", seasonMode: "calendar" },
+  { id: 253, name: "Major League Soccer", country: "USA", seasonMode: "calendar" },
+  { id: 262, name: "Liga MX", country: "Mexico", seasonMode: "calendar" },
+  { id: 772, name: "Leagues Cup", country: "World", seasonMode: "calendar" },
+  { id: 98, name: "J1 League", country: "Japan", seasonMode: "calendar" },
+  { id: 292, name: "K League 1", country: "South Korea", seasonMode: "calendar" },
+  { id: 169, name: "Super League", country: "China", seasonMode: "calendar" },
+  { id: 307, name: "Pro League", country: "Saudi Arabia", seasonMode: "calendar" },
+  { id: 188, name: "A-League", country: "Australia", seasonMode: "europe" },
+  { id: 2, name: "UEFA Champions League", country: "World", seasonMode: "europe" },
+  { id: 3, name: "UEFA Europa League", country: "World", seasonMode: "europe" },
+  { id: 848, name: "UEFA Conference League", country: "World", seasonMode: "europe" },
+  { id: 13, name: "CONMEBOL Libertadores", country: "World", seasonMode: "calendar" },
+  { id: 11, name: "CONMEBOL Sudamericana", country: "World", seasonMode: "calendar" },
+  { id: 1, name: "World Cup", country: "World", seasonMode: "calendar" },
+  { id: 9, name: "Copa America", country: "World", seasonMode: "calendar" },
 ];
 
-
-function matchesLeagueList(list: LeagueTarget[], name: string, country: string | null): boolean {
-  const n = name.toLowerCase();
-  const c = (country ?? "").toLowerCase();
-  return list.some((t) => n.includes(t.name) && (t.country == null || c.includes(t.country)));
+function seasonFor(mode: CuratedLeague["seasonMode"]): number {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  if (mode === "europe") return now.getUTCMonth() >= 6 ? year : year - 1;
+  return year;
 }
 
-async function trackLeagueList(supabase: any, userId: string, list: LeagueTarget[]) {
+function toLeagueOption(l: CuratedLeague) {
+  return { id: l.id, name: l.name, type: "League", country: l.country, logo: "", season: seasonFor(l.seasonMode) };
+}
+
+async function trackLeagueList(supabase: any, userId: string, list: CuratedLeague[]) {
   const { getUserPlan } = await import("@/lib/plan-limits.server");
   const { limits } = await getUserPlan(supabase, userId);
-  const json = await apiSportsFetch<ApiSportsLeague>(`/leagues?current=true`);
-  let matched = (json.response ?? []).filter((r) => matchesLeagueList(list, r.league.name as string, r.country?.name as string));
+  let matched = list;
   if (limits.leagues !== Infinity) matched = matched.slice(0, limits.leagues);
   const leagues = matched.map((r) => ({
     user_id: userId,
-    league_id: r.league.id as number,
-    season: ((r.seasons ?? []).find((s: any) => s.current)?.year
-      ?? (r.seasons ?? [])[0]?.year
-      ?? new Date().getUTCFullYear()) as number,
-    league_name: r.league.name as string,
-    country: (r.country?.name as string) ?? null,
+    league_id: r.id,
+    season: seasonFor(r.seasonMode),
+    league_name: r.name,
+    country: r.country,
     include_stats: false,
   }));
   if (leagues.length === 0) return { ok: true, count: 0 };
