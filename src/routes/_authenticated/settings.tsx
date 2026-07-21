@@ -168,8 +168,9 @@ function SettingsPage() {
               <p className="text-sm text-muted-foreground mb-3">
                 {leagueLimit == null
                   ? "Seu plano permite ligas ilimitadas. Escolha abaixo quais você quer acompanhar."
-                  : `Seu plano permite até ${leagueLimit} liga(s). Ligas extras custam R$5/mês cada — você pode adicionar mais quando precisar.`}
+                  : `Seu plano permite até ${leagueLimit} liga(s). Se precisar de mais, faça upgrade do plano.`}
               </p>
+
               {leagueLimit != null && leagueLimit >= 3 && (
                 <button
                   onClick={() => trackAllMut.mutate()}
