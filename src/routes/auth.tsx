@@ -125,7 +125,7 @@ function AuthPage() {
         {step === "otp" ? (
           <form onSubmit={verifyOtp} className="card-surface p-6 space-y-4">
             <p className="text-sm text-muted-foreground">
-              Enviamos um código de 6 dígitos para <strong className="text-foreground">{email}</strong>.
+              Enviamos um código para <strong className="text-foreground">{email}</strong>.
               Digite abaixo para ativar sua conta.
             </p>
             <div>
@@ -133,23 +133,24 @@ function AuthPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="\d{6}"
-                maxLength={6}
+                pattern="\d{6,8}"
+                maxLength={8}
                 required
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="mt-1 w-full rounded-md bg-input border border-border px-3 py-3 text-center text-2xl font-bold tracking-[0.5em]"
-                placeholder="000000"
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                className="mt-1 w-full rounded-md bg-input border border-border px-3 py-3 text-center text-2xl font-bold tracking-[0.4em]"
+                placeholder="00000000"
                 autoFocus
               />
             </div>
             <button
               type="submit"
-              disabled={loading || otp.length !== 6}
+              disabled={loading || otp.length < 6}
               className="w-full rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Verificando..." : "Confirmar e entrar"}
             </button>
+
             <div className="flex items-center justify-between text-xs">
               <button
                 type="button"
