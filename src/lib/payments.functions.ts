@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
 
-type CheckoutResult = { clientSecret: string } | { error: string };
+type CheckoutResult = { url: string } | { error: string };
 type PortalResult = { url: string } | { error: string };
 
 async function resolveOrCreateCustomer(
