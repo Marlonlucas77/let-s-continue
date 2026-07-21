@@ -243,7 +243,11 @@ function PredictionsPage() {
 
 
       <div className="card-surface p-5 mt-6">
-        {enabledTeams.length === 0 ? (
+        {isLoadingData ? (
+          <div className="mb-4 rounded-md border border-border bg-input/40 p-3 text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando ligas e times...
+          </div>
+        ) : enabledTeams.length === 0 ? (
           <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-400">
             Nenhuma liga habilitada ainda. Vá em <Link to="/settings" className="underline">Configurações</Link> pra escolher quais ligas você quer acompanhar.
           </div>
@@ -253,6 +257,7 @@ function PredictionsPage() {
             <Link to="/settings" className="text-primary hover:underline">Gerenciar ligas →</Link>
           </div>
         )}
+
 
         {enabledTeams.length > 0 && (
           <div className="mb-4">
