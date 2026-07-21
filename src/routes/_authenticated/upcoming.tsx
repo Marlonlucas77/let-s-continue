@@ -150,22 +150,19 @@ function UpcomingPage() {
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2">
         <div className="relative">
-          <input
-            type="text"
-            placeholder="Filtrar por liga ou país..."
+          <select
             value={leagueSearch}
             onChange={(e) => setLeagueSearch(e.target.value)}
-            className="w-full rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
-          />
-          {leagueSearch && (
-            <button 
-              onClick={() => setLeagueSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              ×
-            </button>
-          )}
+            className="w-full appearance-none rounded-md border border-border bg-input/50 px-3 py-2 text-sm outline-none focus:border-primary transition-all pr-10"
+          >
+            <option value="">Todas as ligas ({leagueOptions.length})</option>
+            {leagueOptions.map((o) => (
+              <option key={o.key} value={o.key}>{o.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
+
         <div className="relative">
           <input
             type="text"
