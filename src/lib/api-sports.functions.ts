@@ -527,14 +527,31 @@ export async function fetchAndCacheLiveFixtures(supabaseAdmin: any) {
 export const listLiveFixtures = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { supabase, userId } = context;
+    const { data, error } = await supabase
       .from("live_fixtures_cache")
       .select("data, updated_at")
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
+
+    // Filtra pelas ligas que o usuário habilitou em Configurações — cada
+    // usuário só vê ao vivo os jogos das ligas dele, igual acontece em
+    // "Próximos jogos".
+    const { data: tracked } = await supabase
+      .from("tracked_leagues")
+      .select("league_name")
+      .eq("user_id", userId);
+    const mine = new Set(
+      (tracked ?? []).map((t: any) => (t.league_name as string)?.toLowerCase()).filter(Boolean),
+    );
+    const all = (data?.data as any[]) ?? [];
+    const fixtures = mine.size === 0
+      ? []
+      : all.filter((f: any) => mine.has(String(f.league ?? "").toLowerCase()));
+
     return {
-      fixtures: (data?.data as any[]) ?? [],
+      fixtures,
       updatedAt: data?.updated_at ?? null,
     };
   });
