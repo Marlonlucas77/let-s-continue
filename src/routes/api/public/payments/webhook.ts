@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
-import { type StripeEnv, verifyWebhook } from "@/lib/stripe.server";
+import { type StripeEnv, createStripeClient, verifyWebhook } from "@/lib/stripe.server";
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
@@ -57,7 +57,10 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
     return;
   }
   const item = subscription.items?.data?.[0];
-  const priceLookupKey = item?.price?.lookup_key ?? null;
+  const priceLookupKey = item?.price?.lookup_key
+    ?? item?.price?.metadata?.lovable_external_id
+    ?? item?.price?.id
+    ?? null;
   const productId = typeof item?.price?.product === "string" ? item.price.product : item?.price?.product?.id;
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
@@ -79,6 +82,31 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
       updated_at: new Date().toISOString(),
     },
     { onConflict: "stripe_subscription_id" }
+  );
+}
+
+async function handleCheckoutCompleted(session: any, env: StripeEnv) {
+  const userId = session.metadata?.userId;
+  const subscriptionId = typeof session.subscription === "string"
+    ? session.subscription
+    : session.subscription?.id;
+
+  if (!subscriptionId || !userId) {
+    console.error("Checkout completed without subscription or userId metadata");
+    return;
+  }
+
+  const stripe = createStripeClient(env);
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    expand: ["items.data.price.product"],
+  });
+
+  await handleSubscriptionUpsert(
+    {
+      ...subscription,
+      metadata: { ...(subscription.metadata ?? {}), userId },
+    },
+    env,
   );
 }
 
@@ -105,6 +133,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
         try {
           const event = await verifyWebhook(request, env);
           switch (event.type) {
+            case "checkout.session.completed":
+              await handleCheckoutCompleted(event.data.object, env);
+              break;
             case "customer.subscription.created":
             case "customer.subscription.updated":
               await handleSubscriptionUpsert(event.data.object, env);
