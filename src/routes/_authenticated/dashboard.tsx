@@ -43,28 +43,24 @@ function Dashboard() {
       const inKeys = (league?: string | null, country?: string | null) =>
         trackedKeys.has(`${(league ?? "").toLowerCase()}||${(country ?? "").toLowerCase()}`);
 
-      // 2) Busca em paralelo. Times/jogos vêm pré-filtrados por liga+país
+      // 2) Busca em paralelo. Jogos vêm pré-filtrados por liga+país
       // rastreados; depois refinamos por chave composta para não pegar
       // "Premier League" de outro país que passou pelo .in() de nome.
-      const teamsQuery = trackedLeagueNames.length
-        ? supabase
-            .from("teams")
-            .select("id, league, country")
-            .in("league", trackedLeagueNames)
-            .in("country", trackedCountries)
-        : Promise.resolve({ data: [] as any[] });
+      // Times são contados a partir dos jogos das ligas rastreadas
+      // (DISTINCT home/away) — a coluna teams.league guarda apenas o
+      // último rótulo visto, então filtrar por ela subestima o total
+      // quando o mesmo time aparece em copas/estaduais.
       const matchesQuery = trackedLeagueNames.length
         ? supabase
             .from("matches")
-            .select("match_date, home_goals, away_goals, home_corners, away_corners, league_name, country, home_team:home_team_id(name), away_team:away_team_id(name)")
+            .select("match_date, home_goals, away_goals, home_corners, away_corners, league_name, country, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)")
             .in("league_name", trackedLeagueNames)
             .in("country", trackedCountries)
             .order("match_date", { ascending: false })
-            .limit(60)
+            .limit(2000)
         : Promise.resolve({ data: [] as any[] });
 
-      const [teamsRes, matchesRes, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
-        teamsQuery,
+      const [matchesRes, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
         matchesQuery,
         supabase.from("predictions").select("id, result_checked, was_correct"),
         supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
@@ -72,8 +68,13 @@ function Dashboard() {
         listFixtures({ data: { days: 14 } }).catch(() => []),
       ]);
 
-      const teamsFiltered = ((teamsRes as any).data ?? []).filter((t: any) => inKeys(t.league, t.country));
-      const matchesFiltered = ((matchesRes as any).data ?? []).filter((m: any) => inKeys(m.league_name, m.country)).slice(0, 20);
+      const matchesAll = ((matchesRes as any).data ?? []).filter((m: any) => inKeys(m.league_name, m.country));
+      const teamIdSet = new Set<string>();
+      for (const m of matchesAll) {
+        if (m.home_team_id) teamIdSet.add(m.home_team_id);
+        if (m.away_team_id) teamIdSet.add(m.away_team_id);
+      }
+      const matchesFiltered = matchesAll.slice(0, 20);
 
       const todayFixtures = (weekFixtures ?? []).filter((m: any) => (m.date as string).slice(0, 10) === todayStr);
       const favTeamIds = new Set(
@@ -83,7 +84,7 @@ function Dashboard() {
         (m: any) => favTeamIds.has(m.home.apiId) || favTeamIds.has(m.away.apiId),
       );
       return {
-        teamsCount: teamsFiltered.length,
+        teamsCount: teamIdSet.size,
         trackedLeaguesCount: distinctLeagues,
         todayFixtures: todayFixtures as any[],
         favFixtures: favFixtures as any[],
