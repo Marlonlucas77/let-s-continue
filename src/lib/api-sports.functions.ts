@@ -283,10 +283,14 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
     // ELE MESMO habilitou, não pelas que ele pessoalmente importou.
     const { data: tracked } = await supabase
       .from("tracked_leagues")
-      .select("league_name")
+      .select("league_name, country")
       .eq("user_id", userId);
-    const myLeagues = (tracked ?? []).map((t: any) => t.league_name).filter(Boolean);
-    if (myLeagues.length === 0) return [];
+    const trackedList = (tracked ?? []).filter((t: any) => t.league_name);
+    if (trackedList.length === 0) return [];
+    const myLeagueNames = Array.from(new Set(trackedList.map((t: any) => t.league_name as string)));
+    const allowedKeys = new Set(
+      trackedList.map((t: any) => `${(t.league_name as string).toLowerCase()}|${(t.country ?? "").toLowerCase()}`),
+    );
 
     const { data: rows, error } = await supabase
       .from("matches")
@@ -295,12 +299,13 @@ export const listUpcomingFixtures = createServerFn({ method: "POST" })
         home_team:home_team_id ( id, name, logo_url, api_id ),
         away_team:away_team_id ( id, name, logo_url, api_id )
       `)
-      .in("league_name", myLeagues)
+      .in("league_name", myLeagueNames)
       .in("status", ["NS", "TBD"])
       .gte("kickoff_at", from.toISOString())
       .lte("kickoff_at", to.toISOString())
       .order("kickoff_at", { ascending: true })
-      .limit(500);
+      .limit(1000);
+
     if (error) throw new Error(error.message);
 
     return (rows ?? [])
