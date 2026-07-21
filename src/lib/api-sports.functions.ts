@@ -88,22 +88,21 @@ export const trackLeague = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Lista curada das ~100 competições mais relevantes do mundo — em vez de
+// Lista curada das 50 competições mais relevantes do mundo — em vez de
 // habilitar literalmente tudo que a API-Sports tem (milhares de
 // competições, incluindo categorias de base e ligas amadoras obscuras),
 // que gerava uma fila de importação gigante e impossível de acompanhar.
 // Quem quiser algo fora dessa lista ainda pode buscar e habilitar
 // manualmente em Configurações.
-// Lista curada de ~100 competições — cada entrada exige nome E país
-// batendo juntos, não só o nome. Isso importa porque nomes genéricos
-// como "Premier League" ou "Super League" são usados por dezenas de
-// países ao redor do mundo; sem checar o país junto, um filtro só por
-// nome pegava muito mais do que as ~100 pretendidas (chegou a 387).
+// Cada entrada exige nome E país batendo juntos, não só o nome. Isso
+// importa porque nomes genéricos como "Premier League" ou "Super League"
+// são usados por dezenas de países ao redor do mundo; sem checar o país
+// junto, um filtro só por nome pega muito mais do que as 50 pretendidas.
 // country=null significa competição internacional/continental (a
 // API-Sports rotula essas como país "World").
 type LeagueTarget = { name: string; country: string | null };
 const TOP_LEAGUES: LeagueTarget[] = [
-  // Europa — primeiras divisões
+  // Europa — primeiras divisões (top 5 + relevantes)
   { name: "premier league", country: "england" },
   { name: "la liga", country: "spain" },
   { name: "serie a", country: "italy" },
@@ -114,29 +113,16 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "pro league", country: "belgium" },
   { name: "premiership", country: "scotland" },
   { name: "süper lig", country: "turkey" }, { name: "super lig", country: "turkey" },
-  { name: "premier league", country: "russia" }, { name: "premier liga", country: "russia" },
-  { name: "premier league", country: "ukraine" },
   { name: "super league", country: "greece" },
-  { name: "super league", country: "switzerland" },
   { name: "bundesliga", country: "austria" },
-  { name: "superliga", country: "denmark" },
-  { name: "allsvenskan", country: "sweden" },
-  { name: "eliteserien", country: "norway" },
-  { name: "ekstraklasa", country: "poland" },
-  { name: "fortuna liga", country: "czech" }, { name: "first league", country: "czech" },
-  { name: "hnl", country: "croatia" },
-  { name: "super liga", country: "serbia" },
-  { name: "liga i", country: "romania" },
-  { name: "nb i", country: "hungary" },
-  { name: "ligat ha'al", country: "israel" }, { name: "premier league", country: "israel" },
-  // Europa — segundas divisões
+  { name: "super league", country: "switzerland" },
+  // Europa — segundas divisões principais
   { name: "championship", country: "england" },
   { name: "segunda división", country: "spain" }, { name: "segunda division", country: "spain" }, { name: "laliga2", country: "spain" },
   { name: "serie b", country: "italy" },
   { name: "2. bundesliga", country: "germany" },
   { name: "ligue 2", country: "france" },
-  { name: "eerste divisie", country: "netherlands" },
-  // Europa — copas nacionais
+  // Europa — copas nacionais principais
   { name: "fa cup", country: "england" },
   { name: "copa del rey", country: "spain" },
   { name: "coppa italia", country: "italy" },
@@ -145,16 +131,16 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "efl cup", country: "england" }, { name: "carabao cup", country: "england" },
   // América do Sul
   { name: "serie a", country: "brazil" }, { name: "serie b", country: "brazil" },
+  { name: "copa do brasil", country: "brazil" },
   { name: "liga profesional", country: "argentina" }, { name: "primera división", country: "argentina" }, { name: "primera division", country: "argentina" },
+  { name: "copa argentina", country: "argentina" },
   { name: "primera división", country: "uruguay" }, { name: "primera division", country: "uruguay" },
   { name: "primera división", country: "chile" }, { name: "primera division", country: "chile" },
   { name: "primera a", country: "colombia" },
   { name: "liga 1", country: "peru" },
   { name: "serie a", country: "ecuador" },
   { name: "primera división", country: "paraguay" }, { name: "primera division", country: "paraguay" },
-  { name: "primera división", country: "bolivia" }, { name: "primera division", country: "bolivia" },
-  { name: "liga futve", country: "venezuela" }, { name: "primera división", country: "venezuela" },
-  // América do Norte/Central
+  // América do Norte
   { name: "mls", country: "usa" },
   { name: "liga mx", country: "mexico" },
   { name: "leagues cup", country: "world" },
@@ -163,19 +149,7 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "k league 1", country: "south korea" },
   { name: "super league", country: "china" },
   { name: "pro league", country: "saudi arabia" },
-  { name: "stars league", country: "qatar" },
-  { name: "pro league", country: "uae" },
-  { name: "persian gulf", country: "iran" },
-  { name: "isl", country: "india" }, { name: "indian super league", country: "india" },
   { name: "a-league", country: "australia" },
-  // África
-  { name: "premier league", country: "egypt" },
-  { name: "premier soccer league", country: "south africa" },
-  { name: "botola", country: "morocco" },
-  { name: "npfl", country: "nigeria" },
-  // Copas nacionais (América do Sul)
-  { name: "copa do brasil", country: "brazil" },
-  { name: "copa argentina", country: "argentina" },
   // Continentais e seleções (país "World" na API-Sports)
   { name: "champions league", country: "world" },
   { name: "europa league", country: "world" },
@@ -184,15 +158,12 @@ const TOP_LEAGUES: LeagueTarget[] = [
   { name: "sudamericana", country: "world" },
   { name: "concacaf champions", country: "world" },
   { name: "afc champions", country: "world" },
-  { name: "caf champions league", country: "world" },
   { name: "world cup", country: "world" },
   { name: "nations league", country: "world" },
   { name: "euro championship", country: "world" },
   { name: "copa america", country: "world" }, { name: "copa américa", country: "world" },
-  { name: "africa cup of nations", country: "world" },
-  { name: "asian cup", country: "world" },
-  { name: "gold cup", country: "world" },
 ];
+
 
 function matchesLeagueList(list: LeagueTarget[], name: string, country: string | null): boolean {
   const n = name.toLowerCase();
