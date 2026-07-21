@@ -67,22 +67,50 @@ function SettingsPage() {
     ).slice(0, 200);
   }, [all, query]);
 
+  // Atualização otimista: o refetch da lista pode demorar por causa da
+  // ordem serverFn -> invalidate -> nova chamada -> render. Enquanto isso
+  // o usuário vê "Selecionar" ainda ali e acha que "não fixou". Aqui a
+  // gente injeta a liga na cache na hora e conclui com refetch de reforço.
   const trackMut = useMutation({
     mutationFn: async (l: League) => trackFn({ data: { leagueId: l.id, season: l.season, leagueName: l.name, country: l.country } }),
-    onSuccess: () => {
+    onMutate: async (l: League) => {
+      await qc.cancelQueries({ queryKey: ["tracked-leagues"] });
+      const previous = qc.getQueryData<any[]>(["tracked-leagues"]) ?? [];
+      const optimistic = [
+        { id: `optimistic-${l.id}-${l.season}`, league_id: l.id, season: l.season, league_name: l.name, country: l.country, include_stats: false, created_at: new Date().toISOString(), __optimistic: true },
+        ...previous,
+      ];
+      qc.setQueryData(["tracked-leagues"], optimistic);
+      return { previous };
+    },
+    onSuccess: (_r, l) => {
+      toast.success(`${translateLeague(l.name)} adicionada.`);
       qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
       qc.invalidateQueries({ queryKey: ["my-account"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any, _l, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tracked-leagues"], ctx.previous);
+      toast.error(e?.message ?? "Não foi possível adicionar a liga.");
+    },
   });
 
   const untrackMut = useMutation({
     mutationFn: async (id: string) => untrackFn({ data: { id } }),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["tracked-leagues"] });
+      const previous = qc.getQueryData<any[]>(["tracked-leagues"]) ?? [];
+      qc.setQueryData(["tracked-leagues"], previous.filter((t) => t.id !== id));
+      return { previous };
+    },
     onSuccess: () => {
+      toast.success("Liga removida.");
       qc.invalidateQueries({ queryKey: ["tracked-leagues"] });
       qc.invalidateQueries({ queryKey: ["my-account"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any, _id, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tracked-leagues"], ctx.previous);
+      toast.error(e?.message ?? "Não foi possível remover a liga.");
+    },
   });
 
   const trackAllMut = useMutation({
