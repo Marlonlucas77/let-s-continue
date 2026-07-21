@@ -49,15 +49,19 @@ async function runFixturesRefreshInner(supabaseAdmin: any) {
     liveUpdated = live.length;
   } catch { /* segue o cron mesmo se isso falhar */ }
 
-  // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas
-  const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+  // 1. Sincronizar Fixtures (Jogos) para ligas monitoradas.
+  // Plano API-Sports confirmado em 300 rpm. Cada liga faz ~2 chamadas
+  // (fixtures FT + NS), então 200 ligas cabem tranquilamente em ~1-2 min
+  // respeitando o throttle compartilhado. Cooldown reduzido pra 3h pra
+  // que ligas habilitadas apareçam quase de imediato pro usuário final.
+  const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const { data: leagues, error } = await supabaseAdmin
     .from("tracked_leagues")
     .select("*")
     .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
-    .order("priority", { ascending: false })
     .order("last_run_at", { ascending: true, nullsFirst: true })
-    .limit(30);
+    .order("priority", { ascending: false })
+    .limit(200);
 
   if (error) throw new Error(error.message);
 

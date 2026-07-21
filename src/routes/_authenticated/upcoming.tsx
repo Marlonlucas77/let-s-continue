@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, Suspense, useMemo, useEffect } from "react";
-import { listUpcomingFixtures, getFixtureOdds } from "@/lib/api-sports.functions";
+import { listUpcomingFixtures, getFixtureOdds, syncMyLeaguesNow } from "@/lib/api-sports.functions";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { translateCountry, translateLeague, translateTeam } from "@/lib/country-i18n";
@@ -28,8 +28,12 @@ export const Route = createFileRoute("/_authenticated/upcoming")({
 
 function UpcomingPage() {
   const listFn = useServerFn(listUpcomingFixtures);
+  const syncFn = useServerFn(syncMyLeaguesNow);
+  const queryClient = useQueryClient();
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
   // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
   // valor inicial menor evita estourar o limite de requisições logo na entrada.
   const [days, setDays] = useState(3);
@@ -42,6 +46,21 @@ function UpcomingPage() {
     // tentar de novo automaticamente só desperdiça cota e atrasa o feedback.
     retry: false,
   });
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const r = await syncFn({ data: undefined as any });
+      setSyncMsg(`Sincronizadas ${r.processed} liga(s). Atualizando lista...`);
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-fixtures"] });
+    } catch (e: any) {
+      setSyncMsg(`Erro: ${e.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
 
   // A tela mostra mensagem simples pro usuário de propósito, mas o erro
   // técnico real vai pro console — sem isso não dá pra diagnosticar à
@@ -151,11 +170,22 @@ function UpcomingPage() {
 
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
-        {isFetching && (
-          <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
-            <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {syncMsg && <span className="text-xs text-muted-foreground">{syncMsg}</span>}
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="text-xs rounded-md border border-border px-2.5 py-1 font-medium hover:bg-input transition-all disabled:opacity-60 flex items-center gap-1.5"
+          >
+            {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Sincronizar minhas ligas
+          </button>
+          {isFetching && (
+            <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
+              <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
+            </div>
+          )}
+        </div>
       </div>
 
 
