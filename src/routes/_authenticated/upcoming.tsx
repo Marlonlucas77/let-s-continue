@@ -424,6 +424,16 @@ const FixtureCard = memo(function FixtureCard({ f }: { f: any }) {
         </div>
       </button>
 
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="mt-3 w-full rounded-md bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary px-3 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+        >
+          <Wand2 className="h-3.5 w-3.5" />
+          Ver previsão da IA
+        </button>
+      )}
+
       {open && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
           {showAiError ? (
