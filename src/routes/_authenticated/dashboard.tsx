@@ -69,7 +69,7 @@ function Dashboard() {
         supabase.from("predictions").select("id, result_checked, was_correct"),
         supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
         loadFavorites().catch(() => []),
-        listFixtures({ data: { days: 3 } }).catch(() => []),
+        listFixtures({ data: { days: 14 } }).catch(() => []),
       ]);
 
       const teamsFiltered = ((teamsRes as any).data ?? []).filter((t: any) => inKeys(t.league, t.country));
