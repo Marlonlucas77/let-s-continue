@@ -243,15 +243,24 @@ function Dashboard() {
           {todayFixtures.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum jogo encontrado hoje. <Link to="/upcoming" className="text-primary">Ver próximos</Link>.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {todayFixtures.slice(0, 5).map((m: any) => (
-                <li key={m.fixtureId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  <TeamBadge name={m.home.name} logoUrl={m.home.logo} size={28} />
-                  <span className="text-sm font-medium flex-1 truncate">{m.home.name}</span>
-                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-input border border-border">VS</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{formatKickoff(m.date)}</span>
-                  <span className="text-sm font-medium flex-1 truncate text-right">{m.away.name}</span>
-                  <TeamBadge name={m.away.name} logoUrl={m.away.logo} size={28} />
+                <li key={m.fixtureId}>
+                  <Link
+                    to="/upcoming"
+                    className="group flex items-center gap-3 py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-primary/5 transition"
+                  >
+                    <TeamBadge name={m.home.name} logoUrl={m.home.logo} size={28} />
+                    <span className="text-sm font-medium flex-1 truncate">{m.home.name}</span>
+                    <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-input border border-border">VS</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{formatKickoff(m.date)}</span>
+                    <span className="text-sm font-medium flex-1 truncate text-right">{m.away.name}</span>
+                    <TeamBadge name={m.away.name} logoUrl={m.away.logo} size={28} />
+                    <span className="hidden sm:inline-flex items-center gap-1 ml-2 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+                      Ver previsão <ChevronRight className="h-3 w-3" />
+                    </span>
+                    <ChevronRight className="sm:hidden h-4 w-4 text-primary" />
+                  </Link>
                 </li>
               ))}
               {todayFixtures.length > 5 && (
