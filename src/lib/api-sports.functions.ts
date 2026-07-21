@@ -244,18 +244,21 @@ export const untrackLeague = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // Regra do produto: uma vez escolhida, a liga fica travada. Se quiser
-    // uma outra, o usuário paga R$5 por liga extra (checkout Stripe).
+    // Se for uma liga extra paga (assinatura Stripe recorrente), cancela a
+    // assinatura no Stripe — o usuário continua vendo a liga até o fim do
+    // período pago; a remoção real acontece via webhook subscription.deleted.
     const { data: row, error: readErr } = await supabase
       .from("tracked_leagues")
-      .select("id, is_locked")
+      .select("id, is_paid_extra, extra_stripe_subscription_id")
       .eq("id", data.id)
       .eq("user_id", userId)
       .maybeSingle();
     if (readErr) throw new Error(readErr.message);
     if (!row) throw new Error("Liga não encontrada.");
-    if (row.is_locked) {
-      throw new Error("Essa liga está travada e não pode ser removida. Escolha bem — cada nova liga custa R$5.");
+    if (row.is_paid_extra && row.extra_stripe_subscription_id) {
+      throw new Error(
+        "Essa é uma liga extra paga (R$5/mês). Cancele a assinatura em Planos → Gerenciar assinatura. Você mantém acesso até o fim do período já pago.",
+      );
     }
     const { error } = await supabase.from("tracked_leagues").delete().eq("id", data.id).eq("user_id", userId);
     if (error) throw new Error(error.message);
