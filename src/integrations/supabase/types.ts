@@ -466,11 +466,14 @@ export type Database = {
           created_at: string | null
           id: string
           include_stats: boolean | null
+          is_locked: boolean
+          is_paid_extra: boolean
           last_run_at: string | null
           league_id: number
           league_name: string
           priority: number
           season: number
+          stripe_session_id: string | null
           user_id: string
         }
         Insert: {
@@ -478,11 +481,14 @@ export type Database = {
           created_at?: string | null
           id?: string
           include_stats?: boolean | null
+          is_locked?: boolean
+          is_paid_extra?: boolean
           last_run_at?: string | null
           league_id: number
           league_name: string
           priority?: number
           season: number
+          stripe_session_id?: string | null
           user_id: string
         }
         Update: {
@@ -490,11 +496,14 @@ export type Database = {
           created_at?: string | null
           id?: string
           include_stats?: boolean | null
+          is_locked?: boolean
+          is_paid_extra?: boolean
           last_run_at?: string | null
           league_id?: number
           league_name?: string
           priority?: number
           season?: number
+          stripe_session_id?: string | null
           user_id?: string
         }
         Relationships: []
