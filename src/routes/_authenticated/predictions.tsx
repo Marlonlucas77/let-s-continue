@@ -30,15 +30,25 @@ function PredictionsPage() {
   // furar o limite de ligas do plano digitando qualquer time livremente.
   const { data: trackedLeagues = [] } = useQuery({
     queryKey: ["tracked-leagues"],
-    queryFn: async () => (await supabase.from("tracked_leagues").select("league_name")).data ?? [],
+    queryFn: async () => (await supabase.from("tracked_leagues").select("league_name, country")).data ?? [],
   });
-  const enabledLeagueNames = useMemo(
-    () => new Set(trackedLeagues.map((l: any) => (l.league_name as string)?.toLowerCase()).filter(Boolean)),
+  // Match por (liga + país) — sem o país, "Serie A" habilitava times da
+  // Itália junto com o Brasileirão, e "Premier League" trazia Rússia/Namíbia.
+  const enabledLeagueKeys = useMemo(
+    () => new Set(
+      trackedLeagues
+        .map((l: any) => `${(l.league_name ?? "").toLowerCase()}|${(l.country ?? "").toLowerCase()}`)
+        .filter((k) => k !== "|"),
+    ),
     [trackedLeagues],
   );
   const enabledTeams = useMemo(
-    () => teams.filter((t) => t.league && enabledLeagueNames.has(t.league.toLowerCase())),
-    [teams, enabledLeagueNames],
+    () => teams.filter((t) => {
+      if (!t.league) return false;
+      const key = `${t.league.toLowerCase()}|${(t.country ?? "").toLowerCase()}`;
+      return enabledLeagueKeys.has(key);
+    }),
+    [teams, enabledLeagueKeys],
   );
 
   // Só usado pra checar se os times já se enfrentaram (aviso) e pra dar
