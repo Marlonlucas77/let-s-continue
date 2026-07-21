@@ -193,17 +193,31 @@ function SettingsPage() {
             </p>
           )}
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
-            {tracked.map((l: any) => (
-              <li key={l.id} className="py-2 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span></div>
-                  <div className="text-xs text-muted-foreground">{translateCountry(l.country) || "—"}</div>
-                </div>
-                <button onClick={() => untrackMut.mutate(l.id)} disabled={untrackMut.isPending} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive" title="Remover">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
+            {tracked.map((l: any) => {
+              const isPending = l.__optimistic || typeof l.id !== "string" || !/^[0-9a-f-]{36}$/i.test(l.id);
+              return (
+                <li key={l.id} className="py-2 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span></div>
+                    <div className="text-xs text-muted-foreground">{translateCountry(l.country) || "—"}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (isPending) {
+                        toast.info("Aguarde a liga terminar de salvar antes de remover.");
+                        return;
+                      }
+                      untrackMut.mutate(l.id);
+                    }}
+                    disabled={untrackMut.isPending || isPending}
+                    className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive disabled:opacity-50"
+                    title={isPending ? "Salvando..." : "Remover"}
+                  >
+                    {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
