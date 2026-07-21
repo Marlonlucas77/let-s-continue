@@ -69,7 +69,7 @@ function Dashboard() {
         supabase.from("predictions").select("id, result_checked, was_correct"),
         supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
         loadFavorites().catch(() => []),
-        listFixtures({ data: { days: 3 } }).catch(() => []),
+        listFixtures({ data: { days: 14 } }).catch(() => []),
       ]);
 
       const teamsFiltered = ((teamsRes as any).data ?? []).filter((t: any) => inKeys(t.league, t.country));
@@ -80,7 +80,7 @@ function Dashboard() {
         (favorites ?? []).filter((f: any) => f.kind === "team").map((f: any) => f.ref_id),
       );
       const favFixtures = (weekFixtures ?? []).filter(
-        (m: any) => favTeamIds.has(m.home.id) || favTeamIds.has(m.away.id),
+        (m: any) => favTeamIds.has(m.home.apiId) || favTeamIds.has(m.away.apiId),
       );
       return {
         teamsCount: teamsFiltered.length,
@@ -210,7 +210,7 @@ function Dashboard() {
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" /> Meus favoritos (3 dias)
+              <Star className="h-4 w-4 text-primary" /> Meus favoritos (14 dias)
             </h2>
             <Link to="/account" className="text-xs text-primary hover:underline">Gerenciar</Link>
           </div>
