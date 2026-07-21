@@ -172,8 +172,8 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground">
           Escolha as ligas que você quer acompanhar{leagueLimit != null ? ` — seu plano permite até ${leagueLimit}` : ""}. Isso define o que aparece em Jogos e Previsão IA.
         </p>
-        <p className="text-xs text-amber-400 mt-2 flex items-center gap-1.5">
-          <Lock className="h-3.5 w-3.5" /> Uma vez escolhida, a liga fica travada. Ligas extras (além do limite do plano) custam <strong className="mx-1">R$5</strong> cada.
+        <p className="text-xs text-muted-foreground mt-2">
+          Adicione ou remova as ligas quando quiser. Ligas além do limite do plano custam <strong>R$5/mês</strong> cada — pagas por assinatura recorrente no Stripe (cartão ou Pix).
         </p>
       </div>
 
@@ -186,7 +186,7 @@ function SettingsPage() {
               <p className="text-sm text-muted-foreground mb-3">
                 {leagueLimit == null
                   ? "Seu plano permite ligas ilimitadas. Escolha abaixo quais você quer acompanhar."
-                  : `Seu plano permite até ${leagueLimit} liga(s). Escolha com calma — cada escolha fica travada, e liga extra custa R$5.`}
+                  : `Seu plano permite até ${leagueLimit} liga(s). Ligas extras custam R$5/mês cada — você pode adicionar mais quando precisar.`}
               </p>
               {leagueLimit != null && leagueLimit >= 3 && (
                 <button
