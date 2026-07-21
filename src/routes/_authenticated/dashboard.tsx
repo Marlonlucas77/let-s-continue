@@ -210,7 +210,7 @@ function Dashboard() {
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" /> Meus favoritos (3 dias)
+              <Star className="h-4 w-4 text-primary" /> Meus favoritos (14 dias)
             </h2>
             <Link to="/account" className="text-xs text-primary hover:underline">Gerenciar</Link>
           </div>
