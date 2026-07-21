@@ -203,14 +203,17 @@ export const syncMyLeaguesNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: leagues, error } = await supabase
       .from("tracked_leagues")
       .select("*")
       .eq("user_id", userId)
-      .limit(200);
+      .or(`last_run_at.is.null,last_run_at.lt.${cutoff}`)
+      .order("last_run_at", { ascending: true, nullsFirst: true })
+      .limit(10);
     if (error) throw new Error(error.message);
     if (!leagues || leagues.length === 0) {
-      return { processed: 0, results: [] as any[] };
+      return { processed: 0, results: [{ skipped: true, reason: "Suas ligas já foram sincronizadas recentemente." }] as any[] };
     }
     const { importFixturesFor } = await import("@/lib/fixtures-importer.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
