@@ -213,12 +213,12 @@ function Landing() {
         </section>
 
         <section id="screenshots" className="py-20">
-          <div className="mx-auto max-w-6xl space-y-24 px-6">
-            <div className="grid items-center gap-12 md:grid-cols-2">
-              <div>
+          <div className="mx-auto max-w-6xl space-y-16 px-6">
+            <div className="grid gap-8 md:grid-cols-2">
+              <div className="card-surface p-8">
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">Painel</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Uma visão completa, todo dia</h2>
-                <p className="mt-3 text-muted-foreground">
+                <h2 className="mt-2 font-display text-2xl font-bold">Uma visão completa, todo dia</h2>
+                <p className="mt-3 text-sm text-muted-foreground">
                   Jogos de hoje das suas ligas, times favoritos, resumo das suas previsões salvas e sua taxa de acerto — tudo à sua frente assim que você entra.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
@@ -227,19 +227,11 @@ function Landing() {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl border border-border bg-card/50 p-2">
-                <img src={heroDashboard} alt="Dashboard com jogos do dia e estatísticas" loading="lazy" width={1600} height={1008} className="rounded-lg" />
-              </div>
-            </div>
 
-            <div className="grid items-center gap-12 md:grid-cols-2">
-              <div className="rounded-xl border border-border bg-card/50 p-2 md:order-2">
-                <img src={heroPredictions} alt="Tela de previsão de partida com probabilidades geradas por IA" loading="lazy" width={1600} height={1008} className="rounded-lg" />
-              </div>
-              <div className="md:order-1">
+              <div className="card-surface p-8">
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">Previsão com IA</span>
-                <h2 className="mt-2 font-display text-3xl font-bold">Probabilidades pra qualquer confronto</h2>
-                <p className="mt-3 text-muted-foreground">
+                <h2 className="mt-2 font-display text-2xl font-bold">Probabilidades pra qualquer confronto</h2>
+                <p className="mt-3 text-sm text-muted-foreground">
                   Escolha dois times — de qualquer liga do mundo, mesmo fora da sua lista — e receba na hora as chances de vitória, gols esperados, escanteios e cartões, com a análise da IA pra cada time.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm">
