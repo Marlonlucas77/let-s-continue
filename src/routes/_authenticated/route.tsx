@@ -11,9 +11,27 @@ import { checkIsAdmin } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+
+    // Onboarding obrigatório: enquanto o usuário não tiver escolhido pelo
+    // menos uma liga, mandamos ele pro fluxo de seleção. Sem isso, ele cai
+    // no dashboard e vê tudo vazio ("nenhum jogo") sem entender por quê.
+    // Páginas que fazem parte do próprio fluxo de escolha/upgrade ficam
+    // fora do gate pra não criar um loop.
+    const exempt = ["/settings", "/pricing", "/account"];
+    const path = location.pathname;
+    if (!exempt.some((p) => path.startsWith(p))) {
+      const { count } = await supabase
+        .from("tracked_leagues")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", data.user.id);
+      if ((count ?? 0) === 0) {
+        throw redirect({ to: "/settings", search: { onboarding: "1" } });
+      }
+    }
+
     return { user: data.user };
   },
   component: AuthedLayout,
