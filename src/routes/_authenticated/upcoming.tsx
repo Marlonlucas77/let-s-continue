@@ -170,11 +170,22 @@ function UpcomingPage() {
 
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{filtered.length} de {fixtures.length} jogo(s)</p>
-        {isFetching && (
-          <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
-            <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {syncMsg && <span className="text-xs text-muted-foreground">{syncMsg}</span>}
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="text-xs rounded-md border border-border px-2.5 py-1 font-medium hover:bg-input transition-all disabled:opacity-60 flex items-center gap-1.5"
+          >
+            {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Sincronizar minhas ligas
+          </button>
+          {isFetching && (
+            <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
+              <Loader2 className="h-3 w-3 animate-spin" /> Atualizando...
+            </div>
+          )}
+        </div>
       </div>
 
 
