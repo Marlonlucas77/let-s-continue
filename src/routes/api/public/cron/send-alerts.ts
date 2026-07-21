@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sendEmail, favoritesAlertHtml, favoritesAlertSubject } from "@/lib/email.server";
-
-function checkCronSecret(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return request.headers.get("x-cron-secret") === secret;
-}
+import { isAuthorizedCron } from "@/lib/cron-auth.server";
 
 // Roda uma vez por dia (agendamento externo): pra cada usuário com
 // alertas ativados e que ainda não recebeu hoje, verifica se algum time
@@ -15,7 +10,7 @@ export const Route = createFileRoute("/api/public/cron/send-alerts")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (!checkCronSecret(request)) {
+        if (!(await isAuthorizedCron(request))) {
           return Response.json({ error: "unauthorized" }, { status: 401 });
         }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
