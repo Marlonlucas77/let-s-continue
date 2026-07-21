@@ -107,24 +107,13 @@ async function runFixturesRefreshInner(supabaseAdmin: any) {
   };
 }
 
-// Só o agendador externo (configurado com o mesmo CRON_SECRET) deve
-// conseguir chamar esse endpoint — sem isso, qualquer pessoa na internet
-// que descobrisse essa URL poderia disparar chamadas à API-Sports à
-// vontade, gastando a cota do app de propósito.
-function checkCronSecret(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  // Se ainda não foi configurado, não bloqueia (evita quebrar o
-  // agendamento já existente) — mas isso deveria ser configurado o
-  // quanto antes.
-  if (!secret) return true;
-  return request.headers.get("x-cron-secret") === secret;
-}
+import { isAuthorizedCron } from "@/lib/cron-auth.server";
 
 export const Route = createFileRoute("/api/public/cron/refresh-fixtures")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (!checkCronSecret(request)) {
+        if (!(await isAuthorizedCron(request))) {
           return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
         }
         try {
