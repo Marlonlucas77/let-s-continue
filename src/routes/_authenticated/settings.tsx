@@ -31,7 +31,7 @@ function SettingsPage() {
   const trackAllFn = useServerFn(trackTopLeagues);
   const untrackFn = useServerFn(untrackLeague);
   const accountFn = useServerFn(getMyAccount);
-  const extraCheckoutFn = useServerFn(createExtraLeagueCheckout);
+
 
   const [query, setQuery] = useState("");
 
