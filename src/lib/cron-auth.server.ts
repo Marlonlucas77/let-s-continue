@@ -15,12 +15,8 @@ const TTL_MS = 60_000;
 
 async function getDbSecret(): Promise<string | null> {
   if (cachedDbSecret && Date.now() - cachedAt < TTL_MS) return cachedDbSecret;
-  const { data } = await supabaseAdmin
-    .from("cron_config" as any)
-    .select("cron_secret")
-    .eq("id", 1)
-    .maybeSingle();
-  const value = (data as any)?.cron_secret ?? null;
+  const { data } = await supabaseAdmin.rpc("get_cron_secret" as any);
+  const value = typeof data === "string" ? data : null;
   if (value) {
     cachedDbSecret = value;
     cachedAt = Date.now();
