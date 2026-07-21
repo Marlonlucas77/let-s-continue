@@ -1,12 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-// Só o agendador externo (configurado com o mesmo CRON_SECRET) deve
-// conseguir chamar esse endpoint.
-function checkCronSecret(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return request.headers.get("x-cron-secret") === secret;
-}
+import { isAuthorizedCron } from "@/lib/cron-auth.server";
 
 // Job noturno: compara cada previsão pendente com o resultado real gravado em
 // `matches` (mesmo par de times na mesma data) e preenche `was_correct` +
@@ -15,7 +8,7 @@ export const Route = createFileRoute("/api/public/cron/evaluate-predictions")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        if (!checkCronSecret(request)) {
+        if (!(await isAuthorizedCron(request))) {
           return Response.json({ error: "unauthorized" }, { status: 401 });
         }
         const { createClient } = await import("@supabase/supabase-js");
