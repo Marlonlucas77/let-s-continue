@@ -32,8 +32,11 @@ function PredictionsPage() {
     queryKey: ["tracked-leagues"],
     queryFn: async () => (await supabase.from("tracked_leagues").select("league_name, country")).data ?? [],
   });
-  // Match por (liga + país) — sem o país, "Serie A" habilitava times da
-  // Itália junto com o Brasileirão, e "Premier League" trazia Rússia/Namíbia.
+  // Match por (liga + país) usando os JOGOS como fonte da verdade — a
+  // tabela `teams` guarda um nome de liga diferente (ex. "Brasileirão
+  // Série A") do curado ("Serie A"), então filtrar direto por
+  // teams.league deixava Santos/Corinthians de fora. Os matches já vêm
+  // marcados com o mesmo league_name das ligas rastreadas.
   const enabledLeagueKeys = useMemo(
     () => new Set(
       trackedLeagues
@@ -42,13 +45,24 @@ function PredictionsPage() {
     ),
     [trackedLeagues],
   );
+
+  const { data: matchTeamRefs = [] } = useQuery({
+    queryKey: ["match-team-refs"],
+    queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, league_name, country")).data ?? [],
+  });
+  const enabledTeamIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of matchTeamRefs as any[]) {
+      const key = `${(m.league_name ?? "").toLowerCase()}|${(m.country ?? "").toLowerCase()}`;
+      if (!enabledLeagueKeys.has(key)) continue;
+      if (m.home_team_id) ids.add(m.home_team_id);
+      if (m.away_team_id) ids.add(m.away_team_id);
+    }
+    return ids;
+  }, [matchTeamRefs, enabledLeagueKeys]);
   const enabledTeams = useMemo(
-    () => teams.filter((t) => {
-      if (!t.league) return false;
-      const key = `${t.league.toLowerCase()}|${(t.country ?? "").toLowerCase()}`;
-      return enabledLeagueKeys.has(key);
-    }),
-    [teams, enabledLeagueKeys],
+    () => teams.filter((t) => enabledTeamIds.has(t.id)),
+    [teams, enabledTeamIds],
   );
 
   // Só usado pra checar se os times já se enfrentaram (aviso) e pra dar
