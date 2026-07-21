@@ -154,8 +154,9 @@ function SettingsPage() {
           Escolha as ligas que você quer acompanhar{leagueLimit != null ? ` — seu plano permite até ${leagueLimit}` : ""}. Isso define o que aparece em Jogos e Previsão IA.
         </p>
         <p className="text-xs text-muted-foreground mt-2">
-          Adicione ou remova as ligas quando quiser. Ligas além do limite do plano custam <strong>R$5/mês</strong> cada — pagas por assinatura recorrente no Stripe (cartão ou Pix).
+          Adicione ou remova as ligas quando quiser. Para acompanhar mais ligas, faça upgrade do seu plano.
         </p>
+
       </div>
 
       {onboarding && (
