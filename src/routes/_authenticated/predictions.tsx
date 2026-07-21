@@ -50,16 +50,21 @@ function PredictionsPage() {
     queryKey: ["match-team-refs"],
     queryFn: async () => (await supabase.from("matches").select("home_team_id, away_team_id, league_name, country")).data ?? [],
   });
-  const enabledTeamIds = useMemo(() => {
-    const ids = new Set<string>();
+  // Deriva a "liga real" (name+country das ligas rastreadas) de cada time
+  // a partir dos jogos. Assim o agrupamento/filtro do combobox bate com o
+  // filtro de ligas habilitadas pra TODAS as ligas, não só as genéricas.
+  const teamLeagueMap = useMemo(() => {
+    const map = new Map<string, { league: string; country: string }>();
     for (const m of matchTeamRefs as any[]) {
       const key = `${(m.league_name ?? "").toLowerCase()}|${(m.country ?? "").toLowerCase()}`;
       if (!enabledLeagueKeys.has(key)) continue;
-      if (m.home_team_id) ids.add(m.home_team_id);
-      if (m.away_team_id) ids.add(m.away_team_id);
+      const info = { league: m.league_name ?? "Outros", country: m.country ?? "" };
+      if (m.home_team_id && !map.has(m.home_team_id)) map.set(m.home_team_id, info);
+      if (m.away_team_id && !map.has(m.away_team_id)) map.set(m.away_team_id, info);
     }
-    return ids;
+    return map;
   }, [matchTeamRefs, enabledLeagueKeys]);
+  const enabledTeamIds = useMemo(() => new Set(teamLeagueMap.keys()), [teamLeagueMap]);
   const enabledTeams = useMemo(
     () => teams.filter((t) => enabledTeamIds.has(t.id)),
     [teams, enabledTeamIds],
@@ -83,36 +88,33 @@ function PredictionsPage() {
   const differentCompetition = !!home && !!away && (home.league ?? home.country) !== (away.league ?? away.country);
   const neverPlayed = !!home && !!away && h2h.length === 0;
 
-  // Antes: agrupava só pelo nome da liga, então tanto "Serie A" (Itália)
-  // quanto "Brasileirão Série A" apareciam como opções separadas — e
-  // "Serie A" sem contexto confundia com o Brasileirão. Agora anexa o
-  // país entre parênteses quando faz sentido pra desambiguar.
+  // Chave liga+país pra desambiguar (Serie A Brasil x Itália, Premier
+  // League Inglaterra x Rússia, etc.) — vale igual pra toda liga.
+  const leagueKeyFor = (info: { league: string; country: string }) => {
+    const l = (info.league || "Outros").trim();
+    const c = (info.country || "").trim();
+    return c ? `${l} (${c})` : l;
+  };
+
   const teamsByLeague = useMemo(() => {
     const groups = new Map<string, typeof teams>();
     for (const t of enabledTeams) {
-      const league = t.league || t.country || "Outros";
-      const country = t.country || "";
-      // Só adiciona país quando o nome da liga é genérico o suficiente
-      // pra colidir entre países (Serie A, Premier League, etc.).
-      const genericNames = /^(serie [ab]|premier league|primera divis|super league|super lig|liga profesional|championship)$/i;
-      const key = country && genericNames.test(league) ? `${league} (${country})` : league;
+      const info = teamLeagueMap.get(t.id) ?? { league: t.league || "Outros", country: t.country || "" };
+      const key = leagueKeyFor(info);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(t);
     }
     return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [enabledTeams]);
+  }, [enabledTeams, teamLeagueMap]);
 
   const [leagueFilter, setLeagueFilter] = useState("");
   const filteredTeams = useMemo(() => {
     if (!leagueFilter) return enabledTeams;
     return enabledTeams.filter((t) => {
-      const league = t.league || t.country || "Outros";
-      const country = t.country || "";
-      const genericNames = /^(serie [ab]|premier league|primera divis|super league|super lig|liga profesional|championship)$/i;
-      const key = country && genericNames.test(league) ? `${league} (${country})` : league;
-      return key === leagueFilter;
+      const info = teamLeagueMap.get(t.id) ?? { league: t.league || "Outros", country: t.country || "" };
+      return leagueKeyFor(info) === leagueFilter;
     });
-  }, [enabledTeams, leagueFilter]);
+  }, [enabledTeams, leagueFilter, teamLeagueMap]);
 
   const [wantsAnalysis, setWantsAnalysis] = useState(false);
 
