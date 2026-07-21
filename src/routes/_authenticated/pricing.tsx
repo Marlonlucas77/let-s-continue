@@ -2,18 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Crown, X } from "lucide-react";
-import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
+import { Check, Crown } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { paymentsConfigured, getStripeEnvironment } from "@/lib/stripe";
-import { createPortalSession } from "@/lib/payments.functions";
+import { createCheckoutSession, createPortalSession } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   component: PricingPage,
 });
 
 function PricingPage() {
-  const [checkoutPrice, setCheckoutPrice] = useState<string | null>(null);
+  const [loadingPrice, setLoadingPrice] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const { data: sub } = useQuery({
