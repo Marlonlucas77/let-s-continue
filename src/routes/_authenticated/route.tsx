@@ -131,8 +131,8 @@ function AuthedLayout() {
 
       <header className="md:hidden border-b border-border px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold">P</div>
-          <span className="font-display font-bold">Placar Certo</span>
+          <Logo size={28} />
+          <span className="font-display font-bold">Placar<span className="text-primary"> Certo</span></span>
         </Link>
         <button onClick={logout} className="text-sm text-muted-foreground"><LogOut className="h-4 w-4" /></button>
       </header>
