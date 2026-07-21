@@ -223,22 +223,26 @@ function SettingsPage() {
           <ul className="divide-y divide-border max-h-72 overflow-y-auto">
             {tracked.map((l: any) => {
               const isPending = l.__optimistic || typeof l.id !== "string" || !/^[0-9a-f-]{36}$/i.test(l.id);
-              const isLocked = l.is_locked !== false;
+              const isPaidExtra = !!l.is_paid_extra;
               return (
                 <li key={l.id} className="py-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate flex items-center gap-1.5">
                       {translateLeague(l.league_name)} <span className="text-muted-foreground">· {l.season}</span>
-                      {l.is_paid_extra && <span className="text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Extra</span>}
+                      {isPaidExtra && <span className="text-[10px] uppercase tracking-wide bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded">Extra R$5/mês</span>}
                     </div>
                     <div className="text-xs text-muted-foreground">{translateCountry(l.country) || "—"}</div>
                   </div>
                   {isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  ) : isLocked ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="Liga travada — não pode ser removida">
-                      <Lock className="h-3.5 w-3.5" /> Travada
-                    </span>
+                  ) : isPaidExtra ? (
+                    <Link
+                      to="/pricing"
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                      title="Cancele em Planos → Gerenciar assinatura. Você mantém acesso até o fim do período pago."
+                    >
+                      <Lock className="h-3.5 w-3.5" /> Gerenciar
+                    </Link>
                   ) : (
                     <button
                       onClick={() => untrackMut.mutate(l.id)}
