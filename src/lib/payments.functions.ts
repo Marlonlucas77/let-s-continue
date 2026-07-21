@@ -53,11 +53,12 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         email: user?.email ?? undefined,
         userId: context.userId,
       });
+      const cancelUrl = data.returnUrl.replace(/[?&]session_id=\{CHECKOUT_SESSION_ID\}/g, "");
       const session = await stripe.checkout.sessions.create({
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         mode: "subscription",
         success_url: data.returnUrl,
-        cancel_url: data.returnUrl,
+        cancel_url: cancelUrl,
         customer: customerId,
         metadata: { userId: context.userId },
         subscription_data: { metadata: { userId: context.userId } },
