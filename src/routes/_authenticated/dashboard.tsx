@@ -28,34 +28,53 @@ function Dashboard() {
   const { data, refetch, isFetching } = useSuspenseQuery({
     queryKey: ["dashboard", todayStr],
     queryFn: async () => {
-      // Antes buscava "hoje" e "semana" em duas chamadas separadas — como a
-      // semana já inclui hoje, isso dobrava à toa o número de chamadas à
-      // API externa (que agora tem um throttle conservador de propósito,
-      // então cada chamada a mais soma segundos reais de espera). Busca só
-      // a semana uma vez e filtra "hoje" a partir dela.
-      const [teams, trackedLeagues, allMatches, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
-        supabase.from("teams").select("id", { count: "exact", head: true }),
-        // Antes usava count exact que somava todas as linhas — como cada
-        // liga é gravada por (user_id, league_id, season), quem tem várias
-        // temporadas habilitadas via ligas ativas + histórico, o cartão
-        // "Ligas habilitadas" mostrava um número inflado (ex: 387). Agora
-        // conta ligas distintas pela id da API, que é o que o usuário
-        // pensa quando lê "ligas habilitadas".
-        supabase.from("tracked_leagues").select("league_id"),
-        supabase
-          .from("matches")
-          .select("match_date, home_goals, away_goals, home_corners, away_corners, home_team:home_team_id(name), away_team:away_team_id(name)")
-          .order("match_date", { ascending: false })
-          .limit(20),
+      // 1) Ligas rastreadas do usuário — filtram TUDO para o painel
+      // refletir só o que ele acompanha (não o banco inteiro).
+      const trackedRes = await supabase
+        .from("tracked_leagues")
+        .select("league_id, league_name, country");
+      const tracked = (trackedRes.data ?? []) as { league_id: number; league_name: string | null; country: string | null }[];
+      const distinctLeagues = new Set(tracked.map((r) => r.league_id)).size;
+      const trackedKeys = new Set(
+        tracked.map((r) => `${(r.league_name ?? "").toLowerCase()}||${(r.country ?? "").toLowerCase()}`),
+      );
+      const trackedLeagueNames = Array.from(new Set(tracked.map((r) => r.league_name).filter(Boolean))) as string[];
+      const trackedCountries = Array.from(new Set(tracked.map((r) => r.country).filter(Boolean))) as string[];
+      const inKeys = (league?: string | null, country?: string | null) =>
+        trackedKeys.has(`${(league ?? "").toLowerCase()}||${(country ?? "").toLowerCase()}`);
+
+      // 2) Busca em paralelo. Times/jogos vêm pré-filtrados por liga+país
+      // rastreados; depois refinamos por chave composta para não pegar
+      // "Premier League" de outro país que passou pelo .in() de nome.
+      const teamsQuery = trackedLeagueNames.length
+        ? supabase
+            .from("teams")
+            .select("id, league, country")
+            .in("league", trackedLeagueNames)
+            .in("country", trackedCountries)
+        : Promise.resolve({ data: [] as any[] });
+      const matchesQuery = trackedLeagueNames.length
+        ? supabase
+            .from("matches")
+            .select("match_date, home_goals, away_goals, home_corners, away_corners, league_name, country, home_team:home_team_id(name), away_team:away_team_id(name)")
+            .in("league_name", trackedLeagueNames)
+            .in("country", trackedCountries)
+            .order("match_date", { ascending: false })
+            .limit(60)
+        : Promise.resolve({ data: [] as any[] });
+
+      const [teamsRes, matchesRes, preds, aiGenerated, favorites, weekFixtures] = await Promise.all([
+        teamsQuery,
+        matchesQuery,
         supabase.from("predictions").select("id, result_checked, was_correct"),
-        // "Previsões geradas" precisa ser toda vez que a IA rodou de verdade
-        // (ai_prediction_usage), não só as que a pessoa clicou em "Salvar"
-        // depois (predictions) — antes essas duas coisas estavam confundidas
-        // e o card sempre mostrava 0 pra quem gerava sem salvar.
         supabase.from("ai_prediction_usage").select("id", { count: "exact", head: true }),
         loadFavorites().catch(() => []),
         listFixtures({ data: { days: 3 } }).catch(() => []),
       ]);
+
+      const teamsFiltered = ((teamsRes as any).data ?? []).filter((t: any) => inKeys(t.league, t.country));
+      const matchesFiltered = ((matchesRes as any).data ?? []).filter((m: any) => inKeys(m.league_name, m.country)).slice(0, 20);
+
       const todayFixtures = (weekFixtures ?? []).filter((m: any) => (m.date as string).slice(0, 10) === todayStr);
       const favTeamIds = new Set(
         (favorites ?? []).filter((f: any) => f.kind === "team").map((f: any) => f.ref_id),
@@ -63,21 +82,16 @@ function Dashboard() {
       const favFixtures = (weekFixtures ?? []).filter(
         (m: any) => favTeamIds.has(m.home.id) || favTeamIds.has(m.away.id),
       );
-      const distinctLeagues = new Set((trackedLeagues.data ?? []).map((r: any) => r.league_id)).size;
       return {
-        teamsCount: teams.count ?? 0,
+        teamsCount: teamsFiltered.length,
         trackedLeaguesCount: distinctLeagues,
         todayFixtures: todayFixtures as any[],
         favFixtures: favFixtures as any[],
-        allMatches: allMatches.data ?? [],
+        allMatches: matchesFiltered,
         preds: preds.data ?? [],
         aiGeneratedCount: aiGenerated.count ?? 0,
       };
     },
-    // Antes ficava 5 minutos em cache — deixava os números (ligas
-    // habilitadas, times no histórico) parecerem "errados"/desatualizados
-    // logo depois de qualquer mudança recente (reset, reimportação). Muito
-    // mais curto agora, e com botão de atualizar manual.
     staleTime: 30 * 1000,
   });
 
