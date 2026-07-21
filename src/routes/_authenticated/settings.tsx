@@ -4,10 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw, Lock } from "lucide-react";
+import { Radio, Trash2, Loader2, Globe, Search, CheckCircle2, Sparkles, RefreshCw, Lock, ShoppingCart } from "lucide-react";
 import {
   listAllLeagues, listTrackedLeagues, trackLeague, trackTopLeagues, untrackLeague, runFixturesRefreshNow,
 } from "@/lib/api-sports.functions";
+import { createExtraLeagueCheckout } from "@/lib/payments.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { checkIsAdmin } from "@/lib/admin.functions";
 import { getMyAccount } from "@/lib/account.functions";
 import { translateCountry, translateLeague } from "@/lib/country-i18n";
