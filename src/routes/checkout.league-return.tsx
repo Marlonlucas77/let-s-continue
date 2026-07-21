@@ -41,7 +41,7 @@ function LeagueReturn() {
           <>
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
             <h1 className="font-display text-xl font-bold mb-2">Confirmando seu pagamento…</h1>
-            <p className="text-sm text-muted-foreground">Estamos liberando a liga extra na sua conta.</p>
+            <p className="text-sm text-muted-foreground">Ativando a assinatura da liga extra (R$5/mês).</p>
           </>
         ) : mut.data?.ok ? (
           <>

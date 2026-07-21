@@ -342,10 +342,10 @@ function SettingsPage() {
                       onClick={() => extraMut.mutate(l)}
                       disabled={extraMut.isPending}
                       className="text-xs rounded-md bg-amber-500/10 border border-amber-500/40 text-amber-300 px-3 py-1.5 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-                      title="Liga extra além do limite do plano"
+                      title="Liga extra — assinatura recorrente de R$5/mês"
                     >
                       {extraMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-                      Adicionar por R$5
+                      Adicionar por R$5/mês
                     </button>
                   ) : (
                     <button
