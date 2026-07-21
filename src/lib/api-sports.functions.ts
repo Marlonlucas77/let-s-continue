@@ -244,6 +244,19 @@ export const untrackLeague = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Regra do produto: uma vez escolhida, a liga fica travada. Se quiser
+    // uma outra, o usuário paga R$5 por liga extra (checkout Stripe).
+    const { data: row, error: readErr } = await supabase
+      .from("tracked_leagues")
+      .select("id, is_locked")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!row) throw new Error("Liga não encontrada.");
+    if (row.is_locked) {
+      throw new Error("Essa liga está travada e não pode ser removida. Escolha bem — cada nova liga custa R$5.");
+    }
     const { error } = await supabase.from("tracked_leagues").delete().eq("id", data.id).eq("user_id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
