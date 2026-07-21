@@ -80,22 +80,37 @@ function UpcomingPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Lista única de "Liga (País)" pra escolher no dropdown — evita casos
-  // como "Premier League" da Inglaterra colidir com a da Rússia num
-  // filtro por substring livre.
+  // Ligas rastreadas pelo usuário — usadas pra popular o filtro mesmo
+  // quando ainda não há jogos importados pra elas.
+  const { data: trackedLeagues = [] } = useQuery({
+    queryKey: ["tracked-leagues-for-filter"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tracked_leagues")
+        .select("league_name, country");
+      return (data ?? []) as { league_name: string; country: string | null }[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Lista única de "Liga (País)" pra escolher no dropdown — inclui as
+  // ligas habilitadas pelo usuário mesmo sem jogos ainda, pra ele saber
+  // que o filtro existe e ver "nenhum jogo" ao invés da liga sumir.
   const leagueOptions = useMemo(() => {
     const map = new Map<string, { key: string; label: string; league: string; country: string }>();
-    for (const f of fixtures as any[]) {
-      const league = f.league ?? "";
-      const country = f.country ?? "";
+    const add = (league: string, country: string) => {
+      if (!league) return;
       const key = `${league}||${country}`;
       if (!map.has(key)) {
         const label = country ? `${translateLeague(league)} (${translateCountry(country)})` : translateLeague(league);
         map.set(key, { key, label, league, country });
       }
-    }
+    };
+    for (const t of trackedLeagues) add(t.league_name ?? "", t.country ?? "");
+    for (const f of fixtures as any[]) add(f.league ?? "", f.country ?? "");
     return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [fixtures]);
+  }, [fixtures, trackedLeagues]);
+
 
   const filtered = useMemo(() => {
     return fixtures.filter((f: any) => {
