@@ -91,6 +91,21 @@ function AuthPage() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw new Error(result.error.message ?? "Erro no login com Google");
+      if (result.redirected) return;
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      toast.error(err.message ?? "Erro no login com Google");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
