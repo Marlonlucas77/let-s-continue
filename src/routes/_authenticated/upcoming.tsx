@@ -32,11 +32,18 @@ function UpcomingPage() {
   const queryClient = useQueryClient();
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
   // valor inicial menor evita estourar o limite de requisições logo na entrada.
   const [days, setDays] = useState(3);
+
+  // Debounce da busca por time — evita refiltrar a lista inteira a cada tecla.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 120);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const { data: fixtures = [], isFetching, isLoading, error, refetch } = useQuery({
     queryKey: ["upcoming-fixtures", days],
