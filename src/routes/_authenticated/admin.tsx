@@ -38,6 +38,15 @@ function AdminPage() {
     refetchInterval: 60_000,
   });
 
+  const revenueFn = useServerFn(adminRealRevenue);
+  const [revEnv, setRevEnv] = useState<"live" | "sandbox">("live");
+  const { data: revenue, isFetching: revLoading, refetch: refetchRevenue } = useQuery({
+    queryKey: ["admin-real-revenue", revEnv],
+    queryFn: async () => await revenueFn({ data: { environment: revEnv } }),
+    enabled: isAdmin,
+    staleTime: 5 * 60_000,
+  });
+
   const { data: users = [] } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => await listFn(),
