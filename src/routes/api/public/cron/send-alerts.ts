@@ -72,7 +72,6 @@ export const Route = createFileRoute("/api/public/cron/send-alerts")({
                 home_team:home_team_id ( name ),
                 away_team:away_team_id ( name )
               `)
-              .eq("user_id", profile.id)
               .in("status", ["NS", "TBD"])
               .gte("kickoff_at", dayStart.toISOString())
               .lt("kickoff_at", dayEnd.toISOString())
