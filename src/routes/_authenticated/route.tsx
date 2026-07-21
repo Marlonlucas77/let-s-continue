@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -102,8 +103,10 @@ function AuthedLayout() {
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-60 border-r border-border flex-col p-4 gap-1 overflow-y-auto">
         <Link to="/dashboard" className="flex items-center gap-2 px-2 py-3 mb-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold">P</div>
-          <span className="font-display text-lg font-bold">Placar Certo</span>
+          <Logo size={32} />
+          <span className="font-display text-lg font-bold tracking-tight">
+            Placar<span className="text-primary"> Certo</span>
+          </span>
         </Link>
         {groups.map((group, gi) => (
           <div key={gi} className={group.label ? "mt-3" : ""}>
@@ -129,8 +132,8 @@ function AuthedLayout() {
 
       <header className="md:hidden border-b border-border px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold">P</div>
-          <span className="font-display font-bold">Placar Certo</span>
+          <Logo size={28} />
+          <span className="font-display font-bold">Placar<span className="text-primary"> Certo</span></span>
         </Link>
         <button onClick={logout} className="text-sm text-muted-foreground"><LogOut className="h-4 w-4" /></button>
       </header>
