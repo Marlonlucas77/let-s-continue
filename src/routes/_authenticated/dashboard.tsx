@@ -80,7 +80,7 @@ function Dashboard() {
         (favorites ?? []).filter((f: any) => f.kind === "team").map((f: any) => f.ref_id),
       );
       const favFixtures = (weekFixtures ?? []).filter(
-        (m: any) => favTeamIds.has(m.home.id) || favTeamIds.has(m.away.id),
+        (m: any) => favTeamIds.has(m.home.apiId) || favTeamIds.has(m.away.apiId),
       );
       return {
         teamsCount: teamsFiltered.length,
