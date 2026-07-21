@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { type StripeEnv, createStripeClient, getStripeErrorMessage } from "@/lib/stripe.server";
+
+// Preço fixo (em centavos) de uma liga adicional além do limite do plano.
+const EXTRA_LEAGUE_PRICE_CENTS = 500; // R$5,00
+const EXTRA_LEAGUE_CURRENCY = "brl";
 
 type CheckoutResult = { url: string } | { error: string };
 type PortalResult = { url: string } | { error: string };
