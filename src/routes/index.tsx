@@ -141,15 +141,58 @@ function Landing() {
             <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito para começar • Cancele quando quiser</p>
           </div>
 
-          <div className="mx-auto max-w-6xl px-6 pb-20">
-            <div className="rounded-xl border border-border bg-card/50 p-2 shadow-2xl shadow-primary/5">
+          <div className="mx-auto max-w-6xl px-6 pb-12">
+            <div className="relative rounded-2xl border border-border bg-card/50 p-2 shadow-2xl shadow-primary/10">
+              <div className="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-b from-primary/30 via-transparent to-transparent blur-2xl" />
               <img
                 src={heroDashboard}
                 alt="Painel do Placar Certo com estatísticas e jogos do dia"
                 width={1600}
                 height={1008}
-                className="rounded-lg"
+                className="rounded-xl"
               />
+            </div>
+          </div>
+
+          <div className="mx-auto max-w-6xl px-6 pb-20">
+            <div className="grid grid-cols-2 gap-6 border-y border-border py-8 md:grid-cols-4">
+              {[
+                { k: "1.100+", v: "Ligas cobertas no mundo" },
+                { k: "IA generativa", v: "Análise instantânea" },
+                { k: "Tempo real", v: "Placares e odds ao vivo" },
+                { k: "Sem fidelidade", v: "Cancele quando quiser" },
+              ].map((s) => (
+                <div key={s.v} className="text-center">
+                  <div className="font-display text-2xl font-bold text-primary md:text-3xl">{s.k}</div>
+                  <div className="mt-1 text-xs text-muted-foreground md:text-sm">{s.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-border bg-card/10 py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="text-center">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">Como funciona</span>
+              <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Da dúvida à decisão em 3 passos</h2>
+              <p className="mt-3 text-muted-foreground">Simples, rápido e feito pra quem gosta de futebol de verdade.</p>
+            </div>
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {[
+                { icon: Search, step: "01", title: "Escolha os times", desc: "Digite dois times de qualquer liga do mundo. Não precisa importar nada — a IA já conhece." },
+                { icon: BarChart3, step: "02", title: "Receba a análise da IA", desc: "Probabilidades para resultado, gols, escanteios e cartões, com nível de confiança em cada previsão." },
+                { icon: Star, step: "03", title: "Acompanhe seus acertos", desc: "Salve suas previsões favoritas e veja sua taxa de acerto real, conferida automaticamente." },
+              ].map((s) => (
+                <div key={s.step} className="card-surface relative p-6">
+                  <div className="absolute right-5 top-5 font-display text-4xl font-bold text-primary/20">{s.step}</div>
+                  <div className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <s.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-4 font-display text-lg font-semibold">{s.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
