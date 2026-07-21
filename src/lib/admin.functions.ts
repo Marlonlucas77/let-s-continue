@@ -1,6 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createStripeClient, type StripeEnv } from "@/lib/stripe.server";
+
+const ZERO_DECIMAL = new Set(["bif","clp","djf","gnf","jpy","kmf","krw","mga","pyg","rwf","ugx","vnd","vuv","xaf","xof","xpf"]);
+const THREE_DECIMAL = new Set(["bhd","jod","kwd","omr","tnd"]);
+function toMajor(amount: number, currency: string): number {
+  const c = (currency ?? "").toLowerCase();
+  if (ZERO_DECIMAL.has(c)) return amount;
+  if (THREE_DECIMAL.has(c)) return amount / 1000;
+  return amount / 100;
+}
+
 
 async function requireAdmin(context: any) {
   const { data } = await context.supabase
@@ -134,6 +145,63 @@ export const adminCronStatus = createServerFn({ method: "GET" })
       totalLeagues: totalLeagues ?? 0,
     };
   });
+
+// Receita REAL — soma faturas pagas no Stripe (por padrão live; sandbox
+// opcional). Pagina até esgotar. Retorna totais por moeda + MTD + 30d.
+export const adminRealRevenue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { environment?: StripeEnv } = {}) =>
+    z.object({ environment: z.enum(["sandbox", "live"]).default("live") }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context);
+    try {
+      const stripe = createStripeClient(data.environment);
+      const now = Math.floor(Date.now() / 1000);
+      const monthStart = Math.floor(new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime() / 1000);
+      const thirtyAgo = now - 30 * 24 * 60 * 60;
+
+      let all = 0, mtd = 0, last30 = 0, invoiceCount = 0;
+      const byCurrency: Record<string, number> = {};
+      let starting_after: string | undefined;
+      let pages = 0;
+      // Safety: no mais que 50 páginas (5000 faturas) por chamada.
+      while (pages < 50) {
+        const list: any = await stripe.invoices.list({
+          status: "paid",
+          limit: 100,
+          ...(starting_after && { starting_after }),
+        });
+        for (const inv of list.data) {
+          const paid = toMajor(inv.amount_paid ?? 0, inv.currency);
+          all += paid;
+          byCurrency[inv.currency] = (byCurrency[inv.currency] ?? 0) + paid;
+          const created = inv.created ?? 0;
+          if (created >= monthStart) mtd += paid;
+          if (created >= thirtyAgo) last30 += paid;
+          invoiceCount++;
+        }
+        if (!list.has_more || list.data.length === 0) break;
+        starting_after = list.data[list.data.length - 1].id;
+        pages++;
+      }
+
+      return {
+        ok: true as const,
+        environment: data.environment,
+        invoiceCount,
+        allTime: Math.round(all * 100) / 100,
+        mtd: Math.round(mtd * 100) / 100,
+        last30: Math.round(last30 * 100) / 100,
+        byCurrency: Object.fromEntries(
+          Object.entries(byCurrency).map(([c, v]) => [c, Math.round(v * 100) / 100]),
+        ),
+      };
+    } catch (e: any) {
+      return { ok: false as const, error: e?.message ?? "Falha ao consultar Stripe" };
+    }
+  });
+
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

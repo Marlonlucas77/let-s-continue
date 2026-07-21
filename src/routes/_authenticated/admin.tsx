@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminListUsers, adminToggleRole, adminStats, adminCronStatus, checkIsAdmin } from "@/lib/admin.functions";
-import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign, Activity, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { adminListUsers, adminToggleRole, adminStats, adminCronStatus, checkIsAdmin, adminRealRevenue } from "@/lib/admin.functions";
+import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign, Activity, AlertTriangle, CheckCircle2, Wallet, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -35,6 +36,15 @@ function AdminPage() {
     queryFn: async () => await cronFn(),
     enabled: isAdmin,
     refetchInterval: 60_000,
+  });
+
+  const revenueFn = useServerFn(adminRealRevenue);
+  const [revEnv, setRevEnv] = useState<"live" | "sandbox">("live");
+  const { data: revenue, isFetching: revLoading, refetch: refetchRevenue } = useQuery({
+    queryKey: ["admin-real-revenue", revEnv],
+    queryFn: async () => await revenueFn({ data: { environment: revEnv } }),
+    enabled: isAdmin,
+    staleTime: 5 * 60_000,
   });
 
   const { data: users = [] } = useQuery({
@@ -102,6 +112,82 @@ function AdminPage() {
           </div>
         </div>
       )}
+
+      <div className="card-surface p-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" />
+            <h2 className="font-medium">Receita real (Stripe)</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
+              <button
+                onClick={() => setRevEnv("live")}
+                className={`px-3 py-1 ${revEnv === "live" ? "bg-primary text-primary-foreground" : "bg-input/40 hover:bg-input"}`}
+              >
+                Live
+              </button>
+              <button
+                onClick={() => setRevEnv("sandbox")}
+                className={`px-3 py-1 ${revEnv === "sandbox" ? "bg-primary text-primary-foreground" : "bg-input/40 hover:bg-input"}`}
+              >
+                Sandbox
+              </button>
+            </div>
+            <button
+              onClick={() => refetchRevenue()}
+              disabled={revLoading}
+              className="inline-flex items-center gap-1 text-xs rounded-md border border-border px-2 py-1 hover:bg-input disabled:opacity-50"
+            >
+              {revLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Atualizar
+            </button>
+          </div>
+        </div>
+
+        {revLoading && !revenue && (
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Consultando Stripe...
+          </div>
+        )}
+
+        {revenue && !revenue.ok && (
+          <div className="text-sm text-destructive">Erro: {revenue.error}</div>
+        )}
+
+        {revenue && revenue.ok && (
+          <>
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-3 mb-3">
+              <div className="rounded-md border border-primary/40 bg-primary/5 p-4">
+                <div className="text-xs text-muted-foreground mb-1">Mês atual (MTD)</div>
+                <div className="font-display text-2xl font-bold text-primary">
+                  {revenue.mtd.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-input/40 p-4">
+                <div className="text-xs text-muted-foreground mb-1">Últimos 30 dias</div>
+                <div className="font-display text-2xl font-bold">
+                  {revenue.last30.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-input/40 p-4">
+                <div className="text-xs text-muted-foreground mb-1">Total arrecadado</div>
+                <div className="font-display text-2xl font-bold">
+                  {revenue.allTime.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </div>
+              </div>
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Soma de {revenue.invoiceCount} fatura(s) paga(s) no Stripe ({revenue.environment}).
+              {Object.keys(revenue.byCurrency).length > 1 && (
+                <> Atenção: há faturas em múltiplas moedas — valores em BRL exibidos assumem que todas são BRL. Detalhe por moeda: {Object.entries(revenue.byCurrency).map(([c, v]) => `${c.toUpperCase()} ${v.toFixed(2)}`).join(" · ")}.</>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+
 
       {cron && (
         <div className="card-surface p-4">
