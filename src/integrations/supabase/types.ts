@@ -464,6 +464,9 @@ export type Database = {
         Row: {
           country: string | null
           created_at: string | null
+          extra_current_period_end: string | null
+          extra_status: string | null
+          extra_stripe_subscription_id: string | null
           id: string
           include_stats: boolean | null
           is_locked: boolean
@@ -479,6 +482,9 @@ export type Database = {
         Insert: {
           country?: string | null
           created_at?: string | null
+          extra_current_period_end?: string | null
+          extra_status?: string | null
+          extra_stripe_subscription_id?: string | null
           id?: string
           include_stats?: boolean | null
           is_locked?: boolean
@@ -494,6 +500,9 @@ export type Database = {
         Update: {
           country?: string | null
           created_at?: string | null
+          extra_current_period_end?: string | null
+          extra_status?: string | null
+          extra_stripe_subscription_id?: string | null
           id?: string
           include_stats?: boolean | null
           is_locked?: boolean
