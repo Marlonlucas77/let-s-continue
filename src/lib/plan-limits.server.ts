@@ -32,23 +32,27 @@ function priceIdToPlan(priceId: string | null | undefined): PlanId {
   return "free";
 }
 
+function paidStatusIsActive(status: string | null | undefined, currentPeriodEnd: string | null | undefined) {
+  const statusKeepsAccess = ["active", "trialing", "past_due"].includes(status ?? "");
+  const notExpired = !currentPeriodEnd || new Date(currentPeriodEnd) > new Date();
+  return statusKeepsAccess && notExpired;
+}
+
 export async function getUserPlan(
   supabase: any,
   userId: string,
 ): Promise<{ plan: PlanId; limits: PlanLimits }> {
   const { data } = await supabase
     .from("subscriptions")
-    .select("plan, status, current_period_end")
+    .select("plan, price_id, status, current_period_end")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
 
   let plan: PlanId = "free";
-  if (data && (data.status === "active" || data.status === "trialing")) {
-    const notExpired =
-      !data.current_period_end || new Date(data.current_period_end) > new Date();
-    if (notExpired) plan = priceIdToPlan(data.plan);
+  const activeSub = (data ?? []).find((sub: any) => paidStatusIsActive(sub.status, sub.current_period_end));
+  if (activeSub) {
+    plan = priceIdToPlan(activeSub.plan ?? activeSub.price_id);
   }
   return { plan, limits: PLAN_LIMITS[plan] };
 }
