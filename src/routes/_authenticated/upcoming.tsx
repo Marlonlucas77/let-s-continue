@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, Suspense, useMemo, useEffect } from "react";
+import { useState, Suspense, useMemo, useEffect, memo } from "react";
 import { listUpcomingFixtures, getFixtureOdds, syncMyLeaguesNow } from "@/lib/api-sports.functions";
 import { getAiFixturePrediction } from "@/lib/predictions.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,11 +32,18 @@ function UpcomingPage() {
   const queryClient = useQueryClient();
   const [leagueSearch, setLeagueSearch] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   // Começa em 3 dias: cada dia = 1 requisição na API externa, então um
   // valor inicial menor evita estourar o limite de requisições logo na entrada.
   const [days, setDays] = useState(3);
+
+  // Debounce da busca por time — evita refiltrar a lista inteira a cada tecla.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 120);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const { data: fixtures = [], isFetching, isLoading, error, refetch } = useQuery({
     queryKey: ["upcoming-fixtures", days],
@@ -112,24 +119,39 @@ function UpcomingPage() {
   }, [fixtures, trackedLeagues]);
 
 
-  const filtered = useMemo(() => {
-    return fixtures.filter((f: any) => {
-      if (leagueSearch) {
-        const [league, country] = leagueSearch.split("||");
-        if ((f.league ?? "") !== league || (f.country ?? "") !== country) return false;
-      }
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        if (
-          !f.home.name.toLowerCase().includes(q) && 
-          !f.away.name.toLowerCase().includes(q) &&
-          !translateTeam(f.home.name).toLowerCase().includes(q) &&
-          !translateTeam(f.away.name).toLowerCase().includes(q)
-        ) return false;
-      }
-      return true;
+  // Pré-computa strings em minúsculas dos times UMA vez por lista de jogos,
+  // em vez de recomputar em toda tecla no filtro. Reduz o custo do filtro de
+  // O(n·k) por keystroke pra O(n) sobre valores já normalizados.
+  const indexedFixtures = useMemo(() => {
+    return (fixtures as any[]).map((f) => {
+      const homeName = f.home?.name ?? "";
+      const awayName = f.away?.name ?? "";
+      return {
+        f,
+        _leagueKey: `${f.league ?? ""}||${f.country ?? ""}`,
+        _search: [
+          homeName,
+          awayName,
+          translateTeam(homeName),
+          translateTeam(awayName),
+        ].join("\u0001").toLowerCase(),
+      };
     });
-  }, [fixtures, leagueSearch, search]);
+  }, [fixtures]);
+
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const hasLeague = !!leagueSearch;
+    const hasQuery = q.length > 0;
+    if (!hasLeague && !hasQuery) return indexedFixtures.map((x) => x.f);
+    const out: any[] = [];
+    for (const x of indexedFixtures) {
+      if (hasLeague && x._leagueKey !== leagueSearch) continue;
+      if (hasQuery && !x._search.includes(q)) continue;
+      out.push(x.f);
+    }
+    return out;
+  }, [indexedFixtures, leagueSearch, debouncedSearch]);
 
 
   return (
@@ -303,7 +325,7 @@ function formatMarketOutcome(market: string, outcome: string, homeName: string, 
   return `${market} · ${outcome}`;
 }
 
-function FixtureCard({ f }: { f: any }) {
+const FixtureCard = memo(function FixtureCard({ f }: { f: any }) {
   const [open, setOpen] = useState(false);
   const oddsFn = useServerFn(getFixtureOdds);
   const aiFixtureFn = useServerFn(getAiFixturePrediction);
@@ -345,16 +367,27 @@ function FixtureCard({ f }: { f: any }) {
 
   const p = aiFixturePred?.prediction;
 
-  const dt = new Date(f.date);
-  const dateStr = dt.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  // Data formatada memoizada — evita recriar Date+Intl a cada render do card.
+  const dateStr = useMemo(
+    () => new Date(f.date).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    [f.date]
+  );
 
-  const bestPick = p ? [
-    { label: "Vitória mandante", pct: p.homeWinPct, market: "1x2", outcome: "Home" },
-    { label: "Empate", pct: p.drawPct, market: "1x2", outcome: "Draw" },
-    { label: "Vitória visitante", pct: p.awayWinPct, market: "1x2", outcome: "Away" },
-    { label: "Over 2.5 gols", pct: p.over25Pct, market: "Over/Under", outcome: "Over 2.5" },
-    { label: "Ambas marcam", pct: p.bttsPct, market: "BTTS", outcome: "Yes" },
-  ].sort((a, b) => b.pct - a.pct)[0] : null;
+  // O(n) em vez de sort()+[0]: a lista tem 5 itens, mas o reduce evita
+  // alocar array intermediário e sort a cada render quando `p` muda.
+  const bestPick = useMemo(() => {
+    if (!p) return null;
+    const picks = [
+      { label: "Vitória mandante", pct: p.homeWinPct, market: "1x2", outcome: "Home" },
+      { label: "Empate", pct: p.drawPct, market: "1x2", outcome: "Draw" },
+      { label: "Vitória visitante", pct: p.awayWinPct, market: "1x2", outcome: "Away" },
+      { label: "Over 2.5 gols", pct: p.over25Pct, market: "Over/Under", outcome: "Over 2.5" },
+      { label: "Ambas marcam", pct: p.bttsPct, market: "BTTS", outcome: "Yes" },
+    ];
+    let best = picks[0];
+    for (let i = 1; i < picks.length; i++) if (picks[i].pct > best.pct) best = picks[i];
+    return best;
+  }, [p]);
 
   const bestOddForPick = odds?.markets.find((m: any) => m.market === bestPick?.market && m.outcome === bestPick?.outcome);
   const ev = bestPick && bestOddForPick ? (bestPick.pct / 100) * bestOddForPick.odd : null;
@@ -535,7 +568,7 @@ function FixtureCard({ f }: { f: any }) {
       )}
     </div>
   );
-}
+});
 
 function StatChip({ label, value, highlight, hint }: { label: string; value: string; highlight?: boolean; hint?: string }) {
   return (
