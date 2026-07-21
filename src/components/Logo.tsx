@@ -10,7 +10,7 @@ export function Logo({ size = 32 }: { size?: number }) {
     >
       <defs>
         <linearGradient id="pc-shield" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="hsl(var(--primary))" />
+          <stop offset="0%" stopColor="var(--primary)" />
           <stop offset="55%" stopColor="#22d3ee" />
           <stop offset="100%" stopColor="#a855f7" />
         </linearGradient>
@@ -19,8 +19,8 @@ export function Logo({ size = 32 }: { size?: number }) {
           <stop offset="100%" stopColor="#e0f2fe" />
         </linearGradient>
         <radialGradient id="pc-glow" cx="32" cy="30" r="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
         </radialGradient>
         <filter id="pc-blur" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="1.2" />
