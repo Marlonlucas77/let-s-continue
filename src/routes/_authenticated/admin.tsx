@@ -346,11 +346,36 @@ function AffiliateAdminSection({ isAdmin }: { isAdmin: boolean }) {
     toast.success("Copiado!");
   };
 
+  const exportCSV = () => {
+    const rows = [
+      ["Data", "Afiliado", "Email Pix?", "Chave Pix", "Tipo Pix", "Indicado", "Valor (R$)", "Status", "Pago em"],
+      ...data.map((c) => [
+        new Date(c.created_at).toLocaleDateString("pt-BR"),
+        c.referrer_email ?? "",
+        c.referrer_pix ? "Sim" : "Não",
+        c.referrer_pix ?? "",
+        c.referrer_pix_type ?? "",
+        c.referred_email ?? "",
+        (c.amount_cents / 100).toFixed(2).replace(".", ","),
+        c.status,
+        c.paid_at ? new Date(c.paid_at).toLocaleDateString("pt-BR") : "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `comissoes-${status}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="card-surface p-5 mt-6">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h2 className="font-medium inline-flex items-center gap-2"><Gift className="h-4 w-4" /> Comissões de afiliados</h2>
-        <div className="flex gap-1 text-xs">
+        <div className="flex gap-1 text-xs items-center">
           {(["pending", "paid", "all"] as const).map((s) => (
             <button key={s}
               onClick={() => setStatus(s)}
@@ -358,6 +383,13 @@ function AffiliateAdminSection({ isAdmin }: { isAdmin: boolean }) {
               {s === "pending" ? "Pendentes" : s === "paid" ? "Pagas" : "Todas"}
             </button>
           ))}
+          <button
+            onClick={exportCSV}
+            disabled={!data.length}
+            className="ml-2 px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground disabled:opacity-40"
+          >
+            Exportar CSV
+          </button>
         </div>
       </div>
       {status === "pending" && (

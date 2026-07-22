@@ -158,6 +158,24 @@ function Dashboard() {
         </button>
       </div>
 
+      <Link
+        to="/affiliate"
+        className="group relative mt-6 flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-emerald-400/5 to-cyan-500/10 p-4 sm:p-5 hover:border-emerald-400/70 transition"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-2xl">💸</div>
+          <div className="min-w-0">
+            <p className="text-sm sm:text-base font-semibold text-emerald-300">Ganhe 50% indicando amigos</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">Receba metade do 1º pagamento de cada indicação via Pix. Compartilhe seu link exclusivo.</p>
+          </div>
+        </div>
+        <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium text-emerald-300 shrink-0">
+          Ver meu link <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        </span>
+        <ChevronRight className="sm:hidden h-5 w-5 text-emerald-300 shrink-0" />
+      </Link>
+
+
       <div className="grid gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <div key={c.label} className="card-surface p-5">

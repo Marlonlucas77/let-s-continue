@@ -122,7 +122,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
         const referrerId = (ref as any)?.referrer_id;
         if (referrerId) {
           const commissionCents = Math.floor(amountTotal * 0.5);
-          await (getSupabase().from("affiliate_commissions") as any).upsert(
+          const { data: inserted } = await (getSupabase().from("affiliate_commissions") as any).upsert(
             {
               referrer_id: referrerId,
               referred_id: userId,
@@ -132,7 +132,38 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
               status: "pending",
             },
             { onConflict: "stripe_subscription_id" },
-          );
+          ).select("id").maybeSingle();
+
+          // Envia e-mail de notificação ao afiliado (não bloqueante)
+          if (inserted) {
+            try {
+              const { data: referrer } = await getSupabase()
+                .from("profiles")
+                .select("email, pix_key")
+                .eq("id", referrerId)
+                .maybeSingle();
+              const { data: referred } = await getSupabase()
+                .from("profiles")
+                .select("email")
+                .eq("id", userId)
+                .maybeSingle();
+              if ((referrer as any)?.email) {
+                const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+                const amountBRL = (commissionCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+                await sendTemplateEmail("affiliate-commission", (referrer as any).email, {
+                  templateData: {
+                    amount: amountBRL,
+                    referredEmail: (referred as any)?.email ?? "novo cliente",
+                    hasPix: Boolean((referrer as any).pix_key),
+                    affiliateUrl: "https://placarcerto.ia.br/affiliate",
+                  },
+                  idempotencyKey: `affiliate-commission-${subscription.id}`,
+                });
+              }
+            } catch (e) {
+              console.error("Affiliate commission email error:", e);
+            }
+          }
         }
       }
     } catch (e) {
