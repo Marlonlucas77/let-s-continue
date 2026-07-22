@@ -120,6 +120,13 @@ function AuthPage() {
       });
       if (result.error) throw new Error(result.error.message ?? "Erro no login com Google");
       if (result.redirected) return;
+      try {
+        const ref = window.localStorage.getItem("pc_ref");
+        if (ref) {
+          await attachRefFn({ data: { code: ref } });
+          window.localStorage.removeItem("pc_ref");
+        }
+      } catch {}
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       toast.error(err.message ?? "Erro no login com Google");
