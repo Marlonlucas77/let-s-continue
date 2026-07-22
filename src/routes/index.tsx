@@ -110,6 +110,13 @@ const STRUCTURED_DATA = {
 };
 
 function Landing() {
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const ref = url.searchParams.get("ref");
+      if (ref) window.localStorage.setItem("pc_ref", ref.toUpperCase());
+    } catch {}
+  }, []);
   return (
     <div className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
