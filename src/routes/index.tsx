@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Wand2, Target, Trophy, TrendingUp, Radio, Globe2, LineChart, Check, ShieldCheck, Sparkles, Search, BarChart3, Star, Zap, Clock, Users, MessageCircle, Brain, Rocket, ArrowRight, X } from "lucide-react";
 import { LogoWithName } from "@/components/Logo";
 
