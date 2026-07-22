@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminListUsers, adminToggleRole, adminStats, adminCronStatus, checkIsAdmin, adminRealRevenue } from "@/lib/admin.functions";
-import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign, Activity, AlertTriangle, CheckCircle2, Wallet, RefreshCw } from "lucide-react";
+import { adminListCommissions, adminMarkCommissionPaid } from "@/lib/affiliate.functions";
+import { Shield, Users, Trophy, Layers, ListChecks, Loader2, ShieldOff, ShieldCheck, DollarSign, Activity, AlertTriangle, CheckCircle2, Wallet, RefreshCw, Gift, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
