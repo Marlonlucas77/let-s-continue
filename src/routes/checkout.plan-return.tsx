@@ -120,9 +120,6 @@ function PlanReturn() {
                       : `${limits.predictions} previsões de IA por dia`}
                   </span>
                 </li>
-                {plan !== "elite" && (
-                  <li>• Ligas extras disponíveis por <span className="text-foreground font-medium">R$5/mês</span> cada</li>
-                )}
               </ul>
             </div>
 

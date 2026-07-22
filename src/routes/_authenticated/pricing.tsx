@@ -60,7 +60,7 @@ function PricingPage() {
         "Até 3 ligas monitoradas",
         "8 previsões de IA por dia",
         "Estatísticas básicas",
-        "Ligas extras por R$5/mês cada",
+        "Suporte por e-mail",
       ],
     },
     {
@@ -75,7 +75,7 @@ function PricingPage() {
         "25 previsões de IA por dia",
         "Comparação entre times avançada",
         "Nível de confiança da IA",
-        "Ligas extras por R$5/mês cada",
+        "Favoritos com alertas",
       ],
     },
     {
