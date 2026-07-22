@@ -309,6 +309,116 @@ function AdminPage() {
           </table>
         </div>
       </div>
+
+      <AffiliateAdminSection isAdmin={isAdmin} />
+    </div>
+  );
+}
+
+function AffiliateAdminSection({ isAdmin }: { isAdmin: boolean }) {
+  const listFn = useServerFn(adminListCommissions);
+  const markFn = useServerFn(adminMarkCommissionPaid);
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending" | "paid" | "all">("pending");
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["admin-commissions", status],
+    queryFn: async () => await listFn({ data: { status } }),
+    enabled: isAdmin,
+  });
+
+  const markMut = useMutation({
+    mutationFn: async (id: string) => await markFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Comissão marcada como paga.");
+      qc.invalidateQueries({ queryKey: ["admin-commissions"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro"),
+  });
+
+  if (!isAdmin) return null;
+
+  const pending = data.filter((c) => c.status === "pending");
+  const totalPending = pending.reduce((s, c) => s + c.amount_cents, 0);
+
+  const copy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copiado!");
+  };
+
+  return (
+    <div className="card-surface p-5 mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-medium inline-flex items-center gap-2"><Gift className="h-4 w-4" /> Comissões de afiliados</h2>
+        <div className="flex gap-1 text-xs">
+          {(["pending", "paid", "all"] as const).map((s) => (
+            <button key={s}
+              onClick={() => setStatus(s)}
+              className={`px-2 py-1 rounded-md border ${status === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+              {s === "pending" ? "Pendentes" : s === "paid" ? "Pagas" : "Todas"}
+            </button>
+          ))}
+        </div>
+      </div>
+      {status === "pending" && (
+        <p className="text-sm text-muted-foreground mb-3">
+          Total a pagar: <strong className="text-foreground">{(totalPending / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
+        </p>
+      )}
+      {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : !data.length ? (
+        <p className="text-sm text-muted-foreground">Nenhuma comissão.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground text-left">
+              <tr>
+                <th className="py-2">Data</th>
+                <th>Afiliado</th>
+                <th>Chave Pix</th>
+                <th>Indicado</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((c) => (
+                <tr key={c.id} className="border-t border-border">
+                  <td className="py-2 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString("pt-BR")}</td>
+                  <td className="text-muted-foreground">{c.referrer_email ?? "—"}</td>
+                  <td>
+                    {c.referrer_pix ? (
+                      <button onClick={() => copy(c.referrer_pix!)} className="inline-flex items-center gap-1 font-mono text-xs hover:text-primary">
+                        <Copy className="h-3 w-3" /> {c.referrer_pix} <span className="text-muted-foreground">({c.referrer_pix_type})</span>
+                      </button>
+                    ) : <span className="text-xs text-amber-400">Sem chave Pix</span>}
+                  </td>
+                  <td className="text-muted-foreground">{c.referred_email ?? "—"}</td>
+                  <td className="font-medium">{(c.amount_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+                  <td>
+                    {c.status === "paid" ? (
+                      <span className="text-xs text-emerald-400 inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Pago</span>
+                    ) : (
+                      <span className="text-xs text-amber-400">Pendente</span>
+                    )}
+                  </td>
+                  <td>
+                    {c.status === "pending" && (
+                      <button
+                        onClick={() => markMut.mutate(c.id)}
+                        disabled={markMut.isPending || !c.referrer_pix}
+                        className="text-xs px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 disabled:opacity-40"
+                      >
+                        Marcar como pago
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
