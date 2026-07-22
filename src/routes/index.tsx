@@ -45,7 +45,7 @@ const PLANS = [
     price: "R$ 34,99",
     period: "por mês",
     tagline: "O plano mais escolhido",
-    features: ["15 ligas monitoradas", "25 previsões de IA por dia", "Nível de confiança da IA", "Ligas extras por R$5/mês cada"],
+    features: ["15 ligas monitoradas", "25 previsões de IA por dia", "Nível de confiança da IA", "Favoritos com alertas"],
     cta: "Assinar Pro",
     highlight: true,
   },
