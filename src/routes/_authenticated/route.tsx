@@ -63,6 +63,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Conta",
     items: [
       { to: "/account", label: "Minha conta", icon: UserCircle },
+      { to: "/affiliate", label: "Afiliados", icon: Gift },
       { to: "/settings", label: "Configurações", icon: Settings },
       { to: "/feedback", label: "Feedback", icon: MessageSquare },
     ],
