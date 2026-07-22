@@ -27,6 +27,21 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard" });
     });
+  const search = Route.useSearch();
+  const attachRefFn = useServerFn(attachReferral);
+
+  useEffect(() => {
+    // Persist ?ref=CODE (from landing/whatsapp link) so it survives the OTP round-trip.
+    const fromUrl = search.ref;
+    if (fromUrl && typeof window !== "undefined") {
+      try { window.localStorage.setItem("pc_ref", fromUrl.toUpperCase()); } catch {}
+    }
+  }, [search.ref]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/dashboard" });
+    });
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
