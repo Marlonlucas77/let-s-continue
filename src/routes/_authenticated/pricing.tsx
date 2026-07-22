@@ -75,7 +75,7 @@ function PricingPage() {
         "25 previsões de IA por dia",
         "Comparação entre times avançada",
         "Nível de confiança da IA",
-        "Ligas extras por R$5/mês cada",
+        "Favoritos com alertas",
       ],
     },
     {
