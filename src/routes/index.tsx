@@ -35,7 +35,7 @@ const PLANS = [
     price: "R$ 19,99",
     period: "por mês",
     tagline: "Pra quem acompanha alguns campeonatos",
-    features: ["3 ligas monitoradas", "8 previsões de IA por dia", "Estatísticas por time e liga", "Ligas extras por R$5/mês cada"],
+    features: ["3 ligas monitoradas", "8 previsões de IA por dia", "Estatísticas por time e liga", "Suporte por e-mail"],
     cta: "Assinar Básico",
     highlight: false,
   },
