@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Wand2, Target, Trophy, TrendingUp, Radio, Globe2, LineChart, Check, ShieldCheck, Sparkles, Search, BarChart3, Star, Zap, Clock, Users, MessageCircle, Brain, Rocket, ArrowRight, X } from "lucide-react";
 import { LogoWithName } from "@/components/Logo";
 
@@ -109,6 +110,13 @@ const STRUCTURED_DATA = {
 };
 
 function Landing() {
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const ref = url.searchParams.get("ref");
+      if (ref) window.localStorage.setItem("pc_ref", ref.toUpperCase());
+    } catch {}
+  }, []);
   return (
     <div className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />

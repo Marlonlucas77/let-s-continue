@@ -4,8 +4,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Logo } from "@/components/Logo";
+import { useServerFn } from "@tanstack/react-start";
+import { attachReferral } from "@/lib/affiliate.functions";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({ ref: typeof s.ref === "string" ? s.ref : undefined }),
   component: AuthPage,
 });
 
@@ -19,6 +22,16 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const search = Route.useSearch();
+  const attachRefFn = useServerFn(attachReferral);
+
+  useEffect(() => {
+    const fromUrl = search.ref;
+    if (fromUrl && typeof window !== "undefined") {
+      try { window.localStorage.setItem("pc_ref", fromUrl.toUpperCase()); } catch {}
+    }
+  }, [search.ref]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -70,6 +83,13 @@ function AuthPage() {
         type: "email",
       });
       if (error) throw error;
+      try {
+        const ref = typeof window !== "undefined" ? window.localStorage.getItem("pc_ref") : null;
+        if (ref) {
+          await attachRefFn({ data: { code: ref } });
+          window.localStorage.removeItem("pc_ref");
+        }
+      } catch {}
       toast.success("E-mail confirmado! Bem-vindo(a) ao Placar Certo.");
       navigate({ to: "/settings", search: { onboarding: "1" } });
     } catch (err: any) {
@@ -100,6 +120,13 @@ function AuthPage() {
       });
       if (result.error) throw new Error(result.error.message ?? "Erro no login com Google");
       if (result.redirected) return;
+      try {
+        const ref = window.localStorage.getItem("pc_ref");
+        if (ref) {
+          await attachRefFn({ data: { code: ref } });
+          window.localStorage.removeItem("pc_ref");
+        }
+      } catch {}
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       toast.error(err.message ?? "Erro no login com Google");

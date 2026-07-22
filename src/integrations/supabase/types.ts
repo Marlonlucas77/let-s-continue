@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_commissions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          paid_note: string | null
+          referred_id: string
+          referrer_id: string
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          paid_note?: string | null
+          referred_id: string
+          referrer_id: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          paid_note?: string | null
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_prediction_usage: {
         Row: {
           created_at: string
@@ -356,6 +398,9 @@ export type Database = {
           email_alerts_enabled: boolean
           id: string
           last_alert_sent_on: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          referral_code: string | null
         }
         Insert: {
           created_at?: string | null
@@ -363,6 +408,9 @@ export type Database = {
           email_alerts_enabled?: boolean
           id: string
           last_alert_sent_on?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          referral_code?: string | null
         }
         Update: {
           created_at?: string | null
@@ -370,6 +418,33 @@ export type Database = {
           email_alerts_enabled?: boolean
           id?: string
           last_alert_sent_on?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          referral_code?: string | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
         }
         Relationships: []
       }
@@ -543,6 +618,17 @@ export type Database = {
       claim_api_sports_slot: {
         Args: { min_interval_ms: number }
         Returns: string
+      }
+      generate_referral_code: { Args: never; Returns: string }
+      get_affiliate_stats: {
+        Args: { _user_id: string }
+        Returns: {
+          paid_cents: number
+          paid_referrals: number
+          pending_cents: number
+          total_cents: number
+          total_referrals: number
+        }[]
       }
       get_cron_secret: { Args: never; Returns: string }
       get_leaderboard: {

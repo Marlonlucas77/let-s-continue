@@ -108,6 +108,37 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
     },
     env,
   );
+
+  // Comissão de afiliado: 50% do primeiro pagamento (planos, não liga extra).
+  if ((subscription.metadata as any)?.kind !== "extra_league") {
+    try {
+      const amountTotal = Number(session.amount_total ?? 0);
+      if (amountTotal > 0) {
+        const { data: ref } = await getSupabase()
+          .from("referrals")
+          .select("referrer_id")
+          .eq("referred_id", userId)
+          .maybeSingle();
+        const referrerId = (ref as any)?.referrer_id;
+        if (referrerId) {
+          const commissionCents = Math.floor(amountTotal * 0.5);
+          await (getSupabase().from("affiliate_commissions") as any).upsert(
+            {
+              referrer_id: referrerId,
+              referred_id: userId,
+              stripe_subscription_id: subscription.id,
+              amount_cents: commissionCents,
+              currency: (session.currency ?? "brl").toLowerCase(),
+              status: "pending",
+            },
+            { onConflict: "stripe_subscription_id" },
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Affiliate commission error:", e);
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
