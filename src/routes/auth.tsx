@@ -83,6 +83,13 @@ function AuthPage() {
         type: "email",
       });
       if (error) throw error;
+      try {
+        const ref = typeof window !== "undefined" ? window.localStorage.getItem("pc_ref") : null;
+        if (ref) {
+          await attachRefFn({ data: { code: ref } });
+          window.localStorage.removeItem("pc_ref");
+        }
+      } catch {}
       toast.success("E-mail confirmado! Bem-vindo(a) ao Placar Certo.");
       navigate({ to: "/settings", search: { onboarding: "1" } });
     } catch (err: any) {
