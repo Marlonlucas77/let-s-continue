@@ -10,6 +10,5 @@ export interface TemplateEntry {
   to?: string
 }
 
-export const TEMPLATES: Record<string, TemplateEntry> = {
-  'affiliate-commission': affiliateCommissionTemplate,
-}
+export const TEMPLATES: Record<string, TemplateEntry> = {}
+
