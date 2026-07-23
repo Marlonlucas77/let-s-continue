@@ -5,7 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CalendarClock, LogOut, Crown, Shield, Radio,
-  LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle, MessageSquare, Gift,
+  LayoutDashboard, Sparkles, MoreHorizontal, X, Settings, UserCircle, MessageSquare,
 } from "lucide-react";
 import { checkIsAdmin } from "@/lib/admin.functions";
 import { Logo } from "@/components/Logo";
