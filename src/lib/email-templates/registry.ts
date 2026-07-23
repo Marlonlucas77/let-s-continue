@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { template as affiliateCommissionTemplate } from './affiliate-commission'
+
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -10,6 +10,5 @@ export interface TemplateEntry {
   to?: string
 }
 
-export const TEMPLATES: Record<string, TemplateEntry> = {
-  'affiliate-commission': affiliateCommissionTemplate,
-}
+export const TEMPLATES: Record<string, TemplateEntry> = {}
+
