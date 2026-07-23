@@ -620,16 +620,6 @@ export type Database = {
         Returns: string
       }
       generate_referral_code: { Args: never; Returns: string }
-      get_affiliate_stats: {
-        Args: { _user_id: string }
-        Returns: {
-          paid_cents: number
-          paid_referrals: number
-          pending_cents: number
-          total_cents: number
-          total_referrals: number
-        }[]
-      }
       get_cron_secret: { Args: never; Returns: string }
       get_leaderboard: {
         Args: { _limit?: number }
