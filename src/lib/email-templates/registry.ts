@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { template as affiliateCommissionTemplate } from './affiliate-commission'
+
 
 export interface TemplateEntry {
   component: ComponentType<any>
