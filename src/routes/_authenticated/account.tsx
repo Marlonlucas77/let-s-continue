@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 const PLAN_LABEL: Record<string, string> = {
-  free: "Grátis",
+  free: "Sem plano",
   basic: "Básico",
   pro: "Pro",
   elite: "Elite",
