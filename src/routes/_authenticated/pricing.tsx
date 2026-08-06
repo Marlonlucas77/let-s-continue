@@ -100,7 +100,7 @@ function PricingPage() {
       <div className="max-w-5xl">
         <h1 className="font-display text-3xl font-bold">Planos</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Plano atual: <span className="text-primary font-semibold">{isPremium ? "Premium" : "Grátis"}</span>
+          Plano atual: <span className="text-primary font-semibold">{isPremium ? "Premium" : "Sem plano ativo"}</span>
           {isPremium && (
             <button onClick={openPortal} disabled={portalLoading} className="ml-3 text-xs underline text-muted-foreground hover:text-primary">
               {portalLoading ? "Abrindo..." : "Gerenciar assinatura"}
@@ -155,7 +155,7 @@ function PricingPage() {
                     p.highlight ? "bg-primary text-primary-foreground" : "border border-border"
                   }`}
                 >
-                  {isCurrent ? "Plano atual" : !p.priceId ? "Grátis" : loadingPrice === p.priceId ? "Redirecionando..." : "Assinar"}
+                  {isCurrent ? "Plano atual" : !p.priceId ? "Indisponível" : loadingPrice === p.priceId ? "Redirecionando..." : "Assinar"}
                 </button>
               </div>
             );
