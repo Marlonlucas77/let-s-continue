@@ -115,8 +115,8 @@ function Landing() {
       <div className="bg-primary/10 border-b border-primary/20 py-2 text-center text-xs md:text-sm">
         <span className="inline-flex items-center gap-2 text-foreground">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="hidden sm:inline">Novo por aqui?</span> Assine por R$ 4,99/mês e gere sua primeira previsão com IA em 30 segundos.
-          <Link to="/auth" className="ml-1 font-semibold text-primary hover:underline">Começar →</Link>
+          <span className="hidden sm:inline">🔥 Menos de R$ 0,17 por dia:</span> pare de perder dinheiro no achismo e comece a apostar com IA hoje.
+          <Link to="/auth" className="ml-1 font-semibold text-primary hover:underline">Quero lucrar →</Link>
         </span>
       </div>
 
@@ -131,7 +131,7 @@ function Landing() {
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">Entrar</Link>
-            <Link to="/auth" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Assinar por R$ 4,99</Link>
+            <Link to="/auth" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Quero lucrar</Link>
           </div>
         </div>
       </header>
@@ -142,26 +142,26 @@ function Landing() {
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.18),_transparent_60%)]" />
           <div className="mx-auto max-w-6xl px-6 pt-16 pb-12 text-center md:pt-20">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" /> IA generativa • +1.100 ligas • qualquer time do mundo
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> 💸 R$ 4,99/mês • IA generativa • +1.100 ligas do mundo
             </div>
             <h1 className="mt-6 font-display text-5xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl">
-              Pare de chutar no escuro.
+              Pare de perder dinheiro
               <br />
-              <span className="text-primary">Analise futebol com IA.</span>
+              <span className="text-primary">apostando no achismo.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Digite dois times — de qualquer liga do mundo — e receba na hora as probabilidades de <strong className="text-foreground">resultado, gols, escanteios e cartões</strong>. Sem precisar importar nada, sem planilha, sem achismo.
+              A IA analisa qualquer jogo do mundo em segundos e mostra onde estão as <strong className="text-foreground">melhores chances de resultado, gols, escanteios e cartões</strong>. Quem aposta com dado no bolso joga em outro nível — por menos que um café por mês.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:opacity-90 md:text-base">
-                Assinar por R$ 4,99 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                Quero lucrar com IA <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
               <a href="#how" className="rounded-md border border-border px-6 py-3.5 text-sm font-semibold hover:bg-card md:text-base">
                 Ver como funciona
               </a>
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Sem cartão pra começar</span>
+              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Menos de R$ 0,17 por dia</span>
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Cancele quando quiser</span>
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Pix ou cartão</span>
             </div>
@@ -245,7 +245,7 @@ function Landing() {
             </div>
             <div className="mt-10 text-center">
               <Link to="/auth" className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90">
-                Assinar agora por R$ 4,99 <ArrowRight className="h-4 w-4" />
+                Começar a lucrar por R$ 4,99 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -458,12 +458,13 @@ function Landing() {
         <section className="border-t border-border bg-[radial-gradient(ellipse_at_center,_hsl(var(--primary)/0.15),_transparent_70%)] py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <Rocket className="mx-auto h-10 w-10 text-primary" />
-            <h2 className="mt-4 font-display text-3xl font-bold md:text-5xl">Pronto pra analisar seu próximo jogo?</h2>
-            <p className="mt-3 text-lg text-muted-foreground">Assine a partir de R$ 4,99/mês e gere sua primeira previsão com IA em menos de 30 segundos.</p>
+            <h2 className="mt-4 font-display text-3xl font-bold md:text-5xl">Chega de queimar dinheiro em palpite.</h2>
+            <p className="mt-3 text-lg text-muted-foreground">Por R$ 4,99/mês você troca o achismo por probabilidade real da IA. É menos de R$ 0,17 por dia — o preço de um palpite errado é sempre maior.</p>
             <Link to="/auth" className="mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-8 py-4 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:opacity-90">
-              <TrendingUp className="h-5 w-5" /> Assinar agora
+              <TrendingUp className="h-5 w-5" /> Quero lucrar com IA
             </Link>
-            <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito • Cancele quando quiser</p>
+            <p className="mt-4 text-xs text-muted-foreground">Pix ou cartão • Cancele quando quiser • Sem fidelidade</p>
+            <p className="mx-auto mt-2 max-w-xl text-[11px] text-muted-foreground/70">O Placar Certo é uma ferramenta de análise estatística. Não garantimos lucro nem resultados: aposte com responsabilidade, +18.</p>
           </div>
         </section>
       </main>
