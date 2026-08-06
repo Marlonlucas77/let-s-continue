@@ -119,7 +119,7 @@ function AuthPage() {
               ? "Confirme seu e-mail"
               : mode === "login"
               ? "Entre para analisar seus jogos"
-              : "Crie sua conta grátis"}
+              : "Crie sua conta"}
           </p>
         </div>
 

@@ -5,7 +5,7 @@ import { getStripeEnvironment } from "@/lib/stripe";
 // Mesmo valor do plano grátis em plan-limits.server.ts (dailyPredictions).
 // Se mudar um, mude o outro — mantidos separados porque esse aqui roda no
 // cliente e aquele é server-only.
-export const FREE_PREDICTION_LIMIT = 2;
+export const FREE_PREDICTION_LIMIT = 0;
 
 export function useSubscription() {
   const { data: user } = useQuery({

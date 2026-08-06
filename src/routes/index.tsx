@@ -7,10 +7,10 @@ export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
-      { title: "Placar Certo — Previsões de futebol com IA | Comece grátis" },
-      { name: "description", content: "Pare de chutar no escuro. Analise qualquer jogo do mundo com IA em segundos: probabilidades de gols, escanteios, cartões e resultado. +1.100 ligas cobertas. Comece grátis, sem cartão." },
+      { title: "Placar Certo — Previsões de futebol com IA a partir de R$ 4,99" },
+      { name: "description", content: "Pare de chutar no escuro. Analise qualquer jogo do mundo com IA em segundos: probabilidades de gols, escanteios, cartões e resultado. +1.100 ligas cobertas. Planos a partir de R$ 4,99/mês." },
       { property: "og:title", content: "Placar Certo — Previsões de futebol com IA" },
-      { property: "og:description", content: "Analise qualquer jogo com IA. Gols, escanteios, cartões e resultado — na hora, com nível de confiança. Comece grátis." },
+      { property: "og:description", content: "Analise qualquer jogo com IA. Gols, escanteios, cartões e resultado — na hora, com nível de confiança. A partir de R$ 4,99/mês." },
       { property: "og:url", content: "/" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -21,19 +21,9 @@ export const Route = createFileRoute("/")({
 
 const PLANS = [
   {
-    id: "free",
-    name: "Grátis",
-    price: "R$ 0",
-    period: "pra sempre",
-    tagline: "Pra testar sem risco",
-    features: ["1 liga monitorada", "2 previsões de IA por dia", "Placar ao vivo e painel completo", "Histórico de acertos"],
-    cta: "Criar conta grátis",
-    highlight: false,
-  },
-  {
     id: "basic",
     name: "Básico",
-    price: "R$ 19,99",
+    price: "R$ 4,99",
     period: "por mês",
     tagline: "Pra quem acompanha alguns campeonatos",
     features: ["3 ligas monitoradas", "8 previsões de IA por dia", "Estatísticas por time e liga", "Suporte por e-mail"],
@@ -43,7 +33,7 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 34,99",
+    price: "R$ 9,99",
     period: "por mês",
     tagline: "O plano mais escolhido",
     features: ["15 ligas monitoradas", "25 previsões de IA por dia", "Nível de confiança da IA", "Favoritos com alertas"],
@@ -53,7 +43,7 @@ const PLANS = [
   {
     id: "elite",
     name: "Elite",
-    price: "R$ 64,99",
+    price: "R$ 19,99",
     period: "por mês",
     tagline: "Sem limites, pra profissional",
     features: ["Ligas e previsões ilimitadas", "Odds ao vivo e valor esperado", "Análises comparativas ilimitadas", "Suporte prioritário 24/7"],
@@ -89,7 +79,7 @@ const FAQS = [
   },
   {
     q: "Posso trocar de plano depois?",
-    a: "Pode. Você começa no Grátis, evolui pro Básico, Pro ou Elite quando quiser, e volta pra baixo também. A cobrança é ajustada proporcionalmente.",
+    a: "Pode. Você pode subir ou descer entre Básico, Pro e Elite quando quiser. A cobrança é ajustada proporcionalmente.",
   },
 ];
 
@@ -102,10 +92,10 @@ const STRUCTURED_DATA = {
   description: "Previsões de futebol geradas por IA — compare qualquer time do mundo e receba probabilidades de gols, escanteios e cartões na hora.",
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "0",
-    highPrice: "64.99",
+    lowPrice: "4.99",
+    highPrice: "19.99",
     priceCurrency: "BRL",
-    offerCount: "4",
+    offerCount: "3",
   },
 };
 
@@ -125,7 +115,7 @@ function Landing() {
       <div className="bg-primary/10 border-b border-primary/20 py-2 text-center text-xs md:text-sm">
         <span className="inline-flex items-center gap-2 text-foreground">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="hidden sm:inline">Novo por aqui?</span> Crie sua conta grátis em 30 segundos e gere sua primeira previsão com IA.
+          <span className="hidden sm:inline">Novo por aqui?</span> Assine por R$ 4,99/mês e gere sua primeira previsão com IA em 30 segundos.
           <Link to="/auth" className="ml-1 font-semibold text-primary hover:underline">Começar →</Link>
         </span>
       </div>
@@ -141,7 +131,7 @@ function Landing() {
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">Entrar</Link>
-            <Link to="/auth" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Começar grátis</Link>
+            <Link to="/auth" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Assinar por R$ 4,99</Link>
           </div>
         </div>
       </header>
@@ -164,7 +154,7 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Link to="/auth" className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:opacity-90 md:text-base">
-                Criar conta grátis <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                Assinar por R$ 4,99 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
               </Link>
               <a href="#how" className="rounded-md border border-border px-6 py-3.5 text-sm font-semibold hover:bg-card md:text-base">
                 Ver como funciona
@@ -255,7 +245,7 @@ function Landing() {
             </div>
             <div className="mt-10 text-center">
               <Link to="/auth" className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90">
-                Testar agora, é grátis <ArrowRight className="h-4 w-4" />
+                Assinar agora por R$ 4,99 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -386,10 +376,10 @@ function Landing() {
           <div className="mx-auto max-w-6xl px-6">
             <div className="text-center">
               <span className="text-xs font-semibold uppercase tracking-wider text-primary">Planos</span>
-              <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Comece grátis. Evolua quando fizer sentido.</h2>
-              <p className="mt-3 text-muted-foreground">Sem cobrança para começar. Sem fidelidade. Cartão ou Pix, cancela quando quiser.</p>
+              <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Planos a partir de R$ 4,99/mês.</h2>
+              <p className="mt-3 text-muted-foreground">Sem fidelidade. Cartão ou Pix, cancela quando quiser.</p>
             </div>
-            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {PLANS.map((p) => (
                 <div
                   key={p.id}
@@ -435,9 +425,9 @@ function Landing() {
           <div className="mx-auto max-w-3xl px-6">
             <div className="card-surface p-8 text-center border-primary/30 ring-1 ring-primary/20">
               <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
-              <h3 className="mt-4 font-display text-2xl font-bold">Sem risco pra começar</h3>
+              <h3 className="mt-4 font-display text-2xl font-bold">Sem fidelidade, sem burocracia</h3>
               <p className="mt-3 text-muted-foreground">
-                Você começa <strong className="text-foreground">grátis, sem cartão de crédito</strong>. Se decidir assinar depois e não gostar, é só cancelar direto no app — sem multa, sem burocracia, sem falar com atendimento.
+                Assine por <strong className="text-foreground">R$ 4,99/mês</strong> e, se não gostar, cancele direto no app a qualquer momento — sem multa, sem burocracia, sem falar com atendimento.
               </p>
             </div>
           </div>
@@ -469,9 +459,9 @@ function Landing() {
           <div className="mx-auto max-w-3xl px-6 text-center">
             <Rocket className="mx-auto h-10 w-10 text-primary" />
             <h2 className="mt-4 font-display text-3xl font-bold md:text-5xl">Pronto pra analisar seu próximo jogo?</h2>
-            <p className="mt-3 text-lg text-muted-foreground">Crie sua conta grátis e gere sua primeira previsão com IA em menos de 30 segundos.</p>
+            <p className="mt-3 text-lg text-muted-foreground">Assine a partir de R$ 4,99/mês e gere sua primeira previsão com IA em menos de 30 segundos.</p>
             <Link to="/auth" className="mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-8 py-4 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:opacity-90">
-              <TrendingUp className="h-5 w-5" /> Começar grátis agora
+              <TrendingUp className="h-5 w-5" /> Assinar agora
             </Link>
             <p className="mt-4 text-xs text-muted-foreground">Sem cartão de crédito • Cancele quando quiser</p>
           </div>
