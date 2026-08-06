@@ -8,7 +8,7 @@ export interface PlanLimits {
 
 // Limite DIÁRIO de previsões com IA (antes era mensal — trocado a pedido).
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  free: { leagues: 1, dailyPredictions: 2 },
+  free: { leagues: 0, dailyPredictions: 0 },
   basic: { leagues: 3, dailyPredictions: 8 },
   pro: { leagues: 15, dailyPredictions: 25 },
   elite: { leagues: Infinity, dailyPredictions: Infinity },
@@ -19,9 +19,9 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
 // atualize aqui também.
 export const PLAN_PRICES_BRL: Record<PlanId, number> = {
   free: 0,
-  basic: 19.99,
-  pro: 34.99,
-  elite: 64.99,
+  basic: 4.99,
+  pro: 9.99,
+  elite: 19.99,
 };
 
 function priceIdToPlan(priceId: string | null | undefined): PlanId {

@@ -192,7 +192,7 @@ function PredictionsPage() {
     mutationFn: async () => {
       if (!aiMut.data?.prediction || !home || !away) return;
       if (!homeIsLocal || !awayIsLocal) throw new Error("Só é possível salvar previsões com os dois times da sua lista importada.");
-      if (!canSavePrediction) throw new Error("Limite grátis atingido. Assine para salvar mais.");
+      if (!canSavePrediction) throw new Error("Assine um plano para salvar previsões.");
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from("predictions").insert({
         user_id: user!.id, home_team_id: home.id, away_team_id: away.id,
@@ -223,7 +223,7 @@ function PredictionsPage() {
           </span>
         ) : (
           <Link to="/pricing" className="inline-flex items-center gap-1.5 rounded-full bg-input border border-border px-3 py-1 text-xs font-medium hover:border-primary/50">
-            <Crown className="h-3.5 w-3.5 text-primary" /> {remaining}/{FREE_PREDICTION_LIMIT} grátis hoje
+            <Crown className="h-3.5 w-3.5 text-primary" /> {remaining}/{FREE_PREDICTION_LIMIT} previsões hoje
           </Link>
         )}
       </div>
@@ -232,7 +232,7 @@ function PredictionsPage() {
         <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4 flex items-center gap-3 flex-wrap">
           <Lock className="h-5 w-5 text-primary shrink-0" />
           <div className="flex-1 min-w-0 text-sm">
-            <div className="font-semibold">Você atingiu o limite grátis</div>
+            <div className="font-semibold">Assine para usar as previsões da IA</div>
             <div className="text-muted-foreground">Faça upgrade pra Premium e salve previsões ilimitadas.</div>
           </div>
           <Link to="/pricing" className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
@@ -459,7 +459,7 @@ function PredictionsPage() {
                   Salvar previsão pra acompanhar taxa de acerto só funciona com os dois times da sua lista importada (pelo menos um dos dois foi digitado livremente aqui).
                 </p>
               ) : (
-                <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Limite grátis atingido"} className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+                <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSavePrediction} title={canSavePrediction ? "" : "Assine um plano para salvar"} className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
                   {canSavePrediction ? <Save className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                   {canSavePrediction ? "Salvar previsão" : "Assine para salvar"}
                 </button>

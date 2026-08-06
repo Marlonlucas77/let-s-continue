@@ -10,7 +10,7 @@ const PLAN_LIMITS: Record<string, { name: string; leagues: number | "unlimited";
   basic: { name: "Básico", leagues: 3, predictions: 8 },
   pro: { name: "Pro", leagues: 15, predictions: 25 },
   elite: { name: "Elite", leagues: "unlimited", predictions: "unlimited" },
-  free: { name: "Grátis", leagues: 1, predictions: 2 },
+  free: { name: "Sem plano", leagues: 0, predictions: 0 },
 };
 
 const search = z.object({ session_id: z.string().optional() });

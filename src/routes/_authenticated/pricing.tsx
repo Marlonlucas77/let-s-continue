@@ -53,7 +53,7 @@ function PricingPage() {
     {
       id: "basic_monthly",
       name: "Básico",
-      price: "R$ 19,99",
+      price: "R$ 4,99",
       period: "por mês",
       priceId: "basic_monthly_v2" as string | null,
       features: [
@@ -66,7 +66,7 @@ function PricingPage() {
     {
       id: "pro_monthly",
       name: "Pro",
-      price: "R$ 34,99",
+      price: "R$ 9,99",
       period: "por mês",
       priceId: "pro_monthly_v2" as string | null,
       highlight: true,
@@ -81,7 +81,7 @@ function PricingPage() {
     {
       id: "elite_monthly",
       name: "Elite",
-      price: "R$ 64,99",
+      price: "R$ 19,99",
       period: "por mês",
       priceId: "elite_monthly_v2" as string | null,
       features: [
